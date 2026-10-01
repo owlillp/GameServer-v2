@@ -1,3 +1,4 @@
+using AuthService.Core.Services;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Shared.Core.Abstractions;
@@ -12,6 +13,8 @@ public static class DependencyInjectionExtensions
         {
             services.AddHandlers(typeof(DependencyInjectionExtensions).Assembly);
             services.AddValidatorsFromAssembly(typeof(DependencyInjectionExtensions).Assembly);
+
+            services.AddScoped<PlatformSyncService>();
 
             return services;
         }

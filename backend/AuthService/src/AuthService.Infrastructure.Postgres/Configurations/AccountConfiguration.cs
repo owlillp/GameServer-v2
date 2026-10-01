@@ -1,4 +1,4 @@
-using AuthService.Domain;
+using AuthService.Domain.Accounts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -10,17 +10,43 @@ internal sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
     {
         builder.ToTable("accounts");
 
-        builder.HasKey(account => account.Id);
+        builder.Property(a => a.Id).HasColumnName("id");
 
-        builder.Property(account => account.Id).HasColumnName("id");
+        builder.Property(a => a.UserName)
+            .HasColumnName("username")
+            .HasMaxLength(AccountConstants.USER_NAME_MAX_LENGTH);
 
-        builder.Property(account => account.Email)
+        builder.Property(a => a.NormalizedUserName)
+            .HasColumnName("normalized_username")
+            .HasMaxLength(AccountConstants.USER_NAME_MAX_LENGTH);
+
+        builder.Property(a => a.Email)
             .HasColumnName("email")
-            .HasMaxLength(AccountConstants.EMAIL_MAX_LENGTH)
-            .IsRequired();
+            .HasMaxLength(AccountConstants.EMAIL_MAX_LENGTH);
 
-        builder.Property(account => account.CreatedAt).HasColumnName("created_at");
+        builder.Property(a => a.NormalizedEmail)
+            .HasColumnName("normalized_email")
+            .HasMaxLength(AccountConstants.EMAIL_MAX_LENGTH);
 
-        builder.HasIndex(account => account.Email).IsUnique();
+        builder.Property(a => a.EmailConfirmed).HasColumnName("email_confirmed");
+        builder.Property(a => a.PasswordHash).HasColumnName("password_hash");
+        builder.Property(a => a.SecurityStamp).HasColumnName("security_stamp");
+        builder.Property(a => a.ConcurrencyStamp).HasColumnName("concurrency_stamp");
+        builder.Property(a => a.PhoneNumber).HasColumnName("phone_number");
+        builder.Property(a => a.PhoneNumberConfirmed).HasColumnName("phone_number_confirmed");
+        builder.Property(a => a.TwoFactorEnabled).HasColumnName("two_factor_enabled");
+        builder.Property(a => a.LockoutEnd).HasColumnName("lockout_end");
+        builder.Property(a => a.LockoutEnabled).HasColumnName("lockout_enabled");
+        builder.Property(a => a.AccessFailedCount).HasColumnName("access_failed_count");
+
+        builder.Property(a => a.DisplayName)
+            .HasColumnName("display_name")
+            .HasMaxLength(AccountConstants.DISPLAY_NAME_MAX_LENGTH);
+
+        builder.Property(a => a.CreatedAt).HasColumnName("created_at");
+        builder.Property(a => a.UpdatedAt).HasColumnName("updated_at");
+
+        builder.OwnsOne(a => a.Profile, p => p.ToJson("profile"));
+        builder.Navigation(a => a.Profile).IsRequired();
     }
 }

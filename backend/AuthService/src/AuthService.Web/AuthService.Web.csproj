@@ -10,7 +10,11 @@
         <PackageReference Include="Microsoft.AspNetCore.OpenApi"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design"/>
         <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore"/>
+        <PackageReference Include="Microsoft.IdentityModel.Tokens" />
         <PackageReference Include="Scalar.AspNetCore" />
+        <PackageReference Include="OpenIddict.Server.AspNetCore" />
+        <PackageReference Include="OpenIddict.Validation.AspNetCore" />
+        <PackageReference Include="OpenIddict.Validation.ServerIntegration" />
     </ItemGroup>
 
     <ItemGroup>
@@ -18,6 +22,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\AuthService.Contracts\AuthService.Contracts.csproj" />
       <ProjectReference Include="..\AuthService.Core\AuthService.Core.csproj" />
       <ProjectReference Include="..\AuthService.Domain\AuthService.Domain.csproj" />
       <ProjectReference Include="..\AuthService.Infrastructure.Postgres\AuthService.Infrastructure.Postgres.csproj" />
