@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/SolutionFolder/">
+    <File Path="../.editorconfig" />
+    <File Path="../.gitignore" />
+    <File Path="../Directory.Build.props" />
+    <File Path="../Directory.Packages.props" />
+    <File Path="../nuget.config" />
+  </Folder>
+  <Project Path="src/AuthService.Contracts/AuthService.Contracts.csproj" />
+  <Project Path="src/AuthService.Core/AuthService.Core.csproj" />
+  <Project Path="src/AuthService.Domain/AuthService.Domain.csproj" />
+  <Project Path="src/AuthService.Infrastructure.Postgres/AuthService.Infrastructure.Postgres.csproj" />
+  <Project Path="src/AuthService.Web/AuthService.Web.csproj" />
+</Solution>

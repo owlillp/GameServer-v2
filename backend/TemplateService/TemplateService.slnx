@@ -1,0 +1,17 @@
+<Solution>
+  <Folder Name="/SolutionFolder/">
+    <File Path="../.editorconfig" />
+    <File Path="../.gitignore" />
+    <File Path="../Directory.Build.props" />
+    <File Path="../Directory.Packages.props" />
+    <File Path="../nuget.config" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/TemplateService.IntegrationTests/TemplateService.IntegrationTests.csproj" />
+  </Folder>
+  <Project Path="src/TemplateService.Contracts/TemplateService.Contracts.csproj" />
+  <Project Path="src/TemplateService.Core/TemplateService.Core.csproj" />
+  <Project Path="src/TemplateService.Domain/TemplateService.Domain.csproj" />
+  <Project Path="src/TemplateService.Infrastructure.Postgres/TemplateService.Infrastructure.Postgres.csproj" />
+  <Project Path="src/TemplateService.Web/TemplateService.Web.csproj" />
+</Solution>
