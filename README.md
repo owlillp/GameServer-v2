@@ -1,18 +1,22 @@
 # GameServer-v2
 
-Монорепозиторий платформы v2: бекенд (несколько сервисов), фронтенд, nginx и
-Docker. Создан на основе шаблонного сервиса TemplateService.
+Монорепозиторий игровой платформы v2: бекенд (AuthService), фронтенд, nginx и
+Docker. Единый вход (OIDC) и разделение интерфейса по ролям пользователя.
 
 ## Backend-сервисы
 
-| Сервис            | Статус   | Описание                                                        |
-| ----------------- | -------- | --------------------------------------------------------------- |
-| `TemplateService` | шаблон   | Пример вертикального среза (CRUD `Item`), основа для копирования |
-| `AuthService`     | заглушка | Минимальный скелет без Identity/OpenIddict: `/auth/service-info`, `/health` |
+| Сервис        | Описание                                                                 |
+| ------------- | ------------------------------------------------------------------------ |
+| `AuthService` | OIDC-провайдер (OpenIddict + ASP.NET Identity) и JSON API аккаунтов      |
 
-`AuthService` пока не является issuer'ом токенов — это заготовка структуры
-(Domain / Contracts / Core / Infrastructure.Postgres / Web) с одним
-query-endpoint'ом и пустой схемой `auth` в БД. OIDC/Identity добавятся позже.
+AuthService выдаёт токены (Authorization Code + PKCE, refresh и
+client_credentials) и отдаёт профиль/админские данные:
+
+- `/connect/*`, `/.well-known/*` — OIDC endpoints;
+- `/auth/register`, `/auth/login` — регистрация и вход (Identity-cookie);
+- `/auth/me` — профиль текущего пользователя по Bearer-токену;
+- `/admin/users`, `/admin/stats` — админ-API (permission `users.view`).
+
 Порт разработки — `5280` (`dotnet run --project backend/AuthService/src/AuthService.Web`).
 
 ## Состав
@@ -23,24 +27,22 @@ GameServer-v2/
 │   ├── Directory.Build.props        # общие настройки сборки (net10.0, анализаторы)
 │   ├── Directory.Packages.props     # центральные версии пакетов
 │   ├── nuget.config                 # nuget.org + приватный feed Owlip.*
-│   ├── AuthService/                 # заглушка: Domain/Contracts/Core/Infrastructure/Web
-│   │   └── AuthService.slnx
-│   └── TemplateService/            # шаблонный сервис с примером CRUD
-│       ├── TemplateService.slnx
+│   └── AuthService/
+│       ├── AuthService.slnx
 │       ├── Dockerfile               # стадии base / build / migrations / final
 │       ├── src/
-│       │   ├── TemplateService.Domain/                    # сущности, константы
-│       │   ├── TemplateService.Contracts/                 # DTO запросов/ответов
-│       │   ├── TemplateService.Core/                      # handlers, validators, permissions
-│       │   ├── TemplateService.Infrastructure.Postgres/   # EF Core, репозиторий, миграции
-│       │   └── TemplateService.Web/                       # Program, endpoints (IEndpointGroup), конфиги
+│       │   ├── AuthService.Domain/                    # Account, UserProfile, роли
+│       │   ├── AuthService.Contracts/                 # DTO запросов/ответов
+│       │   ├── AuthService.Core/                      # handlers, validators, permissions
+│       │   ├── AuthService.Infrastructure.Postgres/   # EF Core + Identity, миграции
+│       │   └── AuthService.Web/                       # Program, endpoints, OIDC, конфиги
 │       └── tests/
-│           └── TemplateService.IntegrationTests/          # Testcontainers + Respawn
+│           ├── AuthService.UnitTests/                 # домен, валидаторы
+│           └── AuthService.IntegrationTests/          # Testcontainers + OIDC-флоу
 ├── frontend/                        # Next.js 16 (App Router), React 19, Tailwind v4
-├── nginx.conf                       # 6000 — SPA, 6001 — API
+├── nginx.conf                       # 6100 — SPA, 6101 — API (единый origin)
 ├── nginx/certificates/              # self-signed сертификаты для localhost
 ├── scripts/
-│   ├── create-service.sh            # генерация нового сервиса из шаблона
 │   └── prepare-nginx-https.*        # перегенерация сертификатов
 ├── docker-compose.yml
 └── .env.example
@@ -48,77 +50,77 @@ GameServer-v2/
 
 ## Стек
 
-| Слой      | Технологии                                                                                       |
-| --------- | ------------------------------------------------------------------------------------------------ |
-| Backend   | .NET 10, Minimal API, CQRS-handlers (`Shared.Core`), FluentValidation, EF Core + PostgreSQL, Serilog, Scalar |
-| Auth      | JWT-валидация токенов AuthService (`Owlip.Shared.Authentication`), permissions по ролям           |
-| Frontend  | Next.js 16, React 19, TypeScript, Tailwind CSS v4, TanStack Query, react-hook-form + zod, axios   |
-| Infra     | Docker Compose, nginx с HTTPS, отдельный контейнер миграций EF                                    |
-| Тесты     | xUnit, `WebApplicationFactory`, Testcontainers.PostgreSql, Respawn                               |
+| Слой     | Технологии                                                                                       |
+| -------- | ------------------------------------------------------------------------------------------------ |
+| Backend  | .NET 10, Minimal API, CQRS-handlers (`Shared.Core`), FluentValidation, EF Core + PostgreSQL, Serilog, Scalar |
+| Auth     | OpenIddict (OIDC), ASP.NET Identity, JWT-валидация, permissions по ролям                          |
+| Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS v4, TanStack Query, react-hook-form + zod, axios, zustand |
+| Infra    | Docker Compose, nginx с HTTPS, отдельный контейнер миграций EF                                    |
+| Тесты    | xUnit, `WebApplicationFactory`, Testcontainers.PostgreSql, Respawn                                |
 
 ## Быстрый старт (Docker)
 
 ```bash
 cp .env.example .env
 # заполни NUGET_USERNAME / NUGET_PASSWORD (PAT с read:packages)
-# и AUTH_AUTHORITY (issuer AuthService)
 docker compose up -d --build
 ```
 
-- UI: https://localhost:6000
-- API: https://localhost:6001 (`/health`, в Development — Scalar `/scalar/v1`)
+- UI: https://localhost:6100
+- API (OIDC + JSON): https://localhost:6101 (`/health`, в Docker — Scalar `/scalar/v1`)
 - PostgreSQL: `localhost:5436`
 
-Контейнер `template-migrator` накатывает EF-миграции до старта сервиса.
-Сертификаты для nginx можно перегенерировать: `scripts/prepare-nginx-https.sh`.
+Контейнер `gameserver-v2-auth-migrator` накатывает EF-миграции до старта
+сервиса. Сертификаты для nginx можно перегенерировать:
+`scripts/prepare-nginx-https.sh`.
 
-## Аутентификация
+## Аутентификация и роли
 
-Сервис не выдаёт токены сам — он валидирует JWT, выданные AuthService:
+Фронтенд ходит только на один origin (`https://localhost:6101`): и OIDC, и
+JSON API идут через nginx. Поток входа:
 
-- `Authentication:Authority` — OIDC issuer AuthService;
-- `Authentication:Audiences` — audience, который обязан быть в токене
-  (по умолчанию `template-service`);
-- роли из claim `role` сопоставляются с permissions в
-  `TemplateService.Core/Authorization/TemplatePermissions.cs`.
+1. `/login` — email и пароль уходят в `POST /auth/login`, AuthService ставит
+   Identity-cookie;
+2. браузер редиректится на `/connect/authorize` (Authorization Code + PKCE),
+   AuthService возвращает код на `/auth/callback`;
+3. SPA меняет код на токены в `/connect/token`, кладёт их в zustand-store и
+   подставляет access-токен как `Bearer` через интерсептор axios;
+4. `/auth/me` отдаёт профиль, `/admin/*` доступны по permission `users.view`.
 
-Чтобы токены AuthService подходили, добавь scope/resource `template-service` в
-AuthService (по аналогии с `clan-service` в GameServer) **или** укажи
-существующий audience:
+Роли (`AuthService.Domain.AuthRoles`) и permissions:
 
-```bash
-# docker-compose.yml / .env
-Authentication__Audiences__0=clan-service
+| Роль        | Permissions                              | UI                                     |
+| ----------- | ---------------------------------------- | -------------------------------------- |
+| `User`      | —                                        | личный кабинет, профиль                |
+| `Moderator` | `users.view`, `users.manage`, `platform.manage` | админ-панель: статистика, пользователи |
+| `Admin`     | все                                      | админ-панель                           |
+| `Service`   | —                                        | service-to-service (client_credentials) |
+
+После входа `resolveHomeRoute` уводит персонал в `/admin`, остальных — в
+`/dashboard`. Маршруты админки дополнительно закрыты клиентским
+`RequireAuth roles={[Admin, Moderator]}`.
+
+Чтобы выдать роль первому администратору:
+
+```sql
+INSERT INTO auth.account_roles (account_id, role_id)
+SELECT u.id, r.id FROM auth.accounts u, auth.roles r
+WHERE u.email = 'admin@example.com' AND r.name = 'Admin';
 ```
-
-В UI на странице **Items** есть панель: вставь access-токен — он сохранится в
-localStorage и будет подставляться в `Authorization` интерсептором axios.
-
-### Scalar OAuth (dev)
-
-Scalar UI умеет выполнять вход по OAuth2 (`ConfigureOAuth2`). Flow включается,
-только если одновременно заданы `Authentication:AuthorizationUrl`,
-`Authentication:TokenUrl` и `Authentication:Scalar:ClientId` (или
-`Authentication:Audience`). URL уже проставлены в Development/Docker —
-остаётся зарегистрировать публичный PKCE-клиент в AuthService и указать его
-`ClientId`.
 
 ## Конфигурация (options)
 
-Секции appsettings, которые биндятся на options-классы Shared:
+Секции appsettings, которые биндятся на options-классы:
 
 | Секция           | Options-класс                                          | Ключи                                                                     |
 | ---------------- | ------------------------------------------------------ | ------------------------------------------------------------------------- |
 | `Cors`           | `Shared.Framework.Cors.CorsSettings`                   | `AllowedOrigins`, `AllowCredentials`, `AllowedHeaders`, `AllowedMethods`  |
 | `Authentication` | `Shared.Authentication...BearerTokenSettings` (JWT)    | `Authority`, `Audiences`                                                  |
-| `Authentication` | `Shared.Authentication.AuthenticationOptions` (Scalar) | `AuthorizationUrl`, `TokenUrl`, `Audience`, `Scalar:ClientId/ClientSecret`|
-| `ServiceToken`   | `...HttpServerClients.ServiceTokenOptions`             | `TokenUrl`, `ClientId`, `ClientSecret`, `Scopes`                          |
+| `OpenIddict`     | `AuthService.Core.Configuration.OidcOptions`           | `Issuer`, `AccessTokenLifetimeMinutes`, `RefreshTokenLifetimeDays`, `Clients:*` |
+| `AuthService`    | `AuthService.Web.Configurations.Options.AuthServiceOptions` | `FrontendLoginUrl` (куда вести неавторизованный `/connect/authorize`) |
 
-`BearerTokenSettings` по умолчанию читает секцию `Jwt`, но сервис явно передаёт
-`sectionName: "Authentication"` — JWT и Scalar живут в одной секции.
-`ServiceToken` — заготовка для service-to-service вызовов по client_credentials
-(`AddServiceTokenForwarding`): в шаблоне не используется, заполни при
-необходимости.
+`OpenIddict__Issuer` в Docker — `https://localhost:6101/` (внешний адрес API
+через nginx), `AuthService__FrontendLoginUrl` — `https://localhost:6100/login`.
 
 ## Локальная разработка
 
@@ -126,9 +128,9 @@ Backend (Postgres поднимаем из compose):
 
 ```bash
 docker compose up -d postgres
-cd backend/TemplateService
-dotnet run --project src/TemplateService.Web
-# http://localhost:5279, Scalar: http://localhost:5279/scalar/v1
+cd backend/AuthService
+dotnet run --project src/AuthService.Web
+# http://localhost:5280, Scalar: http://localhost:5280/scalar/v1
 ```
 
 Frontend:
@@ -144,31 +146,29 @@ npm run dev
 
 ```bash
 dotnet ef migrations add <Name> \
-  --project src/TemplateService.Infrastructure.Postgres \
-  --startup-project src/TemplateService.Web
+  --project src/AuthService.Infrastructure.Postgres \
+  --startup-project src/AuthService.Web
 ```
 
 Тесты (нужен запущенный Docker — Testcontainers поднимает Postgres):
 
 ```bash
-cd backend/TemplateService
+cd backend/AuthService
 dotnet test
 ```
 
-## API примера
+## API
 
-| Метод  | Путь                | Permission                | Описание                                  |
-| ------ | ------------------- | ------------------------- | ----------------------------------------- |
-| GET    | `/items`            | `items.read`              | Список с поиском и пагинацией             |
-| GET    | `/items/{itemId}`   | `items.read`              | Одна запись                               |
-| POST   | `/items`            | `items.write`             | Создать запись (owner = текущий user)     |
-| PUT    | `/items/{itemId}`   | `items.write`             | Обновить (владелец или `items.manage`)    |
-| DELETE | `/items/{itemId}`   | `items.write`             | Удалить (владелец или `items.manage`)     |
-| GET    | `/health`           | —                         | Health-check (Postgres)                   |
+| Метод | Путь             | Permission     | Описание                                   |
+| ----- | ---------------- | -------------- | ------------------------------------------ |
+| POST  | `/auth/register` | —              | Регистрация (роль `User`)                  |
+| POST  | `/auth/login`    | —              | Вход, ставит Identity-cookie               |
+| GET   | `/auth/me`       | аутентификация | Профиль текущего пользователя              |
+| GET   | `/admin/users`   | `users.view`   | Список аккаунтов с поиском и пагинацией    |
+| GET   | `/admin/stats`   | `users.view`   | Сводка: всего/админы/модераторы/заблокированы |
+| GET   | `/health`        | —              | Health-check (Postgres)                    |
 
-Роли: `User` — read/write, `Moderator`/`Admin` — плюс `items.manage`,
-`Service` — read (service-to-service). Все ответы обёрнуты в общий
-`Shared.SharedKernel.Envelope`.
+Все ответы обёрнуты в общий `Shared.SharedKernel.Envelope`.
 
 ## Организация эндпоинтов
 
@@ -178,18 +178,17 @@ dotnet test
 уточняют permission, имя и summary:
 
 ```csharp
-public sealed class ItemsEndpoints : IEndpointGroup
+public sealed class AdminEndpoints : IEndpointGroup
 {
     public RouteGroupBuilder MapGroup(IEndpointRouteBuilder app)
     {
-        RouteGroupBuilder group = app.MapGroup("/items")
-            .WithTags("Items")
+        RouteGroupBuilder group = app.MapGroup("/admin")
+            .WithTags("Admin")
             .RequireAuthorization();
 
-        group.MapGet("", List)
-            .WithName("Items.List")
-            .WithSummary("Список записей с поиском и пагинацией")
-            .RequirePermissions(TemplatePermissions.ITEMS_READ);
+        group.MapGet("/users", ListUsers)
+            .WithName("Admin.Users.List")
+            .RequirePermissions(AuthPermissions.Users.VIEW);
 
         return group;
     }
@@ -199,38 +198,18 @@ public sealed class ItemsEndpoints : IEndpointGroup
 Группы регистрируются автоматически: `app.MapEndpointGroups(assembly)` в
 `AppConfigurationExtensions` находит все `IEndpointGroup`. Handler'ы
 разрешаются из DI по интерфейсам `ICommandHandler<,>` / `IQueryHandler<,>`
-(регистрируются `AddCore`/`AddHandlers`) — эндпоинт не знает конкретный класс.
+(регистрируются `AddCore`/`AddHandlers`).
 
-`AddPlatformAuthentication` ставит fallback-политику «требовать
-аутентификацию», поэтому служебные эндпоинты (`/health`, OpenAPI, Scalar)
-помечены `.AllowAnonymous()`.
+## Новый доменный сервис
 
-## Новый сервис из шаблона
-
-```bash
-./scripts/create-service.sh BillingService ../BillingService
-```
-
-Скрипт копирует проект (без `.git`, `node_modules`, `bin`, `obj`) и заменяет
-`TemplateService` / `template-service` / `template_service` / `template` в
-именах файлов и содержимом. После создания:
-
-1. `cd ../BillingService && cp .env.example .env` — заполнить `NUGET_*`,
-   `AUTH_AUTHORITY`, пароли Postgres;
-2. зарегистрировать audience `billing-service` в AuthService;
-3. `docker compose up -d --build`;
-4. заменить пример `Item` на свою доменную сущность:
-
-   | Что                    | Где                                                        |
-   | ---------------------- | ---------------------------------------------------------- |
-   | Сущность и константы   | `backend/BillingService/src/BillingService.Domain`         |
-   | DTO                    | `backend/BillingService/src/BillingService.Contracts`      |
-   | Handlers и validators  | `.../BillingService.Core/Features`                         |
-   | Permissions и роли     | `.../BillingService.Core/Authorization`                    |
-   | EF-конфигурация        | `.../BillingService.Infrastructure.Postgres/Configurations`|
-   | Репозиторий            | `.../BillingService.Infrastructure.Postgres`               |
-   | Endpoints              | `.../BillingService.Web/Endpoints/<Resource>Endpoints.cs`  |
-   | UI-страницы и запросы  | `frontend/src/entities` и `frontend/src/features`          |
+1. Создай проект по образцу `backend/AuthService` (Domain / Contracts / Core /
+   Infrastructure.Postgres / Web) и добавь сервис и migrator в
+   `docker-compose.yml`;
+2. создай отдельную БД через `POSTGRES_DB`/init-скрипт и свою схему;
+3. добавь nginx `location` с префиксом домена (как `/clans` в GameServer) на
+   сервере `6101` и отдельный `upstream`;
+4. зарегистрируй scope/resource в `OidcScopes`/`PlatformSyncService` AuthService
+   и укажи audience нового сервиса в `Authentication:Audiences`.
 
 ## Соглашения
 
@@ -238,11 +217,11 @@ public sealed class ItemsEndpoints : IEndpointGroup
   `Command/Query`, `Handler`, `Validator`.
 - Эндпоинты — один `IEndpointGroup` на ресурс: общие префикс/теги/авторизация
   на группе, `.WithName`/`.WithSummary`/`RequirePermissions` — на маршрутах.
-- Эндпоинт инжектит `ICommandHandler<,>` / `IQueryHandler<,>` из DI; конкретные
-  handler'ы регистрируются `AddCore` (`AddHandlers` + FluentValidation).
 - Handler возвращает `Result<T, Error>` из CSharpFunctionalExtensions; ошибки
   конвертируются в HTTP-статусы middleware из `Shared.Framework`.
 - Данные читаются через `IReadDbContext` (no-tracking), пишутся через
-  репозиторий.
+  репозиторий/менеджеры Identity.
 - Валидация — FluentValidation + `GeneralErrors` из `Shared.SharedKernel`.
-- Схема БД — своя (`template`), история миграций в `__EFMigrationsHistory`.
+- Схема БД — своя (`auth`), история миграций в `__EFMigrationsHistory`.
+- Фронтенд: `entities` (API/DTO), `features` (model/ui), `shared` (auth, api,
+  ui); роли и guard'ы — в `shared/auth`.

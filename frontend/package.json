@@ -1,5 +1,5 @@
 {
-  "name": "template-service-frontend",
+  "name": "gameserver-v2-frontend",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -16,6 +16,7 @@
     "axios": "^1.18.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "jwt-decode": "^4.0.0",
     "lucide-react": "^1.21.0",
     "next": "16.2.7",
     "react": "19.2.4",
@@ -25,7 +26,8 @@
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.6.0",
     "use-debounce": "^10.1.1",
-    "zod": "^4.4.3"
+    "zod": "^4.4.3",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

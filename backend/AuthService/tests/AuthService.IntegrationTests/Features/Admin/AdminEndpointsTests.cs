@@ -88,6 +88,32 @@ public sealed class AdminEndpointsTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task Stats_Moderator_ReturnsRoleCounts()
+    {
+        await SeedPlatformConfigAsync();
+        await RegisterAsync("admin@test.com", PASSWORD, "adminuser");
+        await RegisterAsync("moderator@test.com", PASSWORD, "moderatoruser");
+        await RegisterAsync("player@test.com", PASSWORD, "playeruser");
+        await AddRoleAsync("admin@test.com", AuthRoles.ADMIN);
+        await AddRoleAsync("moderator@test.com", AuthRoles.MODERATOR);
+
+        string accessToken = await GetUserAccessTokenAsync("moderator@test.com");
+        HttpResponseMessage response = await GetAuthorizedAsync("/admin/stats", accessToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        Envelope<AdminStatsDto>? envelope =
+            await response.Content.ReadFromJsonAsync<Envelope<AdminStatsDto>>();
+
+        Assert.NotNull(envelope);
+        Assert.NotNull(envelope.Result);
+        Assert.Equal(3, envelope.Result.TotalUsers);
+        Assert.Equal(1, envelope.Result.AdminCount);
+        Assert.Equal(1, envelope.Result.ModeratorCount);
+        Assert.Equal(0, envelope.Result.LockedOutCount);
+    }
+
+    [Fact]
     public async Task Users_Search_FiltersByEmail()
     {
         await SeedPlatformConfigAsync();

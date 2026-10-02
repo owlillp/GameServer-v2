@@ -1,4 +1,5 @@
 using AuthService.Contracts.Admin;
+using AuthService.Core.Features.Admin.Queries.GetStats;
 using AuthService.Core.Features.Admin.Queries.ListUsers;
 using AuthService.Domain.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -25,6 +26,11 @@ public sealed class AdminEndpoints : IEndpointGroup
             .WithSummary("Список пользователей с поиском и пагинацией")
             .RequirePermissions(AuthPermissions.Users.VIEW);
 
+        group.MapGet("/stats", GetStats)
+            .WithName("Admin.Stats.Get")
+            .WithSummary("Сводная статистика аккаунтов")
+            .RequirePermissions(AuthPermissions.Users.VIEW);
+
         return group;
     }
 
@@ -35,4 +41,9 @@ public sealed class AdminEndpoints : IEndpointGroup
         [FromServices] IQueryHandler<PaginationResponse<AdminUserDto>, ListUsersQuery> handler,
         CancellationToken ct) =>
         await handler.Handle(new ListUsersQuery(page, pageSize, search), ct);
+
+    private static async Task<EndpointResult<AdminStatsDto>> GetStats(
+        [FromServices] IQueryHandler<AdminStatsDto, GetStatsQuery> handler,
+        CancellationToken ct) =>
+        await handler.Handle(new GetStatsQuery(), ct);
 }
