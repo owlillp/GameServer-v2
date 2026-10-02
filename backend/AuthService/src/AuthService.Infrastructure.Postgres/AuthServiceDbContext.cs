@@ -1,16 +1,16 @@
 using AuthService.Core.Abstractions;
 using AuthService.Domain.Accounts;
 using AuthService.Domain.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace AuthService.Infrastructure.Postgres;
 
 public class AuthServiceDbContext(DbContextOptions<AuthServiceDbContext> options)
-    : DbContext(options), IReadDbContext
+    : IdentityDbContext<Account, Role, Guid>(options), IReadDbContext
 {
     public DbSet<Account> Accounts => Set<Account>();
-
-    public DbSet<Role> Roles => Set<Role>();
 
     public IQueryable<Account> AccountsRead => Set<Account>()
         .AsQueryable()
@@ -20,12 +20,16 @@ public class AuthServiceDbContext(DbContextOptions<AuthServiceDbContext> options
         .AsQueryable()
         .AsNoTracking();
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        base.OnModelCreating(modelBuilder);
+    public IQueryable<IdentityUserRole<Guid>> AccountRolesRead => Set<IdentityUserRole<Guid>>()
+        .AsQueryable()
+        .AsNoTracking();
 
-        modelBuilder.HasDefaultSchema(Constants.SCHEMA);
-        modelBuilder.UseOpenIddict();
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AuthServiceDbContext).Assembly);
+    protected override void OnModelCreating(ModelBuilder builder)
+    {
+        base.OnModelCreating(builder);
+
+        builder.HasDefaultSchema(Constants.SCHEMA);
+        builder.UseOpenIddict();
+        builder.ApplyConfigurationsFromAssembly(typeof(AuthServiceDbContext).Assembly);
     }
 }

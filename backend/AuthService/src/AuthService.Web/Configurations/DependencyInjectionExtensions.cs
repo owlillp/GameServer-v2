@@ -30,10 +30,11 @@ public static class DependencyInjectionExtensions
             builder.Services.AddOpenApiSpec(Constants.SERVICE_NAME, Constants.VERSION);
             builder.Services.AddHealthChecks().AddDbContextCheck<AuthServiceDbContext>(POSTGRESQL_HEALTH_CHECK);
             builder.Services.AddEndpoints(typeof(DependencyInjectionExtensions).Assembly);
-            builder.Services.AddAuthServiceOidc(configuration, environment);
 
-            builder.Services.AddCore();
+            builder.Services.AddCore(configuration);
             builder.Services.AddInfrastructurePostgres(configuration);
+
+            builder.Services.AddAuthServiceOidc(configuration, environment);
 
             return builder;
         }

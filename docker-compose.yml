@@ -1,4 +1,44 @@
 services:
+  auth-migrator:
+    container_name: auth-service-migrator
+    build:
+      context: ./backend
+      dockerfile: AuthService/Dockerfile
+      target: migrations
+      args:
+        NUGET_USERNAME: ${NUGET_USERNAME}
+      secrets:
+        - nuget_password
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ConnectionStrings__AuthDb=${ConnectionStrings__AuthDb}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["--connection", "${ConnectionStrings__AuthDb}"]
+    restart: "no"
+
+  auth-service:
+    container_name: auth-service
+    build:
+      context: ./backend
+      dockerfile: AuthService/Dockerfile
+      args:
+        NUGET_USERNAME: ${NUGET_USERNAME}
+      secrets:
+        - nuget_password
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_URLS=http://+:8080
+      - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
+      - ConnectionStrings__AuthDb=${ConnectionStrings__AuthDb}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-migrator:
+        condition: service_completed_successfully
+    restart: always
+
   template-migrator:
     container_name: template-service-migrator
     build:
@@ -32,17 +72,16 @@ services:
       - ASPNETCORE_URLS=http://+:8080
       - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
       - ConnectionStrings__TemplateDb=${ConnectionStrings__TemplateDb}
-      # JWT issuer AuthService. Для Linux-хостов host.docker.internal проброшен
-      # через extra_hosts ниже.
+      # JWT issuer AuthService (внутри docker-сети).
       - Authentication__Authority=${AUTH_AUTHORITY}
       - Authentication__Audiences__0=template-service
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     depends_on:
       postgres:
         condition: service_healthy
       template-migrator:
         condition: service_completed_successfully
+      auth-service:
+        condition: service_started
     restart: always
 
   postgres:
@@ -58,6 +97,7 @@ services:
       - "5436:5432"
     volumes:
       - template-postgres-data:/var/lib/postgresql/data
+      - ./scripts/init-databases.sql:/docker-entrypoint-initdb.d/01-init-databases.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
@@ -81,14 +121,17 @@ services:
     container_name: template-nginx
     image: nginx:alpine
     ports:
-      # 6000/6001, чтобы не конфликтовать с GameServer (5000/5001).
+      # 6000 — SPA, 6001 — API TemplateService, 6002 — AuthService (OIDC).
+      # (GameServer занимает 5000/5001.)
       - "6000:6000"
       - "6001:6001"
+      - "6002:6002"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/certificates:/etc/nginx/certificates:ro
     depends_on:
       - template-service
+      - auth-service
       - frontend
     restart: always
 
