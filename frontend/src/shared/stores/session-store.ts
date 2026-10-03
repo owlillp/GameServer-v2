@@ -32,7 +32,6 @@ type SessionData = {
 
 type SessionActions = {
   setTokens: (tokens: OidcTokens) => void;
-  setAccessToken: (accessToken: string, expiresAt: number | null) => void;
   clear: () => void;
 };
 
@@ -48,7 +47,7 @@ const initialState: SessionData = {
 
 export const useSessionStore = create<SessionStore>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       ...initialState,
       setTokens: (tokens) =>
         set({
@@ -57,13 +56,6 @@ export const useSessionStore = create<SessionStore>()(
           idToken: tokens.idToken,
           expiresAt: tokens.expiresAt,
           user: decodeUser(tokens.accessToken, tokens.idToken),
-        }),
-      // Обновление только access-токена сохраняет refresh/id и пересчитывает user.
-      setAccessToken: (accessToken, expiresAt) =>
-        set({
-          accessToken,
-          expiresAt,
-          user: decodeUser(accessToken, get().idToken),
         }),
       clear: () => set(initialState),
     }),
@@ -104,7 +96,6 @@ export const sessionSelectors = {
   displayName: (s: SessionStore) =>
     s.user?.name ?? s.user?.email ?? s.user?.sub ?? null,
   setTokens: (s: SessionStore) => s.setTokens,
-  setAccessToken: (s: SessionStore) => s.setAccessToken,
   clear: (s: SessionStore) => s.clear,
 } as const;
 

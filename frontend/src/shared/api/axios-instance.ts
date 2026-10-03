@@ -103,16 +103,25 @@ function getRefreshPromise(): Promise<string> {
 }
 
 async function performRefresh(): Promise<string> {
-  const refreshToken = useSessionStore.getState().refreshToken;
+  const state = useSessionStore.getState();
+  const refreshToken = state.refreshToken;
 
   if (!refreshToken) {
     throw new EnvelopeError({ messages: [], type: ErrorType.AUTHENTICATION });
   }
 
   const tokens = await refreshTokens(refreshToken);
-  useSessionStore
-    .getState()
-    .setAccessToken(tokens.accessToken, tokens.expiresAt);
+
+  // OpenIddict ротирует refresh-токены: старый становится недействительным,
+  // поэтому сохраняем новый. Иначе следующий refresh отправит уже
+  // использованный токен, сервер сочтёт это повторным использованием
+  // и отзовёт всю цепочку токенов.
+  useSessionStore.getState().setTokens({
+    accessToken: tokens.accessToken,
+    refreshToken: tokens.refreshToken ?? refreshToken,
+    idToken: tokens.idToken ?? state.idToken,
+    expiresAt: tokens.expiresAt,
+  });
 
   return tokens.accessToken;
 }
