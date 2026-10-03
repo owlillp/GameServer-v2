@@ -1,5 +1,9 @@
+using System.Threading.RateLimiting;
 using AuthService.Core;
+using AuthService.Domain.Authorization;
 using AuthService.Infrastructure.Postgres;
+using AuthService.Web.Endpoints.OidcConnection;
+using Shared.Authentication;
 using Shared.Framework.Cors;
 using Shared.Framework.Endpoints;
 using Shared.Framework.Logging;
@@ -10,6 +14,7 @@ namespace AuthService.Web.Configurations;
 public static class DependencyInjectionExtensions
 {
     private const string POSTGRESQL_HEALTH_CHECK = "postgresql";
+    private const string AUTHENTICATION_SECTION_NAME = "Authentication";
 
     extension(WebApplicationBuilder builder)
     {
@@ -18,19 +23,35 @@ public static class DependencyInjectionExtensions
             IWebHostEnvironment environment)
         {
             builder.AddSerilogLogging(Constants.SERVICE_NAME);
+            builder.AddRateLimiter();
 
-            // AuthService — issuer токенов. JWT-валидация (AddPlatformAuthentication)
-            // появится вместе с OIDC; пока сервис не проверяет токены.
-            builder.Services.AddRateLimiter(_ => { });
+            builder.Services.AddPlatformAuthentication(configuration, RolePermissions.Map, AUTHENTICATION_SECTION_NAME);
             builder.Services.AddFrameworkCors(configuration);
             builder.Services.AddOpenApiSpec(Constants.SERVICE_NAME, Constants.VERSION);
             builder.Services.AddHealthChecks().AddDbContextCheck<AuthServiceDbContext>(POSTGRESQL_HEALTH_CHECK);
             builder.Services.AddEndpoints(typeof(DependencyInjectionExtensions).Assembly);
 
-            builder.Services.AddCore();
+            builder.Services.AddCore(configuration);
             builder.Services.AddInfrastructurePostgres(configuration);
+
+            builder.Services.AddAuthServiceOidc(configuration, environment);
 
             return builder;
         }
+
+        private void AddRateLimiter() =>
+            builder.Services.AddRateLimiter(options =>
+            {
+                options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+                options.AddPolicy(ConnectConstants.TOKEN_RATE_LIMIT_POLICY, httpContext =>
+                    RateLimitPartition.GetFixedWindowLimiter(
+                        httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                        _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = 120,
+                            Window = TimeSpan.FromMinutes(1),
+                            QueueLimit = 0,
+                        }));
+            });
     }
 }

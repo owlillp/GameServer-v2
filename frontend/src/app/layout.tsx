@@ -3,8 +3,8 @@ import "./globals.css";
 import Providers from "./providers";
 
 export const metadata: Metadata = {
-  title: "Template Service",
-  description: "Шаблонный сервис: backend, frontend, nginx, docker",
+  title: "GameServer v2",
+  description: "Игровая платформа: личный кабинет и админ-панель",
 };
 
 export default function RootLayout({

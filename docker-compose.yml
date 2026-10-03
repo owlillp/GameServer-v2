@@ -1,9 +1,9 @@
 services:
-  template-migrator:
-    container_name: template-service-migrator
+  auth-migrator:
+    container_name: gameserver-v2-auth-migrator
     build:
       context: ./backend
-      dockerfile: TemplateService/Dockerfile
+      dockerfile: AuthService/Dockerfile
       target: migrations
       args:
         NUGET_USERNAME: ${NUGET_USERNAME}
@@ -11,18 +11,18 @@ services:
         - nuget_password
     environment:
       - ASPNETCORE_ENVIRONMENT=Docker
-      - ConnectionStrings__TemplateDb=${ConnectionStrings__TemplateDb}
+      - ConnectionStrings__AuthDb=${ConnectionStrings__AuthDb}
     depends_on:
       postgres:
         condition: service_healthy
-    command: ["--connection", "${ConnectionStrings__TemplateDb}"]
+    command: ["--connection", "${ConnectionStrings__AuthDb}"]
     restart: "no"
 
-  template-service:
-    container_name: template-service
+  auth-service:
+    container_name: gameserver-v2-auth-service
     build:
       context: ./backend
-      dockerfile: TemplateService/Dockerfile
+      dockerfile: AuthService/Dockerfile
       args:
         NUGET_USERNAME: ${NUGET_USERNAME}
       secrets:
@@ -31,22 +31,16 @@ services:
       - ASPNETCORE_ENVIRONMENT=Docker
       - ASPNETCORE_URLS=http://+:8080
       - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
-      - ConnectionStrings__TemplateDb=${ConnectionStrings__TemplateDb}
-      # JWT issuer AuthService. Для Linux-хостов host.docker.internal проброшен
-      # через extra_hosts ниже.
-      - Authentication__Authority=${AUTH_AUTHORITY}
-      - Authentication__Audiences__0=template-service
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - ConnectionStrings__AuthDb=${ConnectionStrings__AuthDb}
     depends_on:
       postgres:
         condition: service_healthy
-      template-migrator:
+      auth-migrator:
         condition: service_completed_successfully
     restart: always
 
   postgres:
-    container_name: template-db-postgres
+    container_name: gameserver-v2-postgres
     image: postgres:17-alpine
     restart: always
     environment:
@@ -57,7 +51,7 @@ services:
       # 5436, чтобы не конфликтовать с GameServer (5435).
       - "5436:5432"
     volumes:
-      - template-postgres-data:/var/lib/postgresql/data
+      - gameserver-v2-postgres-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
@@ -65,30 +59,31 @@ services:
       retries: 5
 
   frontend:
-    container_name: template-frontend
+    container_name: gameserver-v2-frontend
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: https://localhost:6001
+        # Единый API-origin: и OIDC (AuthService), и JSON API идут через nginx.
+        NEXT_PUBLIC_API_URL: https://localhost:6101
     # Наружу не публикуется: вход в приложение — через nginx
-    # (https://localhost:6000).
+    # (https://localhost:6100).
     expose:
       - "3000"
     restart: always
 
   nginx:
-    container_name: template-nginx
+    container_name: gameserver-v2-nginx
     image: nginx:alpine
     ports:
-      # 6000/6001, чтобы не конфликтовать с GameServer (5000/5001).
-      - "6000:6000"
-      - "6001:6001"
+      # 6100 — SPA, 6101 — API (AuthService в корне). GameServer занимает 5000/5001.
+      - "6100:6100"
+      - "6101:6101"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/certificates:/etc/nginx/certificates:ro
     depends_on:
-      - template-service
+      - auth-service
       - frontend
     restart: always
 
@@ -97,4 +92,4 @@ secrets:
     environment: NUGET_PASSWORD
 
 volumes:
-  template-postgres-data:
+  gameserver-v2-postgres-data:

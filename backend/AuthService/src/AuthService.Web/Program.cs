@@ -1,4 +1,3 @@
-using AuthService.Web;
 using AuthService.Web.Configurations;
 using Serilog;
 using Shared.Framework.Logging;

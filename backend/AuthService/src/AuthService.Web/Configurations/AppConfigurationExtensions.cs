@@ -1,4 +1,5 @@
 using Scalar.AspNetCore;
+using Shared.Authentication;
 using Shared.Framework.Cors;
 using Shared.Framework.Endpoints;
 using Shared.Framework.Logging;
@@ -16,6 +17,7 @@ public static class AppConfigurationExtensions
         app.UseSerilogHttpRequestLogging();
         app.UseExceptionMiddleware();
         app.UseRequestCorrelationId();
+        app.UsePlatformAuthentication();
 
         if (!app.Environment.IsProduction())
         {
