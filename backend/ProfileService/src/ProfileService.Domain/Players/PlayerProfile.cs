@@ -27,7 +27,7 @@ public sealed class PlayerProfile
         UpdatedAt = DateTime.UtcNow;
     }
 
-    public static Result<PlayerProfile, Error> Create(Guid accountId, Nickname nickname, Region? region)
+    public static Result<PlayerProfile, Error> Create(Guid accountId, Nickname nickname, Region? region = null)
     {
         if (accountId == Guid.Empty)
         {

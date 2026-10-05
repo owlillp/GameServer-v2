@@ -22,7 +22,7 @@ public sealed class GetMyProfileHandler(
             return Error.Authentication("authentication.required", "User identity is not available");
         }
 
-        var profile = await dbContext.Profiles
+        var profile = await dbContext.ProfilesRead
             .AsNoTracking()
             .FirstOrDefaultAsync(p => p.Id == userId.Value, cancellationToken);
 

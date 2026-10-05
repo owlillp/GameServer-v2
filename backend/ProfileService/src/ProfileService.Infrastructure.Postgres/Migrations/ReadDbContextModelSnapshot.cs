@@ -10,7 +10,7 @@ using ProfileService.Infrastructure.Postgres;
 
 namespace ProfileService.Infrastructure.Postgres.Migrations
 {
-    [DbContext(typeof(ReadDbContext))]
+    [DbContext(typeof(ProfileServiceDbContext))]
     partial class ReadDbContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)

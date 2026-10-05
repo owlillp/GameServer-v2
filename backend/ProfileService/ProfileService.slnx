@@ -11,4 +11,5 @@
   <Project Path="src/ProfileService.Domain/ProfileService.Domain.csproj" />
   <Project Path="src/ProfileService.Infrastructure.Postgres/ProfileService.Infrastructure.Postgres.csproj" />
   <Project Path="src/ProfileService.Web/ProfileService.Web.csproj" />
+  <Project Path="../Shared/IntegrationEvents/Shared.IntegrationEvents.csproj" />
 </Solution>

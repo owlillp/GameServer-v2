@@ -13,6 +13,7 @@
     <ItemGroup>
       <ProjectReference Include="..\AuthService.Contracts\AuthService.Contracts.csproj" />
       <ProjectReference Include="..\AuthService.Domain\AuthService.Domain.csproj" />
+      <ProjectReference Include="..\..\..\Shared\IntegrationEvents\Shared.IntegrationEvents.csproj" />
     </ItemGroup>
 
     <ItemGroup>
@@ -20,7 +21,12 @@
       <PackageReference Include="Microsoft.EntityFrameworkCore" />
       <PackageReference Include="OpenIddict.Abstractions" />
       <PackageReference Include="Owlip.Shared.Authentication" />
+      <PackageReference Include="Owlip.Shared.Messaging" />
       <PackageReference Include="owlip.shared.core" />
+      <PackageReference Include="WolverineFx.EntityFrameworkCore" />
+      <PackageReference Include="WolverineFx.Postgresql" />
+      <PackageReference Include="WolverineFx.RabbitMQ" />
+      <PackageReference Include="WolverineFx.RuntimeCompilation" />
     </ItemGroup>
 
     <ItemGroup>

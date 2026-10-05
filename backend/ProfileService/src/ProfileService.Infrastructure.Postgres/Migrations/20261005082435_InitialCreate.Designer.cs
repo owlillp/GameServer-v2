@@ -11,7 +11,7 @@ using ProfileService.Infrastructure.Postgres;
 
 namespace ProfileService.Infrastructure.Postgres.Migrations
 {
-    [DbContext(typeof(ReadDbContext))]
+    [DbContext(typeof(ProfileServiceDbContext))]
     [Migration("20261005082435_InitialCreate")]
     partial class InitialCreate
     {

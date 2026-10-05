@@ -32,8 +32,11 @@ services:
       - ASPNETCORE_URLS=http://+:8080
       - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
       - ConnectionStrings__AuthDb=${ConnectionStrings__AuthDb}
+      - ConnectionStrings__RabbitMQ=${ConnectionStrings__RabbitMQ}
     depends_on:
       postgres:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
       auth-migrator:
         condition: service_completed_successfully
@@ -72,8 +75,11 @@ services:
       - ASPNETCORE_URLS=http://+:8080
       - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
       - ConnectionStrings__ProfileDb=${ConnectionStrings__ProfileDb}
+      - ConnectionStrings__RabbitMQ=${ConnectionStrings__RabbitMQ}
     depends_on:
       postgres:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
       profile-migrator:
         condition: service_completed_successfully
@@ -95,6 +101,24 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    container_name: gameserver-v2-rabbitmq
+    image: rabbitmq:4-management
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"    # AMQP
+      - "15672:15672"  # management UI
+    volumes:
+      - gameserver-v2-rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
       timeout: 5s
       retries: 5
 
@@ -134,3 +158,4 @@ secrets:
 
 volumes:
   gameserver-v2-postgres-data:
+  gameserver-v2-rabbitmq-data:

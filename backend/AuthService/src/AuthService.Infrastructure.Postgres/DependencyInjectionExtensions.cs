@@ -1,4 +1,5 @@
 using AuthService.Core.Abstractions;
+using AuthService.Core.Messaging;
 using AuthService.Domain.Accounts;
 using AuthService.Domain.Authorization;
 using Dapper;
@@ -10,6 +11,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 using Shared.Core.Database;
+using Wolverine;
 
 namespace AuthService.Infrastructure.Postgres;
 
@@ -21,11 +23,13 @@ public static class DependencyInjectionExtensions
     {
         DefaultTypeMap.MatchNamesWithUnderscores = true;
 
-        string connectionString = configuration.GetConnectionString(Constants.AUTH_DB_CONNECTION_NAME)
-                                  ?? throw new InvalidOperationException($"Connection string '{Constants.AUTH_DB_CONNECTION_NAME}' is not configured.");
+        string connectionName = AuthService.Core.Constants.ConnectionStringNames.DATABASE;
+
+        string connectionString = configuration.GetConnectionString(connectionName)
+                                  ?? throw new InvalidOperationException($"Connection string '{connectionName}' is not configured.");
 
         var dataSource = new NpgsqlDataSourceBuilder(connectionString)
-            { Name = Constants.AUTH_DB_CONNECTION_NAME }.Build();
+            { Name = connectionName }.Build();
 
         services.AddSingleton(dataSource);
         services.AddDbContextPool<AuthServiceDbContext>((sp, options) =>
@@ -47,6 +51,9 @@ public static class DependencyInjectionExtensions
 
         services.AddScoped<ITransactionManager, TransactionManager>();
         services.AddScoped<IReadDbContext, AuthServiceDbContext>();
+        services.AddScoped<IOutboxService, OutboxService>();
+
+        services.AddSingleton<IWolverineExtension, AuthWolverineExtension>();
 
         new IdentityBuilder(typeof(Account), typeof(Role), services)
             .AddEntityFrameworkStores<AuthServiceDbContext>();

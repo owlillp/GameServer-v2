@@ -7,11 +7,12 @@ using Microsoft.Extensions.Logging;
 using Npgsql;
 using Shared.Core.Database;
 using Shared.SharedKernel.Errors;
+using Wolverine.EntityFrameworkCore;
 
 namespace AuthService.Infrastructure.Postgres;
 
 public sealed class TransactionManager(
-    AuthServiceDbContext dbContext,
+    IDbContextOutbox<AuthServiceDbContext> outbox,
     ILogger<TransactionManager> logger) : ITransactionManager
 {
     private IDbContextTransaction? _currentTransaction;
@@ -20,7 +21,7 @@ public sealed class TransactionManager(
     {
         try
         {
-            _currentTransaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+            _currentTransaction = await outbox.DbContext.Database.BeginTransactionAsync(cancellationToken);
             return UnitResult.Success<Error>();
         }
         catch (Exception ex)
@@ -34,7 +35,15 @@ public sealed class TransactionManager(
     {
         try
         {
-            await dbContext.SaveChangesAsync(cancellationToken);
+            if (_currentTransaction is not null)
+            {
+                await outbox.DbContext.SaveChangesAsync(cancellationToken);
+            }
+            else
+            {
+                await outbox.SaveChangesAndFlushMessagesAsync(cancellationToken);
+            }
+
             return UnitResult.Success<Error>();
         }
         catch (DbUpdateConcurrencyException ex)
@@ -65,8 +74,9 @@ public sealed class TransactionManager(
 
         try
         {
-            await dbContext.SaveChangesAsync(cancellationToken);
+            await outbox.DbContext.SaveChangesAsync(cancellationToken);
             await _currentTransaction.CommitAsync(cancellationToken);
+            await outbox.FlushOutgoingMessagesAsync();
             return UnitResult.Success<Error>();
         }
         catch (DbUpdateConcurrencyException ex)
@@ -100,7 +110,7 @@ public sealed class TransactionManager(
 
     public DbConnection GetDbConnection()
     {
-        DbConnection connection = dbContext.Database.GetDbConnection();
+        DbConnection connection = outbox.DbContext.Database.GetDbConnection();
 
         if (connection.State != ConnectionState.Open)
             connection.Open();

@@ -3,20 +3,21 @@ using Microsoft.EntityFrameworkCore.Design;
 
 namespace ProfileService.Infrastructure.Postgres;
 
-public class ProfileDbContextDesignTimeFactory : IDesignTimeDbContextFactory<ReadDbContext>
+public class ProfileDbContextDesignTimeFactory : IDesignTimeDbContextFactory<ProfileServiceDbContext>
 {
     private const string CONNECTION_STRING = "Host=design-time;Database=design;Username=postgres";
 
-    public ReadDbContext CreateDbContext(string[] args)
+    public ProfileServiceDbContext CreateDbContext(string[] args)
     {
-        string connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__ProfileDb")
+        string connectionString = Environment.GetEnvironmentVariable(
+                $"ConnectionStrings__{ProfileService.Core.Constants.ConnectionStringNames.DATABASE}")
             ?? CONNECTION_STRING;
 
-        var optionsBuilder = new DbContextOptionsBuilder<ReadDbContext>();
+        var optionsBuilder = new DbContextOptionsBuilder<ProfileServiceDbContext>();
         optionsBuilder.UseNpgsql(
             connectionString,
             npgsql => npgsql.MigrationsHistoryTable(Constants.EF_MIGRATION_HISTORY, Constants.SCHEMA));
 
-        return new ReadDbContext(optionsBuilder.Options);
+        return new ProfileServiceDbContext(optionsBuilder.Options);
     }
 }

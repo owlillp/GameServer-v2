@@ -1,13 +1,16 @@
 using Microsoft.EntityFrameworkCore;
 using ProfileService.Core.Abstractions;
 using ProfileService.Domain.Players;
+using Wolverine.EntityFrameworkCore;
 
 namespace ProfileService.Infrastructure.Postgres;
 
-public class ReadDbContext(DbContextOptions<ReadDbContext> options)
+public class ProfileServiceDbContext(DbContextOptions<ProfileServiceDbContext> options)
     : DbContext(options), IReadDbContext
 {
-    public IQueryable<PlayerProfile> Profiles => Set<PlayerProfile>()
+    public DbSet<PlayerProfile> Profiles => Set<PlayerProfile>();
+
+    public IQueryable<PlayerProfile> ProfilesRead => Set<PlayerProfile>()
         .AsQueryable()
         .AsNoTracking();
 
@@ -16,6 +19,7 @@ public class ReadDbContext(DbContextOptions<ReadDbContext> options)
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.HasDefaultSchema(Constants.SCHEMA);
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(ReadDbContext).Assembly);
+        modelBuilder.MapWolverineEnvelopeStorage("public");
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(ProfileServiceDbContext).Assembly);
     }
 }

@@ -4,6 +4,7 @@ using AuthService.Domain.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Wolverine.EntityFrameworkCore;
 
 namespace AuthService.Infrastructure.Postgres;
 
@@ -30,6 +31,7 @@ public class AuthServiceDbContext(DbContextOptions<AuthServiceDbContext> options
 
         builder.HasDefaultSchema(Constants.SCHEMA);
         builder.UseOpenIddict();
+        builder.MapWolverineEnvelopeStorage("public");
         builder.ApplyConfigurationsFromAssembly(typeof(AuthServiceDbContext).Assembly);
     }
 }

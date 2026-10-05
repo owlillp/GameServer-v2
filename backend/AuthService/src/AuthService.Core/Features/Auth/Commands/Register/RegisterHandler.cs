@@ -1,4 +1,5 @@
 using AuthService.Contracts.Responses;
+using AuthService.Core.Messaging.Publishers;
 using AuthService.Domain.Accounts;
 using AuthService.Domain.Authorization;
 using CSharpFunctionalExtensions;
@@ -14,6 +15,7 @@ namespace AuthService.Core.Features.Auth.Commands.Register;
 public sealed class RegisterHandler(
     IValidator<RegisterCommand> validator,
     UserManager<Account> userManager,
+    IAccountRegisteredEventPublisher eventPublisher,
     ITransactionManager transactionManager)
     : ICommandHandler<RegisterResponse, RegisterCommand>
 {
@@ -51,6 +53,8 @@ public sealed class RegisterHandler(
         {
             return MapIdentityErrors(roleResult);
         }
+
+        await eventPublisher.PublishAsync(account.Id, account.UserName!);
 
         var commitResult = await transactionManager.CommitTransactionAsync(cancellationToken);
         if (commitResult.IsFailure)

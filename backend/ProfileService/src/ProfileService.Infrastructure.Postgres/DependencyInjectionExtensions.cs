@@ -5,7 +5,10 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 using ProfileService.Core.Abstractions;
+using ProfileService.Core.Messaging;
+using ProfileService.Infrastructure.Postgres.Repositories;
 using Shared.Core.Database;
+using Wolverine;
 
 namespace ProfileService.Infrastructure.Postgres;
 
@@ -15,14 +18,16 @@ public static class DependencyInjectionExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        string connectionString = configuration.GetConnectionString(Constants.PROFILE_DB_CONNECTION_NAME)
-            ?? throw new InvalidOperationException($"Connection string '{Constants.PROFILE_DB_CONNECTION_NAME}' is not configured.");
+        string connectionName = ProfileService.Core.Constants.ConnectionStringNames.DATABASE;
+
+        string connectionString = configuration.GetConnectionString(connectionName)
+            ?? throw new InvalidOperationException($"Connection string '{connectionName}' is not configured.");
 
         var dataSource = new NpgsqlDataSourceBuilder(connectionString)
-            { Name = Constants.PROFILE_DB_CONNECTION_NAME }.Build();
+            { Name = connectionName }.Build();
 
         services.AddSingleton(dataSource);
-        services.AddDbContextPool<ReadDbContext>((sp, options) =>
+        services.AddDbContextPool<ProfileServiceDbContext>((sp, options) =>
         {
             var hostEnvironment = sp.GetRequiredService<IHostEnvironment>();
             var loggerFactory = sp.GetRequiredService<ILoggerFactory>();
@@ -39,8 +44,13 @@ public static class DependencyInjectionExtensions
             }
         });
 
-        services.AddScoped<IReadDbContext, ReadDbContext>();
+        services.AddScoped<IReadDbContext, ProfileServiceDbContext>();
         services.AddScoped<ITransactionManager, TransactionManager>();
+        services.AddScoped<IOutboxService, OutboxService>();
+
+        services.AddScoped<IProfileRepository, ProfileRepository>();
+
+        services.AddSingleton<IWolverineExtension, ProfileWolverineExtension>();
 
         return services;
     }

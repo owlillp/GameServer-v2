@@ -1,3 +1,4 @@
+using AuthService.Core.Messaging.Publishers;
 using AuthService.Core.Services;
 using AuthService.Domain.Accounts;
 using AuthService.Domain.Authorization;
@@ -24,6 +25,10 @@ public static class DependencyInjectionExtensions
             services.AddScoped<PlatformSyncService>();
 
             services.AddIdentityServices(configuration);
+
+            services.AddScoped<IAccountRegisteredEventPublisher, AccountRegisteredEventPublisher>();
+            services.AddScoped<IAccountDeletedEventPublisher, AccountDeletedEventPublisher>();
+            services.AddScoped<IAccountBlockedEventPublisher, AccountBlockedEventPublisher>();
 
             return services;
         }
