@@ -17,7 +17,6 @@ public class AccountTests
         Assert.NotEqual(Guid.Empty, result.Value.Id);
         Assert.Equal(USER_NAME, result.Value.UserName);
         Assert.Equal(EMAIL, result.Value.Email);
-        Assert.Equal(UserProfile.Empty, result.Value.Profile);
     }
 
     [Theory]
@@ -56,28 +55,6 @@ public class AccountTests
         string email = new('a', AccountConstants.EMAIL_MAX_LENGTH + 1);
 
         Result<Account, Shared.SharedKernel.Errors.Error> result = Account.Create(USER_NAME, email);
-
-        Assert.True(result.IsFailure);
-    }
-
-    [Fact]
-    public void SetDisplayName_WithValidValue_Succeeds()
-    {
-        Account account = Account.Create(USER_NAME, EMAIL).Value;
-
-        UnitResult<Shared.SharedKernel.Errors.Error> result = account.SetDisplayName("New Name");
-
-        Assert.True(result.IsSuccess);
-        Assert.Equal("New Name", account.DisplayName);
-    }
-
-    [Fact]
-    public void SetDisplayName_WithTooLongValue_Fails()
-    {
-        Account account = Account.Create(USER_NAME, EMAIL).Value;
-        string displayName = new('a', AccountConstants.USER_NAME_MAX_LENGTH + 1);
-
-        UnitResult<Shared.SharedKernel.Errors.Error> result = account.SetDisplayName(displayName);
 
         Assert.True(result.IsFailure);
     }

@@ -39,14 +39,7 @@ internal sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
         builder.Property(a => a.LockoutEnabled).HasColumnName("lockout_enabled");
         builder.Property(a => a.AccessFailedCount).HasColumnName("access_failed_count");
 
-        builder.Property(a => a.DisplayName)
-            .HasColumnName("display_name")
-            .HasMaxLength(AccountConstants.DISPLAY_NAME_MAX_LENGTH);
-
         builder.Property(a => a.CreatedAt).HasColumnName("created_at");
         builder.Property(a => a.UpdatedAt).HasColumnName("updated_at");
-
-        builder.OwnsOne(a => a.Profile, p => p.ToJson("profile"));
-        builder.Navigation(a => a.Profile).IsRequired();
     }
 }

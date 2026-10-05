@@ -31,18 +31,11 @@ public sealed class GetMyProfileHandler(
             return GeneralErrors.NotFound(userId, entityName: "user");
         }
 
-        var profileBodyDto = new ProfileBodyDto(
-            account.Profile.Age,
-            account.Profile.Bio,
-            account.Profile.Location);
-
         return new ProfileDto(
             account.Id,
             account.Email,
             account.UserName,
-            account.DisplayName,
             account.CreatedAt,
-            account.UpdatedAt,
-            profileBodyDto);
+            account.UpdatedAt);
     }
 }

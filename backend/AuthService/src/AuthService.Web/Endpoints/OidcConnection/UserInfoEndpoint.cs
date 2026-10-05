@@ -44,7 +44,7 @@ public sealed class UserInfoEndpoint : IEndpoint
         var claims = new Dictionary<string, object>(StringComparer.Ordinal)
         {
             [OpenIddictConstants.Claims.Subject] = user.Id.ToString(),
-            [OpenIddictConstants.Claims.Name] = user.DisplayName ?? user.UserName ?? string.Empty,
+            [OpenIddictConstants.Claims.Name] = user.UserName ?? string.Empty,
             [OpenIddictConstants.Claims.Email] = user.Email ?? string.Empty,
             [OpenIddictConstants.Claims.PreferredUsername] = user.UserName ?? string.Empty,
             [OpenIddictConstants.Claims.Role] = roles,

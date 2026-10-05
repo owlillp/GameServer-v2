@@ -6,10 +6,6 @@ namespace AuthService.Domain.Accounts;
 
 public sealed class Account : IdentityUser<Guid>
 {
-    public string? DisplayName { get; private set; }
-
-    public UserProfile Profile { get; private set; } = UserProfile.Empty;
-
     public DateTime CreatedAt { get; private set; }
 
     public DateTime UpdatedAt { get; private set; }
@@ -24,7 +20,6 @@ public sealed class Account : IdentityUser<Guid>
         UserName = userName;
         CreatedAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
-        Profile = UserProfile.Empty;
     }
 
     public static Result<Account, Error> Create(string userName, string email)
@@ -50,18 +45,5 @@ public sealed class Account : IdentityUser<Guid>
         }
 
         return new Account(email, userName);
-    }
-
-    public UnitResult<Error> SetDisplayName(string? displayName)
-    {
-        if (displayName is { Length: > AccountConstants.USER_NAME_MAX_LENGTH })
-        {
-            return GeneralErrors.ValueIsInvalid("displayName");
-        }
-
-        DisplayName = displayName;
-        UpdatedAt = DateTime.UtcNow;
-
-        return UnitResult.Success<Error>();
     }
 }
