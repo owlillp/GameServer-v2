@@ -31,6 +31,13 @@ public sealed class GetMyProfileHandler(
             return GeneralErrors.NotFound(userId.Value, entityName: "profile");
         }
 
-        return new ProfileDto(profile.Id, profile.Nickname.Value, profile.Region?.Value, profile.CreatedAt);
+        return new ProfileDto(
+            profile.Id,
+            profile.Nickname.Value,
+            profile.Region?.Value,
+            userScope.Email,
+            userScope.UserName,
+            profile.CreatedAt,
+            profile.UpdatedAt);
     }
 }

@@ -1,6 +1,5 @@
 "use client";
 
-import { profileQueryOptions } from "@/src/entities/auth";
 import { playerProfileQueryOptions } from "@/src/entities/profile";
 import { ErrorType, isEnvelopeError } from "@/src/shared/api/errors";
 import { useLogout } from "@/src/features/logout";
@@ -22,17 +21,16 @@ export function ProfileCard() {
   const { logout, isPending } = useLogout();
   const hydrated = useIsHydrated();
 
-  const account = useQuery(profileQueryOptions());
   const player = useQuery(playerProfileQueryOptions());
 
-  if (account.isLoading) {
+  if (player.isLoading) {
     return <Spinner label="Загружаем профиль..." />;
   }
 
   // 401 → не авторизованы. Это валидное состояние, а не «ошибка».
   if (
-    isEnvelopeError(account.error) &&
-    account.error.type === ErrorType.AUTHENTICATION
+    isEnvelopeError(player.error) &&
+    player.error.type === ErrorType.AUTHENTICATION
   ) {
     return (
       <div className="space-y-3">
@@ -55,19 +53,13 @@ export function ProfileCard() {
     );
   }
 
-  if (account.error) {
+  if (player.error) {
     return (
-      <ApiErrorList error={account.error} fallback="Не удалось загрузить профиль" />
+      <ApiErrorList error={player.error} fallback="Не удалось загрузить профиль" />
     );
   }
 
-  if (!account.data) return null;
-
-  const isFetching = account.isFetching || player.isFetching;
-  const refetchAll = () => {
-    void account.refetch();
-    void player.refetch();
-  };
+  if (!player.data) return null;
 
   return (
     <div className="space-y-6">
@@ -80,11 +72,11 @@ export function ProfileCard() {
         </span>
         <button
           type="button"
-          onClick={refetchAll}
-          disabled={isFetching}
+          onClick={() => void player.refetch()}
+          disabled={player.isFetching}
           className="text-xs text-slate-500 underline-offset-2 hover:text-slate-900 hover:underline disabled:opacity-50"
         >
-          {isFetching ? "Обновляем..." : "Обновить"}
+          {player.isFetching ? "Обновляем..." : "Обновить"}
         </button>
       </div>
 
@@ -92,25 +84,12 @@ export function ProfileCard() {
         <h3 className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
           Профиль игрока
         </h3>
-        {player.isLoading ? (
-          <p className="text-sm text-slate-500">Загружаем...</p>
-        ) : isEnvelopeError(player.error) &&
-          player.error.type === ErrorType.NOT_FOUND ? (
-          <p className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            Профиль ещё не создан. Он появится после обработки события регистрации.
-          </p>
-        ) : player.error ? (
-          <ApiErrorList
-            error={player.error}
-            fallback="Не удалось загрузить профиль игрока"
-          />
-        ) : player.data ? (
-          <dl className="grid grid-cols-1 gap-y-2 rounded-md border border-slate-200 px-4 py-3 text-sm sm:grid-cols-[160px_1fr]">
-            <Field label="Ник" value={player.data.nickname} />
-            <Field label="Регион" value={player.data.region} />
-            <Field label="Создан" value={formatDate(player.data.createdAt)} />
-          </dl>
-        ) : null}
+        <dl className="grid grid-cols-1 gap-y-2 rounded-md border border-slate-200 px-4 py-3 text-sm sm:grid-cols-[160px_1fr]">
+          <Field label="Ник" value={player.data.nickname} />
+          <Field label="Регион" value={player.data.region} />
+          <Field label="Создан" value={formatDate(player.data.createdAt)} />
+          <Field label="Обновлён" value={formatDate(player.data.updatedAt)} />
+        </dl>
       </section>
 
       <section className="space-y-2">
@@ -118,11 +97,9 @@ export function ProfileCard() {
           Аккаунт
         </h3>
         <dl className="grid grid-cols-1 gap-y-2 rounded-md border border-slate-200 px-4 py-3 text-sm sm:grid-cols-[160px_1fr]">
-          <Field label="ID" value={account.data.id} mono />
-          <Field label="Email" value={account.data.email} />
-          <Field label="Username" value={account.data.username} />
-          <Field label="Создан" value={formatDate(account.data.createdAt)} />
-          <Field label="Обновлён" value={formatDate(account.data.updatedAt)} />
+          <Field label="ID" value={player.data.id} mono />
+          <Field label="Email" value={player.data.email} />
+          <Field label="Username" value={player.data.userName} />
         </dl>
       </section>
 

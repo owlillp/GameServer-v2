@@ -21,13 +21,3 @@ export type LoginResponse = {
   email: string;
   userName: string;
 };
-
-// GET /auth/me — только identity-поля. Игровой профиль (ник, регион) живёт
-// в ProfileService и запрашивается отдельно через /profiles/me.
-export type ProfileResponse = {
-  id: string;
-  email: string | null;
-  username: string | null;
-  createdAt: string;
-  updatedAt: string;
-};

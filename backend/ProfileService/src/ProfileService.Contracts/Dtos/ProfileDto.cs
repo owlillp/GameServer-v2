@@ -4,4 +4,7 @@ public sealed record ProfileDto(
     Guid Id,
     string Nickname,
     string? Region,
-    DateTime CreatedAt);
+    string? Email,
+    string? UserName,
+    DateTime CreatedAt,
+    DateTime UpdatedAt);
