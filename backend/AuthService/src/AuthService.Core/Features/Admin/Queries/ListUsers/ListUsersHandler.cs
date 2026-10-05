@@ -52,7 +52,6 @@ public sealed class ListUsersHandler(IReadDbContext readDbContext)
                 account.Id,
                 account.Email,
                 account.UserName,
-                account.DisplayName,
                 rolesByUser.TryGetValue(account.Id, out List<string>? roles) ? roles : [],
                 account.LockoutEnd is not null && account.LockoutEnd > now,
                 account.CreatedAt))

@@ -9,7 +9,8 @@ public class AuthServiceDbContextDesignTimeFactory : IDesignTimeDbContextFactory
 
     public AuthServiceDbContext CreateDbContext(string[] args)
     {
-        string connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__AuthDb")
+        string connectionString = Environment.GetEnvironmentVariable(
+                                    $"ConnectionStrings__{AuthService.Core.Constants.ConnectionStringNames.DATABASE}")
                                   ?? CONNECTION_STRING;
 
         var optionsBuilder = new DbContextOptionsBuilder<AuthServiceDbContext>();

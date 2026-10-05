@@ -21,20 +21,3 @@ export type LoginResponse = {
   email: string;
   userName: string;
 };
-
-export type ProfileBody = {
-  age: number | null;
-  bio: string | null;
-  location: string | null;
-};
-
-// GET /auth/me — работает по Bearer access-токену.
-export type ProfileResponse = {
-  id: string;
-  email: string | null;
-  username: string | null;
-  displayName: string | null;
-  createdAt: string;
-  updatedAt: string;
-  profile: ProfileBody;
-};

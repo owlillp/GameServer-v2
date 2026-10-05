@@ -1,9 +1,7 @@
-using AuthService.Contracts.Dtos;
 using AuthService.Contracts.Requests;
 using AuthService.Contracts.Responses;
 using AuthService.Core.Features.Auth.Commands.Login;
 using AuthService.Core.Features.Auth.Commands.Register;
-using AuthService.Core.Features.Auth.Queries.GetMyProfile;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Core.Abstractions;
 using Shared.Framework.Endpoints;
@@ -31,10 +29,6 @@ public sealed class AuthEndpoints : IEndpointGroup
             .WithSummary("Регистрация аккаунта")
             .AllowAnonymous();
 
-        group.MapGet("/me", GetProfile)
-            .WithName("Auth.Me")
-            .WithSummary("Профиль текущего пользователя");
-
         return group;
     }
 
@@ -49,9 +43,4 @@ public sealed class AuthEndpoints : IEndpointGroup
         [FromServices] ICommandHandler<RegisterResponse, RegisterCommand> handler,
         CancellationToken ct) =>
         await handler.Handle(new RegisterCommand(request), ct);
-
-    private static async Task<EndpointResult<ProfileDto>> GetProfile(
-        [FromServices] IQueryHandler<ProfileDto, GetMyProfileQuery> handler,
-        CancellationToken ct) =>
-        await handler.Handle(new GetMyProfileQuery(), ct);
 }

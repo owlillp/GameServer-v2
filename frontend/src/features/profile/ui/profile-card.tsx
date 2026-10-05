@@ -1,6 +1,6 @@
 "use client";
 
-import { profileQueryOptions } from "@/src/entities/auth";
+import { playerProfileQueryOptions } from "@/src/entities/profile";
 import { ErrorType, isEnvelopeError } from "@/src/shared/api/errors";
 import { useLogout } from "@/src/features/logout";
 import { useIsHydrated } from "@/src/shared/lib/use-is-hydrated";
@@ -20,16 +20,18 @@ export function ProfileCard() {
   const roles = useSessionStore(sessionSelectors.roles);
   const { logout, isPending } = useLogout();
   const hydrated = useIsHydrated();
-  const { data, isLoading, error, refetch, isFetching } = useQuery(
-    profileQueryOptions(),
-  );
 
-  if (isLoading) {
+  const player = useQuery(playerProfileQueryOptions());
+
+  if (player.isLoading) {
     return <Spinner label="Загружаем профиль..." />;
   }
 
   // 401 → не авторизованы. Это валидное состояние, а не «ошибка».
-  if (isEnvelopeError(error) && error.type === ErrorType.AUTHENTICATION) {
+  if (
+    isEnvelopeError(player.error) &&
+    player.error.type === ErrorType.AUTHENTICATION
+  ) {
     return (
       <div className="space-y-3">
         <p className="text-sm text-slate-600">Вы не авторизованы.</p>
@@ -51,13 +53,13 @@ export function ProfileCard() {
     );
   }
 
-  if (error) {
+  if (player.error) {
     return (
-      <ApiErrorList error={error} fallback="Не удалось загрузить профиль" />
+      <ApiErrorList error={player.error} fallback="Не удалось загрузить профиль" />
     );
   }
 
-  if (!data) return null;
+  if (!player.data) return null;
 
   return (
     <div className="space-y-6">
@@ -70,36 +72,34 @@ export function ProfileCard() {
         </span>
         <button
           type="button"
-          onClick={() => refetch()}
-          disabled={isFetching}
+          onClick={() => void player.refetch()}
+          disabled={player.isFetching}
           className="text-xs text-slate-500 underline-offset-2 hover:text-slate-900 hover:underline disabled:opacity-50"
         >
-          {isFetching ? "Обновляем..." : "Обновить"}
+          {player.isFetching ? "Обновляем..." : "Обновить"}
         </button>
       </div>
+
+      <section className="space-y-2">
+        <h3 className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+          Профиль игрока
+        </h3>
+        <dl className="grid grid-cols-1 gap-y-2 rounded-md border border-slate-200 px-4 py-3 text-sm sm:grid-cols-[160px_1fr]">
+          <Field label="Ник" value={player.data.nickname} />
+          <Field label="Регион" value={player.data.region} />
+          <Field label="Создан" value={formatDate(player.data.createdAt)} />
+          <Field label="Обновлён" value={formatDate(player.data.updatedAt)} />
+        </dl>
+      </section>
 
       <section className="space-y-2">
         <h3 className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
           Аккаунт
         </h3>
         <dl className="grid grid-cols-1 gap-y-2 rounded-md border border-slate-200 px-4 py-3 text-sm sm:grid-cols-[160px_1fr]">
-          <Field label="ID" value={data.id} mono />
-          <Field label="Email" value={data.email} />
-          <Field label="Username" value={data.username} />
-          <Field label="Display name" value={data.displayName} />
-          <Field label="Создан" value={formatDate(data.createdAt)} />
-          <Field label="Обновлён" value={formatDate(data.updatedAt)} />
-        </dl>
-      </section>
-
-      <section className="space-y-2">
-        <h3 className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-          Профиль
-        </h3>
-        <dl className="grid grid-cols-1 gap-y-2 rounded-md border border-slate-200 px-4 py-3 text-sm sm:grid-cols-[160px_1fr]">
-          <Field label="Возраст" value={data.profile.age?.toString() ?? null} />
-          <Field label="О себе" value={data.profile.bio} />
-          <Field label="Локация" value={data.profile.location} />
+          <Field label="ID" value={player.data.id} mono />
+          <Field label="Email" value={player.data.email} />
+          <Field label="Username" value={player.data.userName} />
         </dl>
       </section>
 

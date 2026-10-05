@@ -1,5 +1,6 @@
 using System.Threading.RateLimiting;
 using AuthService.Core;
+using AuthService.Core.Messaging;
 using AuthService.Domain.Authorization;
 using AuthService.Infrastructure.Postgres;
 using AuthService.Web.Endpoints.OidcConnection;
@@ -8,6 +9,7 @@ using Shared.Framework.Cors;
 using Shared.Framework.Endpoints;
 using Shared.Framework.Logging;
 using Shared.Framework.OpenApi;
+using Shared.Messaging;
 
 namespace AuthService.Web.Configurations;
 
@@ -24,11 +26,14 @@ public static class DependencyInjectionExtensions
         {
             builder.AddSerilogLogging(Constants.SERVICE_NAME);
             builder.AddRateLimiter();
+            builder.AddWolverine();
 
             builder.Services.AddPlatformAuthentication(configuration, RolePermissions.Map, AUTHENTICATION_SECTION_NAME);
             builder.Services.AddFrameworkCors(configuration);
             builder.Services.AddOpenApiSpec(Constants.SERVICE_NAME, Constants.VERSION);
-            builder.Services.AddHealthChecks().AddDbContextCheck<AuthServiceDbContext>(POSTGRESQL_HEALTH_CHECK);
+            builder.Services.AddHealthChecks()
+                .AddDbContextCheck<AuthServiceDbContext>(POSTGRESQL_HEALTH_CHECK)
+                .AddRabbitMqCheck(configuration);
             builder.Services.AddEndpoints(typeof(DependencyInjectionExtensions).Assembly);
 
             builder.Services.AddCore(configuration);

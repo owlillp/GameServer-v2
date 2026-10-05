@@ -16,6 +16,7 @@ public sealed class PlatformSyncService(
 
         await UpsertScopeAsync(OidcScopes.AUTH, "AuthService API Access", OidcScopes.Resources.AUTH_RESOURCE, cancellationToken);
         await UpsertScopeAsync(OidcScopes.CLANS, "ClanService API Access", OidcScopes.Resources.CLANS_RESOURCE, cancellationToken);
+        await UpsertScopeAsync(OidcScopes.PROFILES, "ProfileService API Access", OidcScopes.Resources.PROFILES_RESOURCE, cancellationToken);
 
         await UpsertPublicClientAsync(options.Clients.Web, allowPasswordGrant: false, cancellationToken);
         await UpsertPublicClientAsync(options.Clients.Unity, allowPasswordGrant: true, cancellationToken);
@@ -89,6 +90,7 @@ public sealed class PlatformSyncService(
                 OpenIddictConstants.Permissions.Scopes.Roles,
                 OpenIddictConstants.Permissions.Prefixes.Scope + OidcScopes.AUTH,
                 OpenIddictConstants.Permissions.Prefixes.Scope + OidcScopes.CLANS,
+                OpenIddictConstants.Permissions.Prefixes.Scope + OidcScopes.PROFILES,
             },
         };
 

@@ -8,16 +8,22 @@ Docker. Единый вход (OIDC) и разделение интерфейс�
 | Сервис        | Описание                                                                 |
 | ------------- | ------------------------------------------------------------------------ |
 | `AuthService` | OIDC-провайдер (OpenIddict + ASP.NET Identity) и JSON API аккаунтов      |
+| `ProfileService` | Игровой профиль игрока (ник, регион) и identity-поля из access-токена |
 
 AuthService выдаёт токены (Authorization Code + PKCE, refresh и
-client_credentials) и отдаёт профиль/админские данные:
+client_credentials) и отдаёт админские данные:
 
 - `/connect/*`, `/.well-known/*` — OIDC endpoints;
 - `/auth/register`, `/auth/login` — регистрация и вход (Identity-cookie);
-- `/auth/me` — профиль текущего пользователя по Bearer-токену;
 - `/admin/users`, `/admin/stats` — админ-API (permission `users.view`).
 
-Порт разработки — `5280` (`dotnet run --project backend/AuthService/src/AuthService.Web`).
+ProfileService отдаёт профиль текущего игрока по Bearer-токену:
+
+- `/profiles/me` — объединённый профиль: игровые поля (ник, регион) плюс
+  `email`/`userName` из claims access-токена.
+
+Порт разработки AuthService — `5280`
+(`dotnet run --project backend/AuthService/src/AuthService.Web`).
 
 ## Состав
 
@@ -31,7 +37,7 @@ GameServer-v2/
 │       ├── AuthService.slnx
 │       ├── Dockerfile               # стадии base / build / migrations / final
 │       ├── src/
-│       │   ├── AuthService.Domain/                    # Account, UserProfile, роли
+│       │   ├── AuthService.Domain/                    # Account, роли
 │       │   ├── AuthService.Contracts/                 # DTO запросов/ответов
 │       │   ├── AuthService.Core/                      # handlers, validators, permissions
 │       │   ├── AuthService.Infrastructure.Postgres/   # EF Core + Identity, миграции
@@ -85,7 +91,8 @@ JSON API идут через nginx. Поток входа:
    AuthService возвращает код на `/auth/callback`;
 3. SPA меняет код на токены в `/connect/token`, кладёт их в zustand-store и
    подставляет access-токен как `Bearer` через интерсептор axios;
-4. `/auth/me` отдаёт профиль, `/admin/*` доступны по permission `users.view`.
+4. `/profiles/me` отдаёт профиль игрока (ProfileService), `/admin/*` доступны по
+   permission `users.view`.
 
 Роли (`AuthService.Domain.AuthRoles`) и permissions:
 
@@ -163,7 +170,7 @@ dotnet test
 | ----- | ---------------- | -------------- | ------------------------------------------ |
 | POST  | `/auth/register` | —              | Регистрация (роль `User`)                  |
 | POST  | `/auth/login`    | —              | Вход, ставит Identity-cookie               |
-| GET   | `/auth/me`       | аутентификация | Профиль текущего пользователя              |
+| GET   | `/profiles/me`   | аутентификация | Профиль текущего игрока (ProfileService)   |
 | GET   | `/admin/users`   | `users.view`   | Список аккаунтов с поиском и пагинацией    |
 | GET   | `/admin/stats`   | `users.view`   | Сводка: всего/админы/модераторы/заблокированы |
 | GET   | `/health`        | —              | Health-check (Postgres)                    |

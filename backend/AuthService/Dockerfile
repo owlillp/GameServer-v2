@@ -16,6 +16,7 @@ COPY ["nuget.config", "."]
 COPY [".editorconfig", "."]
 COPY ["Directory.Build.props", "."]
 COPY ["Directory.Packages.props", "."]
+COPY ["Shared/", "Shared/"]
 COPY ["AuthService/", "AuthService/"]
 
 RUN dotnet tool install --global dotnet-ef --version 10.0.12

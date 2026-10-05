@@ -9,6 +9,7 @@ public static class OidcScopes
 
     public const string AUTH = "auth";
     public const string CLANS = "clans";
+    public const string PROFILES = "profiles";
 
     public static IReadOnlyList<string> All { get; } =
     [
@@ -18,11 +19,13 @@ public static class OidcScopes
         OFFLINE_ACCESS,
         AUTH,
         CLANS,
+        PROFILES,
     ];
 
     public static class Resources
     {
         public const string AUTH_RESOURCE = "auth-service";
         public const string CLANS_RESOURCE = "clan-service";
+        public const string PROFILES_RESOURCE = "profile-service";
     }
 }

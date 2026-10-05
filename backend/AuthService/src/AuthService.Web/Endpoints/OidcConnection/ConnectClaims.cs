@@ -16,7 +16,7 @@ internal static class ConnectClaims
             OpenIddictConstants.Claims.Role);
 
         identity.SetClaim(OpenIddictConstants.Claims.Subject, user.Id.ToString());
-        identity.SetClaim(OpenIddictConstants.Claims.Name, user.DisplayName ?? user.UserName ?? string.Empty);
+        identity.SetClaim(OpenIddictConstants.Claims.Name, user.UserName ?? string.Empty);
         identity.SetClaim(OpenIddictConstants.Claims.Email, user.Email ?? string.Empty);
         identity.SetClaim(OpenIddictConstants.Claims.PreferredUsername, user.UserName ?? string.Empty);
 
