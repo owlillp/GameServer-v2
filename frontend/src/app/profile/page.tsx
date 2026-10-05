@@ -1,4 +1,5 @@
 import { ProfileCard } from "@/src/features/profile";
+import { WalletBalances } from "@/src/features/wallet";
 import { RequireAuth } from "@/src/shared/auth/require-auth";
 import { SiteHeader } from "@/src/shared/ui/site-header";
 
@@ -18,6 +19,13 @@ export default function ProfilePage() {
 
         <section className="rounded-lg border border-slate-200 bg-white p-6">
           <ProfileCard />
+        </section>
+
+        <section className="space-y-4 rounded-lg border border-slate-200 bg-white p-6">
+          <h2 className="text-sm font-semibold text-slate-900">
+            Баланс игрока
+          </h2>
+          <WalletBalances />
         </section>
       </main>
     </RequireAuth>
