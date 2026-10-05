@@ -39,12 +39,12 @@ public static class RabbitMqConfiguration
         {
             options.PublishMessagesToRabbitMqExchange<WalletCreditedEvent>(
                     WalletEventRouting.EXCHANGE,
-                    _ => WalletEventRouting.RoutingKeys.CREDITED)
+                    _ => WalletEventRouting.RoutingKeys.TOP_UP)
                 .UseDurableOutbox();
 
             options.PublishMessagesToRabbitMqExchange<WalletDebitedEvent>(
                     WalletEventRouting.EXCHANGE,
-                    _ => WalletEventRouting.RoutingKeys.DEBITED)
+                    _ => WalletEventRouting.RoutingKeys.SPENT)
                 .UseDurableOutbox();
         }
 

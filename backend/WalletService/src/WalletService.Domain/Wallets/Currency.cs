@@ -6,12 +6,6 @@ namespace WalletService.Domain.Wallets;
 public sealed record Currency
 {
     public const int MAX_LENGTH = 16;
-    public const string SOFT = "SOFT";
-    public const string HARD = "HARD";
-
-    public static Currency Soft { get; } = new(SOFT);
-
-    public static Currency Hard { get; } = new(HARD);
 
     public string Code { get; }
 

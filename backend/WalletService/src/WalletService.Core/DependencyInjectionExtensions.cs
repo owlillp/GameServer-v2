@@ -1,7 +1,7 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Shared.Core.Abstractions;
-using WalletService.Core.Features.Wallets;
+using WalletService.Core.Services;
 
 namespace WalletService.Core;
 
@@ -13,7 +13,7 @@ public static class DependencyInjectionExtensions
         {
             services.AddHandlers(typeof(DependencyInjectionExtensions).Assembly);
             services.AddValidatorsFromAssembly(typeof(DependencyInjectionExtensions).Assembly);
-            services.AddScoped<WalletWriter>();
+            services.AddScoped<IWalletService, Services.WalletService>();
 
             return services;
         }

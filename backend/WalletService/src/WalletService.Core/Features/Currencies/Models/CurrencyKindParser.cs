@@ -2,7 +2,7 @@ using CSharpFunctionalExtensions;
 using Shared.SharedKernel.Errors;
 using WalletService.Domain.Wallets;
 
-namespace WalletService.Core.Features.Currencies;
+namespace WalletService.Core.Features.Currencies.Models;
 
 internal static class CurrencyKindParser
 {

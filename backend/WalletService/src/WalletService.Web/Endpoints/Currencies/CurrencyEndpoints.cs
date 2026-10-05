@@ -26,6 +26,6 @@ public sealed class CurrencyEndpoints : IEndpointGroup
 
     private static async Task<EndpointResult<IReadOnlyList<CurrencyDto>>> GetCurrencies(
         [FromServices] IQueryHandler<IReadOnlyList<CurrencyDto>, GetCurrenciesQuery> handler,
-        CancellationToken ct) =>
-        await handler.Handle(new GetCurrenciesQuery(), ct);
+        CancellationToken ct)
+        => await handler.Handle(new GetCurrenciesQuery(), ct);
 }

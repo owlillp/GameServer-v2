@@ -28,24 +28,5 @@ internal sealed class CurrencyDefinitionConfiguration : IEntityTypeConfiguration
         builder.Property(currency => currency.CreatedAt).HasColumnName("created_at");
 
         builder.HasKey(currency => currency.Code);
-
-        // Базовые валюты присутствуют в свежей БД; остальные создаёт админ.
-        builder.HasData(
-            new
-            {
-                Code = Currency.SOFT,
-                DisplayName = "Soft currency",
-                Kind = CurrencyKind.Soft,
-                IsActive = true,
-                CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-            },
-            new
-            {
-                Code = Currency.HARD,
-                DisplayName = "Hard currency",
-                Kind = CurrencyKind.Hard,
-                IsActive = true,
-                CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-            });
     }
 }

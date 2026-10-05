@@ -56,28 +56,12 @@ public sealed class WalletEndpoints : IEndpointGroup
         [FromBody] TopUpWalletRequest request,
         [FromServices] ICommandHandler<WalletDto, TopUpWalletCommand> handler,
         CancellationToken ct) =>
-        await handler.Handle(
-            new TopUpWalletCommand(
-                walletId,
-                request.Currency,
-                request.Amount,
-                request.Reason,
-                request.OperationId,
-                request.ReferenceId),
-            ct);
+        await handler.Handle(new TopUpWalletCommand(walletId, request), ct);
 
     private static async Task<EndpointResult<WalletDto>> SpentWallet(
         [FromRoute] Guid walletId,
         [FromBody] SpentWalletRequest request,
         [FromServices] ICommandHandler<WalletDto, SpentWalletCommand> handler,
         CancellationToken ct) =>
-        await handler.Handle(
-            new SpentWalletCommand(
-                walletId,
-                request.Currency,
-                request.Amount,
-                request.Reason,
-                request.OperationId,
-                request.ReferenceId),
-            ct);
+        await handler.Handle(new SpentWalletCommand(walletId, request), ct);
 }

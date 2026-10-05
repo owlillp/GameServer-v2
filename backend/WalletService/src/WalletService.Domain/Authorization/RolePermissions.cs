@@ -6,6 +6,6 @@ public static class RolePermissions
         new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal)
         {
             [WalletRoles.ADMIN] = WalletPermissions.All,
-            [WalletRoles.MODERATOR] = WalletPermissions.All,
+            [WalletRoles.MODERATOR] = [WalletPermissions.Wallets.MANAGE, WalletPermissions.Wallets.VIEW],
         };
 }

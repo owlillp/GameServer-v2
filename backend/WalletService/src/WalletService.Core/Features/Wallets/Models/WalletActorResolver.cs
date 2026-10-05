@@ -1,7 +1,7 @@
 using WalletService.Domain.Authorization;
 using WalletService.Domain.Wallets.Ledgers;
 
-namespace WalletService.Core.Features.Wallets;
+namespace WalletService.Core.Features.Wallets.Models;
 
 internal static class WalletActorResolver
 {

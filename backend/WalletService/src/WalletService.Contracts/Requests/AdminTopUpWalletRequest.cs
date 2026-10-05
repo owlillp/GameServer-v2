@@ -4,6 +4,6 @@ public sealed record AdminTopUpWalletRequest(
     string Currency,
     long Amount,
     string Reason,
-    string Comment,
+    string? Comment,
     Guid? OperationId,
     string? ReferenceId);

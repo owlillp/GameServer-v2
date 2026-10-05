@@ -3,11 +3,6 @@ using Shared.SharedKernel.Errors;
 
 namespace WalletService.Domain.Wallets.Ledgers;
 
-/// <summary>
-/// Append-only запись журнала операций (ledger). Баланс — производная величина,
-/// которую всегда можно пересчитать из проводок. Записи не изменяются и не удаляются.
-/// Несёт аудит-провенанс: кто (actor) и зачем (comment) выполнил операцию.
-/// </summary>
 public sealed class LedgerEntry
 {
     public Guid Id { get; private set; }

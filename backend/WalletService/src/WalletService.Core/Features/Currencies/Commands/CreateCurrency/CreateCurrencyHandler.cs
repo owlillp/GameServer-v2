@@ -7,6 +7,7 @@ using Shared.Core.Validation;
 using Shared.SharedKernel.Errors;
 using WalletService.Contracts.Dtos;
 using WalletService.Core.Abstractions;
+using WalletService.Core.Features.Currencies.Models;
 using WalletService.Domain.Wallets;
 
 namespace WalletService.Core.Features.Currencies.Commands.CreateCurrency;
@@ -27,13 +28,15 @@ public sealed class CreateCurrencyHandler(
             return validationResult.ToError();
         }
 
-        var kindResult = CurrencyKindParser.Parse(command.Kind);
+        var request = command.Request;
+
+        var kindResult = CurrencyKindParser.Parse(request.Kind);
         if (kindResult.IsFailure)
         {
             return kindResult.Error;
         }
 
-        var currencyResult = Currency.Create(command.Code);
+        var currencyResult = Currency.Create(request.Code);
         if (currencyResult.IsFailure)
         {
             return currencyResult.Error;
@@ -49,7 +52,7 @@ public sealed class CreateCurrencyHandler(
             return GeneralErrors.AlreadyExists("currency", code);
         }
 
-        var definitionResult = CurrencyDefinition.Create(code, command.DisplayName, kindResult.Value);
+        var definitionResult = CurrencyDefinition.Create(code, request.DisplayName, kindResult.Value);
         if (definitionResult.IsFailure)
         {
             return definitionResult.Error;

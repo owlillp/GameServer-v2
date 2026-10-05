@@ -1,12 +1,6 @@
 using Shared.Core.Abstractions;
+using WalletService.Contracts.Requests;
 
 namespace WalletService.Core.Features.Wallets.Commands.AdminTopUpWallet;
 
-public sealed record AdminTopUpWalletCommand(
-    Guid WalletId,
-    string Currency,
-    long Amount,
-    string Reason,
-    string Comment,
-    Guid? OperationId,
-    string? ReferenceId) : ICommand;
+public sealed record AdminTopUpWalletCommand(Guid WalletId, AdminTopUpWalletRequest Request) : ICommand;

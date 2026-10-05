@@ -4,6 +4,7 @@ using Shared.Core.Abstractions;
 using Shared.SharedKernel.Errors;
 using WalletService.Contracts.Dtos;
 using WalletService.Core.Abstractions;
+using WalletService.Core.Features.Currencies.Models;
 using WalletService.Domain.Wallets;
 
 namespace WalletService.Core.Features.Currencies.Queries.GetCurrencies;

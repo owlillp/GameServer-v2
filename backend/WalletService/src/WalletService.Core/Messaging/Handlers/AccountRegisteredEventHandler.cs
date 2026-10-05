@@ -6,10 +6,6 @@ using WalletService.Domain.Wallets;
 
 namespace WalletService.Core.Messaging.Handlers;
 
-/// <summary>
-/// Провижининг кошелька при регистрации аккаунта. Идемпотентен по account_id
-/// (PK = account_id): повторная доставка события не создаёт дубликат.
-/// </summary>
 public sealed class AccountRegisteredEventHandler(
     ILogger<AccountRegisteredEventHandler> logger,
     IWalletRepository walletRepository,

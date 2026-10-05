@@ -63,40 +63,20 @@ public sealed class AdminWalletEndpoints : IEndpointGroup
         [FromBody] AdminTopUpWalletRequest request,
         [FromServices] ICommandHandler<WalletDto, AdminTopUpWalletCommand> handler,
         CancellationToken ct) =>
-        await handler.Handle(
-            new AdminTopUpWalletCommand(
-                walletId,
-                request.Currency,
-                request.Amount,
-                request.Reason,
-                request.Comment,
-                request.OperationId,
-                request.ReferenceId),
-            ct);
+        await handler.Handle(new AdminTopUpWalletCommand(walletId, request), ct);
 
     private static async Task<EndpointResult<WalletDto>> AdminSpentWallet(
         [FromRoute] Guid walletId,
         [FromBody] AdminSpentWalletRequest request,
         [FromServices] ICommandHandler<WalletDto, AdminSpentWalletCommand> handler,
         CancellationToken ct) =>
-        await handler.Handle(
-            new AdminSpentWalletCommand(
-                walletId,
-                request.Currency,
-                request.Amount,
-                request.Reason,
-                request.Comment,
-                request.OperationId,
-                request.ReferenceId),
-            ct);
+        await handler.Handle(new AdminSpentWalletCommand(walletId, request), ct);
 
     private static async Task<EndpointResult<CurrencyDto>> CreateCurrency(
         [FromBody] CreateCurrencyRequest request,
         [FromServices] ICommandHandler<CurrencyDto, CreateCurrencyCommand> handler,
         CancellationToken ct) =>
-        await handler.Handle(
-            new CreateCurrencyCommand(request.Code, request.DisplayName, request.Kind),
-            ct);
+        await handler.Handle(new CreateCurrencyCommand(request), ct);
 
     private static async Task<EndpointResult<CurrencyDto>> DeleteCurrency(
         [FromRoute] string code,

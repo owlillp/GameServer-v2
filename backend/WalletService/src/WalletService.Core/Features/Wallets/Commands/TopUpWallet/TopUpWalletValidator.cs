@@ -12,15 +12,15 @@ public sealed class TopUpWalletValidator : AbstractValidator<TopUpWalletCommand>
         RuleFor(command => command.WalletId)
             .NotEmpty().WithError(GeneralErrors.ValueIsRequired("walletId"));
 
-        RuleFor(command => command.Currency)
+        RuleFor(command => command.Request.Currency)
             .NotEmpty().WithError(GeneralErrors.ValueIsRequired("currency"))
             .MaximumLength(Currency.MAX_LENGTH)
             .WithError(GeneralErrors.LengthIsInvalid("currency", max: Currency.MAX_LENGTH));
 
-        RuleFor(command => command.Amount)
+        RuleFor(command => command.Request.Amount)
             .GreaterThan(0).WithError(WalletErrors.AmountMustBePositive);
 
-        RuleFor(command => command.Reason)
+        RuleFor(command => command.Request.Reason)
             .NotEmpty().WithError(GeneralErrors.ValueIsRequired("reason"));
     }
 }

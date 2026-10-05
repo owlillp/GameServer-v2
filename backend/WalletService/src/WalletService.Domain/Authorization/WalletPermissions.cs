@@ -8,5 +8,15 @@ public static class WalletPermissions
         public const string MANAGE = "wallets.manage";
     }
 
-    public static IReadOnlyList<string> All { get; } = [Wallets.VIEW, Wallets.MANAGE];
+    public static class Currencies
+    {
+        public const string MANAGE = "currencies.manage";
+    }
+
+    public static IReadOnlyList<string> All { get; } =
+    [
+        Wallets.VIEW,
+        Wallets.MANAGE,
+        Currencies.MANAGE
+    ];
 }

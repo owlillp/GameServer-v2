@@ -2,14 +2,14 @@ using WalletService.Contracts.Dtos;
 using WalletService.Domain.Wallets;
 using WalletService.Domain.Wallets.Ledgers;
 
-namespace WalletService.Core.Features.Wallets;
+namespace WalletService.Core.Features.Wallets.Models;
 
 internal static class WalletMapper
 {
     public static WalletDto ToDto(Wallet wallet) =>
         new(
             wallet.Id,
-            [.. wallet.Balances.Select(balance => ToBalanceDto(balance))],
+            [.. wallet.Balances.Select(ToBalanceDto)],
             wallet.CreatedAt,
             wallet.UpdatedAt);
 

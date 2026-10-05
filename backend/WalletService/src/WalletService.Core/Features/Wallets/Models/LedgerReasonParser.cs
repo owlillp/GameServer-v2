@@ -2,7 +2,7 @@ using CSharpFunctionalExtensions;
 using Shared.SharedKernel.Errors;
 using WalletService.Domain.Wallets.Ledgers;
 
-namespace WalletService.Core.Features.Wallets;
+namespace WalletService.Core.Features.Wallets.Models;
 
 internal static class LedgerReasonParser
 {

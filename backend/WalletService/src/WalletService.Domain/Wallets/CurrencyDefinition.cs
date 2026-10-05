@@ -3,11 +3,6 @@ using Shared.SharedKernel.Errors;
 
 namespace WalletService.Domain.Wallets;
 
-/// <summary>
-/// Реестр валют сервиса — динамический список доступных валют.
-/// Код нормализуется тем же правилом, что и <see cref="Currency"/>,
-/// и служит первичным ключом. Балансы и проводки ссылаются на код строкой.
-/// </summary>
 public sealed class CurrencyDefinition
 {
     public string Code { get; private set; } = null!;
