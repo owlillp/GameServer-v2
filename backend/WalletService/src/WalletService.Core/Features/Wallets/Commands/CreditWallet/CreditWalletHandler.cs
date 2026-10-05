@@ -9,14 +9,14 @@ using WalletService.Core.Services;
 using WalletService.Domain.Wallets;
 using WalletService.Domain.Wallets.Ledgers;
 
-namespace WalletService.Core.Features.Wallets.Commands.TopUpWallet;
+namespace WalletService.Core.Features.Wallets.Commands.CreditWallet;
 
-public sealed class TopUpWalletHandler(
-    IValidator<TopUpWalletCommand> validator,
-    IWalletService walletService) : ICommandHandler<WalletDto, TopUpWalletCommand>
+public sealed class CreditWalletHandler(
+    IValidator<CreditWalletCommand> validator,
+    IWalletService walletService) : ICommandHandler<WalletDto, CreditWalletCommand>
 {
     public async Task<Result<WalletDto, Error>> Handle(
-        TopUpWalletCommand command,
+        CreditWalletCommand command,
         CancellationToken cancellationToken = new ())
     {
         var validationResult = await validator.ValidateAsync(command, cancellationToken);
@@ -50,6 +50,6 @@ public sealed class TopUpWalletHandler(
             ActorId: null,
             Comment: null);
 
-        return await walletService.TopUpAsync(operation, cancellationToken);
+        return await walletService.CreditAsync(operation, cancellationToken);
     }
 }

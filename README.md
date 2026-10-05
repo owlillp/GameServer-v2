@@ -27,9 +27,9 @@ WalletService ведёт балансы и журнал операций:
 
 - `/wallets/me`, `/wallets/me/transactions` — балансы и история игрока;
 - `/wallets/currencies` — динамический список доступных (активных) валют;
-- `/wallets/{id}/top-up`, `/wallets/{id}/spent` — внутренние операции
+- `/wallets/{id}/credit`, `/wallets/{id}/debit` — внутренние операции
   (service-токен со scope `wallet`);
-- `/admin/wallets/{id}/top-up`, `/admin/wallets/{id}/spent` — ручные операции
+- `/admin/wallets/{id}/credit`, `/admin/wallets/{id}/debit` — ручные операции
   Admin/Moderator (permission `wallets.manage`, обязательный `comment`);
 - `/admin/wallets/{id}`, `/admin/wallets/{id}/transactions` — карточка игрока
   (балансы и история, `wallets.view`);
@@ -187,10 +187,10 @@ dotnet test
 | GET   | `/wallets/me`    | аутентификация | Балансы текущего игрока (WalletService)    |
 | GET   | `/wallets/currencies` | аутентификация | Список доступных валют                |
 | GET   | `/wallets/me/transactions` | аутентификация | История операций игрока        |
-| POST  | `/wallets/{id}/top-up` | `wallet` scope | Начисление на кошелёк               |
-| POST  | `/wallets/{id}/spent`  | `wallet` scope | Списание с кошелька                 |
-| POST  | `/admin/wallets/{id}/top-up` | `wallets.manage` | Ручное начисление (Admin/Moderator) |
-| POST  | `/admin/wallets/{id}/spent`  | `wallets.manage` | Ручное списание (Admin/Moderator)   |
+| POST  | `/wallets/{id}/credit` | `wallet` scope | Начисление на кошелёк               |
+| POST  | `/wallets/{id}/debit`  | `wallet` scope | Списание с кошелька                 |
+| POST  | `/admin/wallets/{id}/credit` | `wallets.manage` | Ручное начисление (Admin/Moderator) |
+| POST  | `/admin/wallets/{id}/debit`  | `wallets.manage` | Ручное списание (Admin/Moderator)   |
 | GET   | `/admin/wallets/{id}`        | `wallets.view`   | Карточка кошелька игрока            |
 | GET   | `/admin/wallets/{id}/transactions` | `wallets.view` | История операций игрока         |
 | POST  | `/admin/wallets/currencies`  | `wallets.manage` | Создание валюты                     |

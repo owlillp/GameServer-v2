@@ -42,26 +42,26 @@ export const walletApi = {
     return unwrapEnvelope(response.data);
   },
 
-  // POST /admin/wallets/{id}/top-up — ручное начисление (wallets.manage).
-  adminTopUp: async (
+  // POST /admin/wallets/{id}/credit — ручное начисление (wallets.manage).
+  adminCredit: async (
     walletId: string,
     request: WalletOperationRequest,
   ): Promise<Wallet> => {
     const response = await apiClient.post<Envelope<Wallet>>(
-      `/admin/wallets/${walletId}/top-up`,
+      `/admin/wallets/${walletId}/credit`,
       request,
     );
 
     return unwrapEnvelope(response.data);
   },
 
-  // POST /admin/wallets/{id}/spent — ручное списание (wallets.manage).
-  adminSpent: async (
+  // POST /admin/wallets/{id}/debit — ручное списание (wallets.manage).
+  adminDebit: async (
     walletId: string,
     request: WalletOperationRequest,
   ): Promise<Wallet> => {
     const response = await apiClient.post<Envelope<Wallet>>(
-      `/admin/wallets/${walletId}/spent`,
+      `/admin/wallets/${walletId}/debit`,
       request,
     );
 

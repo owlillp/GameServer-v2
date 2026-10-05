@@ -24,8 +24,8 @@ const OPERATIONS: readonly {
   value: AdminWalletOperationType;
   label: string;
 }[] = [
-  { value: "top-up", label: "Начислить" },
-  { value: "spent", label: "Списать" },
+  { value: "credit", label: "Начислить" },
+  { value: "debit", label: "Списать" },
 ];
 
 type Props = {
@@ -39,7 +39,7 @@ export function AdminWalletAdjustment({ fixedWalletId }: Props) {
   const { run, isPending, error, result, reset } = useAdminWalletOperation();
 
   const [walletId, setWalletId] = useState(fixedWalletId ?? "");
-  const [type, setType] = useState<AdminWalletOperationType>("top-up");
+  const [type, setType] = useState<AdminWalletOperationType>("credit");
   const [currency, setCurrency] = useState("");
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState<string>(REASONS[0].value);
@@ -90,7 +90,7 @@ export function AdminWalletAdjustment({ fixedWalletId }: Props) {
           Ручная операция
         </h2>
         <p className="text-xs text-slate-500">
-          Начисление/списание игроку. POST /admin/wallets/{"{id}"}/top-up|spent
+          Начисление/списание игроку. POST /admin/wallets/{"{id}"}/credit|debit
           (permission wallets.manage, обязательный comment).
         </p>
       </header>

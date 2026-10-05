@@ -3,11 +3,11 @@ using Shared.Core.Validation;
 using Shared.SharedKernel.Errors;
 using WalletService.Domain.Wallets;
 
-namespace WalletService.Core.Features.Wallets.Commands.SpentWallet;
+namespace WalletService.Core.Features.Wallets.Commands.AdminDebitWallet;
 
-public sealed class SpentWalletValidator : AbstractValidator<SpentWalletCommand>
+public sealed class AdminDebitWalletValidator : AbstractValidator<AdminDebitWalletCommand>
 {
-    public SpentWalletValidator()
+    public AdminDebitWalletValidator()
     {
         RuleFor(command => command.WalletId)
             .NotEmpty().WithError(GeneralErrors.ValueIsRequired("walletId"));
@@ -22,5 +22,10 @@ public sealed class SpentWalletValidator : AbstractValidator<SpentWalletCommand>
 
         RuleFor(command => command.Request.Reason)
             .NotEmpty().WithError(GeneralErrors.ValueIsRequired("reason"));
+
+        RuleFor(command => command.Request.Comment)
+            .NotEmpty().WithError(GeneralErrors.ValueIsRequired("comment"))
+            .MaximumLength(WalletConstants.COMMENT_MAX_LENGTH)
+            .WithError(GeneralErrors.LengthIsInvalid("comment", max: WalletConstants.COMMENT_MAX_LENGTH));
     }
 }

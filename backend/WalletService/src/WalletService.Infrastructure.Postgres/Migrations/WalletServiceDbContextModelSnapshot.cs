@@ -82,24 +82,6 @@ namespace WalletService.Infrastructure.Postgres.Migrations
                     b.HasKey("Code");
 
                     b.ToTable("currencies", "wallets");
-
-                    b.HasData(
-                        new
-                        {
-                            Code = "SOFT",
-                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            DisplayName = "Soft currency",
-                            IsActive = true,
-                            Kind = "Soft"
-                        },
-                        new
-                        {
-                            Code = "HARD",
-                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            DisplayName = "Hard currency",
-                            IsActive = true,
-                            Kind = "Hard"
-                        });
                 });
 
             modelBuilder.Entity("WalletService.Domain.Wallets.Ledgers.LedgerEntry", b =>

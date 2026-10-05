@@ -9,15 +9,15 @@ using WalletService.Core.Features.Wallets.Models;
 using WalletService.Core.Services;
 using WalletService.Domain.Wallets;
 
-namespace WalletService.Core.Features.Wallets.Commands.AdminSpentWallet;
+namespace WalletService.Core.Features.Wallets.Commands.AdminDebitWallet;
 
-public sealed class AdminSpentWalletHandler(
-    IValidator<AdminSpentWalletCommand> validator,
+public sealed class AdminDebitWalletHandler(
+    IValidator<AdminDebitWalletCommand> validator,
     IWalletService walletService,
-    UserScopedData userScope) : ICommandHandler<WalletDto, AdminSpentWalletCommand>
+    UserScopedData userScope) : ICommandHandler<WalletDto, AdminDebitWalletCommand>
 {
     public async Task<Result<WalletDto, Error>> Handle(
-        AdminSpentWalletCommand command,
+        AdminDebitWalletCommand command,
         CancellationToken cancellationToken = new ())
     {
         var validationResult = await validator.ValidateAsync(command, cancellationToken);
@@ -57,6 +57,6 @@ public sealed class AdminSpentWalletHandler(
             actorId,
             request.Comment);
 
-        return await walletService.SpentAsync(operation, cancellationToken);
+        return await walletService.DebitAsync(operation, cancellationToken);
     }
 }

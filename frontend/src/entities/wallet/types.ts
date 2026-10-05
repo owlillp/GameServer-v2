@@ -12,7 +12,7 @@ export type Wallet = {
   updatedAt: string;
 };
 
-export type LedgerDirection = "TOP_UP" | "SPENT";
+export type LedgerDirection = "Credit" | "Debit";
 
 export type LedgerEntry = {
   id: string;

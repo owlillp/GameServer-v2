@@ -6,8 +6,8 @@ using WalletService.Contracts.Dtos;
 using WalletService.Contracts.Requests;
 using WalletService.Core.Features.Currencies.Commands.CreateCurrency;
 using WalletService.Core.Features.Currencies.Commands.DeleteCurrency;
-using WalletService.Core.Features.Wallets.Commands.AdminSpentWallet;
-using WalletService.Core.Features.Wallets.Commands.AdminTopUpWallet;
+using WalletService.Core.Features.Wallets.Commands.AdminDebitWallet;
+using WalletService.Core.Features.Wallets.Commands.AdminCreditWallet;
 using WalletService.Core.Features.Wallets.Queries.GetAdminWalletTransactions;
 using WalletService.Core.Features.Wallets.Queries.GetWallet;
 using WalletService.Domain.Authorization;
@@ -25,13 +25,13 @@ public sealed class AdminWalletEndpoints : IEndpointGroup
             .WithTags("Admin.Wallets")
             .RequireAuthorization();
 
-        group.MapPost("/{walletId:guid}/top-up", AdminTopUpWallet)
-            .WithName("Admin.Wallets.TopUp")
+        group.MapPost("/{walletId:guid}/credit", AdminCreditWallet)
+            .WithName("Admin.Wallets.Credit")
             .WithSummary("Начисление игроку админом/модератором")
             .RequirePermissions(WalletPermissions.Wallets.MANAGE);
 
-        group.MapPost("/{walletId:guid}/spent", AdminSpentWallet)
-            .WithName("Admin.Wallets.Spent")
+        group.MapPost("/{walletId:guid}/debit", AdminDebitWallet)
+            .WithName("Admin.Wallets.Debit")
             .WithSummary("Списание у игрока админом/модератором")
             .RequirePermissions(WalletPermissions.Wallets.MANAGE);
 
@@ -58,19 +58,19 @@ public sealed class AdminWalletEndpoints : IEndpointGroup
         return group;
     }
 
-    private static async Task<EndpointResult<WalletDto>> AdminTopUpWallet(
+    private static async Task<EndpointResult<WalletDto>> AdminCreditWallet(
         [FromRoute] Guid walletId,
-        [FromBody] AdminTopUpWalletRequest request,
-        [FromServices] ICommandHandler<WalletDto, AdminTopUpWalletCommand> handler,
+        [FromBody] AdminCreditWalletRequest request,
+        [FromServices] ICommandHandler<WalletDto, AdminCreditWalletCommand> handler,
         CancellationToken ct) =>
-        await handler.Handle(new AdminTopUpWalletCommand(walletId, request), ct);
+        await handler.Handle(new AdminCreditWalletCommand(walletId, request), ct);
 
-    private static async Task<EndpointResult<WalletDto>> AdminSpentWallet(
+    private static async Task<EndpointResult<WalletDto>> AdminDebitWallet(
         [FromRoute] Guid walletId,
-        [FromBody] AdminSpentWalletRequest request,
-        [FromServices] ICommandHandler<WalletDto, AdminSpentWalletCommand> handler,
+        [FromBody] AdminDebitWalletRequest request,
+        [FromServices] ICommandHandler<WalletDto, AdminDebitWalletCommand> handler,
         CancellationToken ct) =>
-        await handler.Handle(new AdminSpentWalletCommand(walletId, request), ct);
+        await handler.Handle(new AdminDebitWalletCommand(walletId, request), ct);
 
     private static async Task<EndpointResult<CurrencyDto>> CreateCurrency(
         [FromBody] CreateCurrencyRequest request,

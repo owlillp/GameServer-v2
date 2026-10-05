@@ -3,11 +3,11 @@ using Shared.Core.Validation;
 using Shared.SharedKernel.Errors;
 using WalletService.Domain.Wallets;
 
-namespace WalletService.Core.Features.Wallets.Commands.AdminTopUpWallet;
+namespace WalletService.Core.Features.Wallets.Commands.AdminCreditWallet;
 
-public sealed class AdminTopUpWalletValidator : AbstractValidator<AdminTopUpWalletCommand>
+public sealed class AdminCreditWalletValidator : AbstractValidator<AdminCreditWalletCommand>
 {
-    public AdminTopUpWalletValidator()
+    public AdminCreditWalletValidator()
     {
         RuleFor(command => command.WalletId)
             .NotEmpty().WithError(GeneralErrors.ValueIsRequired("walletId"));

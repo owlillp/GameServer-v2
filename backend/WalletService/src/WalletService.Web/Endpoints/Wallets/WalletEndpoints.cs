@@ -3,8 +3,8 @@ using Shared.Core.Abstractions;
 using Shared.Framework.Endpoints;
 using WalletService.Contracts.Dtos;
 using WalletService.Contracts.Requests;
-using WalletService.Core.Features.Wallets.Commands.SpentWallet;
-using WalletService.Core.Features.Wallets.Commands.TopUpWallet;
+using WalletService.Core.Features.Wallets.Commands.DebitWallet;
+using WalletService.Core.Features.Wallets.Commands.CreditWallet;
 using WalletService.Core.Features.Wallets.Queries.GetMyWallet;
 using WalletService.Core.Features.Wallets.Queries.GetTransactions;
 
@@ -29,12 +29,12 @@ public sealed class WalletEndpoints : IEndpointGroup
             .WithName("Wallets.Me.Transactions")
             .WithSummary("История операций текущего игрока");
 
-        group.MapPost("/{walletId:guid}/top-up", TopUpWallet)
-            .WithName("Wallets.TopUp")
+        group.MapPost("/{walletId:guid}/credit", CreditWallet)
+            .WithName("Wallets.Credit")
             .WithSummary("Начисление на кошелёк (внутренний вызов Store/наград)");
 
-        group.MapPost("/{walletId:guid}/spent", SpentWallet)
-            .WithName("Wallets.Spent")
+        group.MapPost("/{walletId:guid}/debit", DebitWallet)
+            .WithName("Wallets.Debit")
             .WithSummary("Списание с кошелька (внутренний вызов Store)");
 
         return group;
@@ -51,17 +51,17 @@ public sealed class WalletEndpoints : IEndpointGroup
         CancellationToken ct) =>
         await handler.Handle(new GetWalletTransactionsQuery(limit), ct);
 
-    private static async Task<EndpointResult<WalletDto>> TopUpWallet(
+    private static async Task<EndpointResult<WalletDto>> CreditWallet(
         [FromRoute] Guid walletId,
-        [FromBody] TopUpWalletRequest request,
-        [FromServices] ICommandHandler<WalletDto, TopUpWalletCommand> handler,
+        [FromBody] CreditWalletRequest request,
+        [FromServices] ICommandHandler<WalletDto, CreditWalletCommand> handler,
         CancellationToken ct) =>
-        await handler.Handle(new TopUpWalletCommand(walletId, request), ct);
+        await handler.Handle(new CreditWalletCommand(walletId, request), ct);
 
-    private static async Task<EndpointResult<WalletDto>> SpentWallet(
+    private static async Task<EndpointResult<WalletDto>> DebitWallet(
         [FromRoute] Guid walletId,
-        [FromBody] SpentWalletRequest request,
-        [FromServices] ICommandHandler<WalletDto, SpentWalletCommand> handler,
+        [FromBody] DebitWalletRequest request,
+        [FromServices] ICommandHandler<WalletDto, DebitWalletCommand> handler,
         CancellationToken ct) =>
-        await handler.Handle(new SpentWalletCommand(walletId, request), ct);
+        await handler.Handle(new DebitWalletCommand(walletId, request), ct);
 }

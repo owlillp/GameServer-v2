@@ -95,7 +95,7 @@ export function WalletBalances() {
 }
 
 function TransactionRow({ entry }: { entry: LedgerEntry }) {
-  const isTopUp = entry.direction === "TOP_UP";
+  const isCredit = entry.direction === "Credit";
 
   return (
     <li className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-sm">
@@ -103,12 +103,12 @@ function TransactionRow({ entry }: { entry: LedgerEntry }) {
         <span
           className={cn(
             "inline-flex h-6 min-w-16 items-center justify-center rounded px-2 text-xs font-medium",
-            isTopUp
+            isCredit
               ? "bg-emerald-50 text-emerald-700"
               : "bg-rose-50 text-rose-700",
           )}
         >
-          {isTopUp ? "+" : "−"}
+          {isCredit ? "+" : "−"}
           {formatAmount(entry.amount)} {entry.currency}
         </span>
         <span className="text-slate-500">{entry.reason}</span>

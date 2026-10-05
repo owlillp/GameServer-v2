@@ -28,13 +28,13 @@ public sealed class Balance
 
     internal static Balance Empty(Guid walletId, Currency currency) => new(walletId, currency);
 
-    internal void TopUp(long amount)
+    internal void Credit(long amount)
     {
         Available += amount;
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 
-    internal UnitResult<Error> Spent(long amount)
+    internal UnitResult<Error> Debit(long amount)
     {
         if (amount <= 0)
         {

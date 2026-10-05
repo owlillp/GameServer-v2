@@ -36,7 +36,7 @@ public sealed class Wallet
         return new Wallet(accountId);
     }
 
-    public Result<LedgerEntry, Error> TopUp(
+    public Result<LedgerEntry, Error> Credit(
         Currency currency,
         long amount,
         LedgerReason reason,
@@ -51,14 +51,14 @@ public sealed class Wallet
             return WalletErrors.AmountMustBePositive;
         }
 
-        GetOrCreateBalance(currency).TopUp(amount);
+        GetOrCreateBalance(currency).Credit(amount);
         UpdatedAt = DateTime.UtcNow;
 
         return LedgerEntry.Create(
             Id,
             operationId,
             currency,
-            LedgerDirection.TOP_UP,
+            LedgerDirection.Credit,
             amount,
             reason,
             referenceId,
@@ -67,7 +67,7 @@ public sealed class Wallet
             comment);
     }
 
-    public Result<LedgerEntry, Error> Spent(
+    public Result<LedgerEntry, Error> Debit(
         Currency currency,
         long amount,
         LedgerReason reason,
@@ -83,10 +83,10 @@ public sealed class Wallet
         }
 
         var balance = GetOrCreateBalance(currency);
-        var spentResult = balance.Spent(amount);
-        if (spentResult.IsFailure)
+        var debitResult = balance.Debit(amount);
+        if (debitResult.IsFailure)
         {
-            return spentResult.Error;
+            return debitResult.Error;
         }
 
         UpdatedAt = DateTime.UtcNow;
@@ -95,7 +95,7 @@ public sealed class Wallet
             Id,
             operationId,
             currency,
-            LedgerDirection.SPENT,
+            LedgerDirection.Debit,
             amount,
             reason,
             referenceId,

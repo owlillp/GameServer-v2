@@ -9,15 +9,15 @@ using WalletService.Core.Features.Wallets.Models;
 using WalletService.Core.Services;
 using WalletService.Domain.Wallets;
 
-namespace WalletService.Core.Features.Wallets.Commands.AdminTopUpWallet;
+namespace WalletService.Core.Features.Wallets.Commands.AdminCreditWallet;
 
-public sealed class AdminTopUpWalletHandler(
-    IValidator<AdminTopUpWalletCommand> validator,
+public sealed class AdminCreditWalletHandler(
+    IValidator<AdminCreditWalletCommand> validator,
     IWalletService walletService,
-    UserScopedData userScope) : ICommandHandler<WalletDto, AdminTopUpWalletCommand>
+    UserScopedData userScope) : ICommandHandler<WalletDto, AdminCreditWalletCommand>
 {
     public async Task<Result<WalletDto, Error>> Handle(
-        AdminTopUpWalletCommand command,
+        AdminCreditWalletCommand command,
         CancellationToken cancellationToken = new ())
     {
         var validationResult = await validator.ValidateAsync(command, cancellationToken);
@@ -57,6 +57,6 @@ public sealed class AdminTopUpWalletHandler(
             actorId,
             request.Comment);
 
-        return await walletService.TopUpAsync(operation, cancellationToken);
+        return await walletService.CreditAsync(operation, cancellationToken);
     }
 }

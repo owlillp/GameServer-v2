@@ -1,6 +1,6 @@
 namespace WalletService.Contracts.Requests;
 
-public sealed record AdminSpentWalletRequest(
+public sealed record AdminDebitWalletRequest(
     string Currency,
     long Amount,
     string Reason,

@@ -13,9 +13,9 @@ namespace WalletService.Core.Services;
 
 public interface IWalletService
 {
-    Task<Result<WalletDto, Error>> TopUpAsync(WalletOperation operation, CancellationToken cancellationToken);
+    Task<Result<WalletDto, Error>> CreditAsync(WalletOperation operation, CancellationToken cancellationToken);
 
-    Task<Result<WalletDto, Error>> SpentAsync(WalletOperation operation, CancellationToken cancellationToken);
+    Task<Result<WalletDto, Error>> DebitAsync(WalletOperation operation, CancellationToken cancellationToken);
 }
 
 public sealed class WalletService(
@@ -24,11 +24,11 @@ public sealed class WalletService(
     ITransactionManager transactionManager,
     IWalletEventPublisher eventPublisher) : IWalletService
 {
-    public Task<Result<WalletDto, Error>> TopUpAsync(WalletOperation operation, CancellationToken cancellationToken) =>
-        WriteAsync(operation, LedgerDirection.TOP_UP, cancellationToken);
+    public Task<Result<WalletDto, Error>> CreditAsync(WalletOperation operation, CancellationToken cancellationToken) =>
+        WriteAsync(operation, LedgerDirection.Credit, cancellationToken);
 
-    public Task<Result<WalletDto, Error>> SpentAsync(WalletOperation operation, CancellationToken cancellationToken) =>
-        WriteAsync(operation, LedgerDirection.SPENT, cancellationToken);
+    public Task<Result<WalletDto, Error>> DebitAsync(WalletOperation operation, CancellationToken cancellationToken) =>
+        WriteAsync(operation, LedgerDirection.Debit, cancellationToken);
 
     private async Task<Result<WalletDto, Error>> WriteAsync(
         WalletOperation operation,
@@ -72,9 +72,9 @@ public sealed class WalletService(
 
         var wallet = walletResult.Value;
 
-        var entryResult = direction == LedgerDirection.TOP_UP
-            ? WriteTopUp(wallet, operation)
-            : WriteSpent(wallet, operation);
+        var entryResult = direction == LedgerDirection.Credit
+            ? WriteCredit(wallet, operation)
+            : WriteDebit(wallet, operation);
 
         if (entryResult.IsFailure)
         {
@@ -87,7 +87,7 @@ public sealed class WalletService(
             return ledgerResult.Error;
         }
 
-        if (direction == LedgerDirection.TOP_UP)
+        if (direction == LedgerDirection.Credit)
         {
             await eventPublisher.PublishCreditedAsync(
                 wallet.Id,
@@ -115,8 +115,8 @@ public sealed class WalletService(
         return WalletMapper.ToDto(wallet);
     }
 
-    private static Result<LedgerEntry, Error> WriteTopUp(Wallet wallet, WalletOperation operation) =>
-        wallet.TopUp(
+    private static Result<LedgerEntry, Error> WriteCredit(Wallet wallet, WalletOperation operation) =>
+        wallet.Credit(
             operation.Currency,
             operation.Amount,
             operation.Reason,
@@ -126,8 +126,8 @@ public sealed class WalletService(
             operation.ActorId,
             operation.Comment);
 
-    private static Result<LedgerEntry, Error> WriteSpent(Wallet wallet, WalletOperation operation) =>
-        wallet.Spent(
+    private static Result<LedgerEntry, Error> WriteDebit(Wallet wallet, WalletOperation operation) =>
+        wallet.Debit(
             operation.Currency,
             operation.Amount,
             operation.Reason,

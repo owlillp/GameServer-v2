@@ -6,7 +6,7 @@ import {
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-export type AdminWalletOperationType = "top-up" | "spent";
+export type AdminWalletOperationType = "credit" | "debit";
 
 type Variables = {
   type: AdminWalletOperationType;
@@ -19,13 +19,13 @@ export function useAdminWalletOperation() {
 
   const mutation = useMutation({
     mutationFn: ({ type, walletId, request }: Variables) =>
-      type === "top-up"
-        ? walletApi.adminTopUp(walletId, request)
-        : walletApi.adminSpent(walletId, request),
+      type === "credit"
+        ? walletApi.adminCredit(walletId, request)
+        : walletApi.adminDebit(walletId, request),
     onSuccess: (_wallet, variables) => {
       void queryClient.invalidateQueries({ queryKey: walletQueryKeys.all });
       toast.success(
-        variables.type === "top-up"
+        variables.type === "credit"
           ? "Средства начислены"
           : "Средства списаны",
       );
