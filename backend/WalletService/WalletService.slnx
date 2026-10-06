@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/SolutionFolder/">
+    <File Path="../.editorconfig" />
+    <File Path="../.gitignore" />
+    <File Path="../Directory.Build.props" />
+    <File Path="../Directory.Packages.props" />
+    <File Path="../nuget.config" />
+  </Folder>
+  <Project Path="src/WalletService.Contracts/WalletService.Contracts.csproj" />
+  <Project Path="src/WalletService.Core/WalletService.Core.csproj" />
+  <Project Path="src/WalletService.Domain/WalletService.Domain.csproj" />
+  <Project Path="src/WalletService.Infrastructure.Postgres/WalletService.Infrastructure.Postgres.csproj" />
+  <Project Path="src/WalletService.Web/WalletService.Web.csproj" />
+  <Project Path="../Shared/IntegrationEvents/Shared.IntegrationEvents.csproj" />
+</Solution>

@@ -20,6 +20,8 @@ public sealed class OidcClientsOptions
     public OidcClientOptions Unity { get; init; } = new();
 
     public OidcClientOptions ClanService { get; init; } = new();
+
+    public OidcClientOptions WalletService { get; init; } = new();
 }
 
 public sealed class OidcClientOptions

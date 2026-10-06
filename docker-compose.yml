@@ -85,6 +85,49 @@ services:
         condition: service_completed_successfully
     restart: always
 
+  wallet-migrator:
+    container_name: gameserver-v2-wallet-migrator
+    build:
+      context: ./backend
+      dockerfile: WalletService/Dockerfile
+      target: migrations
+      args:
+        NUGET_USERNAME: ${NUGET_USERNAME}
+      secrets:
+        - nuget_password
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ConnectionStrings__WalletDb=${ConnectionStrings__WalletDb}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["--connection", "${ConnectionStrings__WalletDb}"]
+    restart: "no"
+
+  wallet-service:
+    container_name: gameserver-v2-wallet-service
+    build:
+      context: ./backend
+      dockerfile: WalletService/Dockerfile
+      args:
+        NUGET_USERNAME: ${NUGET_USERNAME}
+      secrets:
+        - nuget_password
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_URLS=http://+:8080
+      - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
+      - ConnectionStrings__WalletDb=${ConnectionStrings__WalletDb}
+      - ConnectionStrings__RabbitMQ=${ConnectionStrings__RabbitMQ}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      wallet-migrator:
+        condition: service_completed_successfully
+    restart: always
+
   postgres:
     container_name: gameserver-v2-postgres
     image: postgres:17-alpine
@@ -149,6 +192,7 @@ services:
     depends_on:
       - auth-service
       - profile-service
+      - wallet-service
       - frontend
     restart: always
 

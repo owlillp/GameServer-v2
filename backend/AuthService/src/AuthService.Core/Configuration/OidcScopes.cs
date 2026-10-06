@@ -10,6 +10,7 @@ public static class OidcScopes
     public const string AUTH = "auth";
     public const string CLANS = "clans";
     public const string PROFILES = "profiles";
+    public const string WALLET = "wallet";
 
     public static IReadOnlyList<string> All { get; } =
     [
@@ -20,6 +21,7 @@ public static class OidcScopes
         AUTH,
         CLANS,
         PROFILES,
+        WALLET,
     ];
 
     public static class Resources
@@ -27,5 +29,6 @@ public static class OidcScopes
         public const string AUTH_RESOURCE = "auth-service";
         public const string CLANS_RESOURCE = "clan-service";
         public const string PROFILES_RESOURCE = "profile-service";
+        public const string WALLET_RESOURCE = "wallet-service";
     }
 }

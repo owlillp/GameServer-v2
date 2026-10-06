@@ -2,11 +2,13 @@
 
 import type { AdminUser } from "@/src/entities/admin";
 import { cn } from "@/src/shared/lib/utils";
+import { routes } from "@/src/shared/routes";
 import { ApiErrorList } from "@/src/shared/ui/api-error-list";
 import { Button } from "@/src/shared/ui/button";
 import { Input } from "@/src/shared/ui/input";
 import { RoleBadge } from "@/src/shared/ui/role-badge";
 import { Spinner } from "@/src/shared/ui/spinner";
+import Link from "next/link";
 import { useDebounce } from "use-debounce";
 import { useState, type ReactNode } from "react";
 import { useAdminUsers } from "../model/use-admin-users";
@@ -143,7 +145,12 @@ function UserRow({ user }: { user: AdminUser }) {
         className="block bg-slate-50/60 px-4 py-2 text-left font-medium text-slate-900 @2xl:bg-transparent @2xl:px-4 @2xl:py-3 @2xl:font-normal"
       >
         <CellLabel>Пользователь</CellLabel>
-        {displayName}
+        <Link
+          href={routes.adminPlayer(user.id)}
+          className="font-medium text-slate-900 underline-offset-2 hover:underline"
+        >
+          {displayName}
+        </Link>
       </th>
       <td className="block px-4 py-1 @2xl:table-cell @2xl:px-4 @2xl:py-3">
         <CellLabel>Email</CellLabel>

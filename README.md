@@ -9,6 +9,7 @@ Docker. Единый вход (OIDC) и разделение интерфейс�
 | ------------- | ------------------------------------------------------------------------ |
 | `AuthService` | OIDC-провайдер (OpenIddict + ASP.NET Identity) и JSON API аккаунтов      |
 | `ProfileService` | Игровой профиль игрока (ник, регион) и identity-поля из access-токена |
+| `WalletService` | Балансы валют и ledger-журнал операций                                 |
 
 AuthService выдаёт токены (Authorization Code + PKCE, refresh и
 client_credentials) и отдаёт админские данные:
@@ -21,6 +22,18 @@ ProfileService отдаёт профиль текущего игрока по Be
 
 - `/profiles/me` — объединённый профиль: игровые поля (ник, регион) плюс
   `email`/`userName` из claims access-токена.
+
+WalletService ведёт балансы и журнал операций:
+
+- `/wallets/me`, `/wallets/me/transactions` — балансы и история игрока;
+- `/wallets/currencies` — динамический список доступных (активных) валют;
+- `/wallets/{id}/credit`, `/wallets/{id}/debit` — внутренние операции
+  (service-токен со scope `wallet`);
+- `/admin/wallets/{id}/credit`, `/admin/wallets/{id}/debit` — ручные операции
+  Admin/Moderator (permission `wallets.manage`, обязательный `comment`);
+- `/admin/wallets/{id}`, `/admin/wallets/{id}/transactions` — карточка игрока
+  (балансы и история, `wallets.view`);
+- `/admin/wallets/currencies` — создание/удаление валют (`wallets.manage`).
 
 Порт разработки AuthService — `5280`
 (`dotnet run --project backend/AuthService/src/AuthService.Web`).
@@ -171,6 +184,17 @@ dotnet test
 | POST  | `/auth/register` | —              | Регистрация (роль `User`)                  |
 | POST  | `/auth/login`    | —              | Вход, ставит Identity-cookie               |
 | GET   | `/profiles/me`   | аутентификация | Профиль текущего игрока (ProfileService)   |
+| GET   | `/wallets/me`    | аутентификация | Балансы текущего игрока (WalletService)    |
+| GET   | `/wallets/currencies` | аутентификация | Список доступных валют                |
+| GET   | `/wallets/me/transactions` | аутентификация | История операций игрока        |
+| POST  | `/wallets/{id}/credit` | `wallet` scope | Начисление на кошелёк               |
+| POST  | `/wallets/{id}/debit`  | `wallet` scope | Списание с кошелька                 |
+| POST  | `/admin/wallets/{id}/credit` | `wallets.manage` | Ручное начисление (Admin/Moderator) |
+| POST  | `/admin/wallets/{id}/debit`  | `wallets.manage` | Ручное списание (Admin/Moderator)   |
+| GET   | `/admin/wallets/{id}`        | `wallets.view`   | Карточка кошелька игрока            |
+| GET   | `/admin/wallets/{id}/transactions` | `wallets.view` | История операций игрока         |
+| POST  | `/admin/wallets/currencies`  | `wallets.manage` | Создание валюты                     |
+| DELETE | `/admin/wallets/currencies/{code}` | `wallets.manage` | Удаление (деактивация) валюты |
 | GET   | `/admin/users`   | `users.view`   | Список аккаунтов с поиском и пагинацией    |
 | GET   | `/admin/stats`   | `users.view`   | Сводка: всего/админы/модераторы/заблокированы |
 | GET   | `/health`        | —              | Health-check (Postgres)                    |

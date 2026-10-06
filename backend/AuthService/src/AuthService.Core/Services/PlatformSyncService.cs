@@ -17,10 +17,12 @@ public sealed class PlatformSyncService(
         await UpsertScopeAsync(OidcScopes.AUTH, "AuthService API Access", OidcScopes.Resources.AUTH_RESOURCE, cancellationToken);
         await UpsertScopeAsync(OidcScopes.CLANS, "ClanService API Access", OidcScopes.Resources.CLANS_RESOURCE, cancellationToken);
         await UpsertScopeAsync(OidcScopes.PROFILES, "ProfileService API Access", OidcScopes.Resources.PROFILES_RESOURCE, cancellationToken);
+        await UpsertScopeAsync(OidcScopes.WALLET, "WalletService API Access", OidcScopes.Resources.WALLET_RESOURCE, cancellationToken);
 
         await UpsertPublicClientAsync(options.Clients.Web, allowPasswordGrant: false, cancellationToken);
         await UpsertPublicClientAsync(options.Clients.Unity, allowPasswordGrant: true, cancellationToken);
-        await UpsertServiceClientAsync(options.Clients.ClanService, cancellationToken);
+        await UpsertServiceClientAsync(options.Clients.ClanService, [OidcScopes.AUTH], cancellationToken);
+        await UpsertServiceClientAsync(options.Clients.WalletService, [OidcScopes.WALLET], cancellationToken);
     }
 
     private async Task SeedRolesAsync()
@@ -91,6 +93,7 @@ public sealed class PlatformSyncService(
                 OpenIddictConstants.Permissions.Prefixes.Scope + OidcScopes.AUTH,
                 OpenIddictConstants.Permissions.Prefixes.Scope + OidcScopes.CLANS,
                 OpenIddictConstants.Permissions.Prefixes.Scope + OidcScopes.PROFILES,
+                OpenIddictConstants.Permissions.Prefixes.Scope + OidcScopes.WALLET,
             },
         };
 
@@ -119,6 +122,7 @@ public sealed class PlatformSyncService(
 
     private async Task UpsertServiceClientAsync(
         OidcClientOptions client,
+        IReadOnlyList<string> scopes,
         CancellationToken cancellationToken)
     {
         if (!client.IsConfigured)
@@ -136,9 +140,13 @@ public sealed class PlatformSyncService(
             {
                 OpenIddictConstants.Permissions.Endpoints.Token,
                 OpenIddictConstants.Permissions.GrantTypes.ClientCredentials,
-                OpenIddictConstants.Permissions.Prefixes.Scope + OidcScopes.AUTH,
             },
         };
+
+        foreach (string scope in scopes)
+        {
+            descriptor.Permissions.Add(OpenIddictConstants.Permissions.Prefixes.Scope + scope);
+        }
 
         await UpsertApplicationAsync(client.ClientId, descriptor, cancellationToken);
     }
