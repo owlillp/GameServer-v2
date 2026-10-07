@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design"/>
+        <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore"/>
+        <PackageReference Include="Scalar.AspNetCore" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="owlip.shared.framework" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\CatalogService.Contracts\CatalogService.Contracts.csproj" />
+      <ProjectReference Include="..\CatalogService.Core\CatalogService.Core.csproj" />
+      <ProjectReference Include="..\CatalogService.Domain\CatalogService.Domain.csproj" />
+      <ProjectReference Include="..\CatalogService.Infrastructure.Postgres\CatalogService.Infrastructure.Postgres.csproj" />
+    </ItemGroup>
+
+</Project>

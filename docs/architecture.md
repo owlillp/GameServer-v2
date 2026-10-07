@@ -213,6 +213,34 @@ Kafka-топики ключуются по `player_id` / `clan_id` — поря�
 | `clan.war.points.updated` | ClanWar | Kafka | Leaderboard, аналитика |
 | `clan.season.locked/payout.completed` | ClanWar | Rabbit + Kafka | Inventory/Wallet/Mail, Leaderboard, аналитика |
 
+### 4.5 Переход на gRPC (план)
+
+Принцип: **gRPC — только для внутренних service-to-service вызовов**; REST/JSON
+остаётся для клиента, админки и внешних интеграций. Оба транспорта — тонкие
+адаптеры над одними и теми же handler'ами (`Core`), логика, валидация и
+идемпотентность не дублируются. Доменные `Error` конвертируются единым маппером
+(HTTP-статус для REST / gRPC-статус для gRPC).
+
+| Вызов | Сейчас | Целевой транспорт | Фаза |
+| --- | --- | --- | --- |
+| Store → Wallet `Reserve` / `Commit` / `Release` | REST, service-token | gRPC unary | 1 (Commerce) |
+| Игровой сервер → SessionService (отчёты о матчах) | — | gRPC (server/bidi streaming) | 2 |
+| BFF → сервисы (агрегация экрана входа) | — | gRPC unary (параллельно) | 3 |
+
+Правила внедрения:
+
+- контракт — отдельный проект/пакет (`.proto`), версионируется; номера полей не
+  переиспользуются, старые методы не ломаются;
+- аутентификация — тот же service-токен (`client_credentials`, scope на
+  операцию) в gRPC-**metadata** (`authorization: Bearer …`);
+- deadlines/таймауты 1–2 s; retry только для идемпотентных операций
+  (`Reserve`/`Commit`/`Release` по `operation_id`); circuit breaker на каждую
+  зависимость;
+- gRPC **не выставляется в интернет** — только внутри compose/service mesh;
+  наружу — REST, BFF или grpc-web; отдельный ingress-путь через nginx не
+  создаётся;
+- добавляется параллельно REST: существующие REST-эндпоинты не удаляются.
+
 ## 5. Данные
 
 ### 5.1 Владение
@@ -504,6 +532,7 @@ rank, points)`; `RewardPayout(payout_id, season_id, clan_id, status)`.
 | --- | --- | --- |
 | 0. Фундамент | Shared.Messaging (outbox/inbox, MassTransit), конверт событий, шаблон сервиса, Redis/RabbitMQ в compose, observability | новый сервис поднимается из шаблона, событие доходит end-to-end |
 | 1. Игрок и экономика | Player, Catalog, Inventory, Wallet, Store (игровая валюта), Session-контракт (заглушка отчётов) | покупка одежды/оружия/машины/детали, гараж и тюнинг, профиль |
+| 1.5 gRPC-транспорт | `.proto`-контракт Wallet `Reserve/Commit/Release`, gRPC-сервер рядом с REST, gRPC-клиент в Store; общий маппер ошибок | Store вызывает Wallet по gRPC, REST-эндпоинты кошелька продолжают работать |
 | 2. Сезонный контент | BattlePass, Events, Clan, ClanWar, Leaderboard, реальные отчёты матчей | BP-сезон, летний/новогодний ивент, клан-войны и выплата сезона |
 | 3. Донат и сервис-полировка | Payment, hard-валюта, premium BP, Notification/Mail, BFF, аналитика | донат end-to-end, возвраты, почта, агрегированный экран входа |
 | 4. Масштаб | реплики/шардирование PG, Kafka-реплей, canary, anti-fraud ML-сигналы | нагрузочный тест 50k+ CCU, сезонный «шторм» выдерживается |

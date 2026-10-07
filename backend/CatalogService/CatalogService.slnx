@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/SolutionFolder/">
+    <File Path="../.editorconfig" />
+    <File Path="../.gitignore" />
+    <File Path="../Directory.Build.props" />
+    <File Path="../Directory.Packages.props" />
+    <File Path="../nuget.config" />
+  </Folder>
+  <Project Path="src/CatalogService.Contracts/CatalogService.Contracts.csproj" />
+  <Project Path="src/CatalogService.Core/CatalogService.Core.csproj" />
+  <Project Path="src/CatalogService.Domain/CatalogService.Domain.csproj" />
+  <Project Path="src/CatalogService.Infrastructure.Postgres/CatalogService.Infrastructure.Postgres.csproj" />
+  <Project Path="src/CatalogService.Web/CatalogService.Web.csproj" />
+  <Project Path="../Shared/IntegrationEvents/Shared.IntegrationEvents.csproj" />
+</Solution>
