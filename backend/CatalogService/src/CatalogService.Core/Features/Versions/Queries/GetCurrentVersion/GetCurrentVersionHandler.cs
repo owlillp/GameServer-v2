@@ -1,9 +1,8 @@
 using CatalogService.Contracts.Dtos;
 using CatalogService.Core.Abstractions;
 using CatalogService.Core.Cache;
-using CatalogService.Core.Features.Items.Models;
+using CatalogService.Core.Features.Versions.Models;
 using CatalogService.Domain.Items;
-using CatalogService.Domain.Versions;
 using CSharpFunctionalExtensions;
 using Microsoft.Extensions.Caching.Hybrid;
 using Shared.Core.Abstractions;
@@ -47,6 +46,6 @@ public sealed class GetCurrentVersionHandler(
         var versionResult = await versionRepository.GetByNumberAsync(number, cancellationToken);
         return versionResult.IsFailure
             ? null
-            : ItemMapper.ToDto(versionResult.Value);
+            : VersionMapper.ToDto(versionResult.Value, isCurrent: true);
     }
 }

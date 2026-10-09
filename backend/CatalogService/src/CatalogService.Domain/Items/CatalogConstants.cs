@@ -13,4 +13,6 @@ public static class CatalogConstants
     public const int CURRENCY_MAX_LENGTH = 16;
 
     public const string UNIVERSAL_FIT_TAG = "universal";
+
+    public const string MODEL_FIT_PREFIX = "model:";
 }

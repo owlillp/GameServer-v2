@@ -48,7 +48,7 @@ public sealed record CatalogItemSnapshot(
             Code,
             Enum.Parse<ItemKind>(Kind),
             Enum.Parse<ItemRarity>(Rarity),
-            ItemStatus.Published,
+            ItemStatus.PUBLISHED,
             DisplayName,
             Description,
             ModelCode,

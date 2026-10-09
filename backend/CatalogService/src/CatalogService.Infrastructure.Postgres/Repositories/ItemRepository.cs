@@ -65,7 +65,7 @@ public sealed class ItemRepository(
 
             if (!includeArchived)
             {
-                query = query.Where(item => item.Status != ItemStatus.Archived);
+                query = query.Where(item => item.Status != ItemStatus.ARCHIVED);
             }
 
             List<Item> items = await query.ToListAsync(cancellationToken);

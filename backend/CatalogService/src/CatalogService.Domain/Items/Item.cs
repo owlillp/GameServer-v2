@@ -63,7 +63,7 @@ public sealed class Item
         Code = code;
         Kind = kind;
         Rarity = rarity;
-        Status = ItemStatus.Draft;
+        Status = ItemStatus.DRAFT;
         DisplayName = displayName;
         Description = description;
         ModelCode = modelCode;
@@ -149,7 +149,7 @@ public sealed class Item
         IReadOnlyList<string>? tags,
         IReadOnlyList<string>? fitTags)
     {
-        if (Status == ItemStatus.Archived)
+        if (Status == ItemStatus.ARCHIVED)
         {
             return CatalogErrors.ItemAlreadyArchived;
         }
@@ -197,7 +197,7 @@ public sealed class Item
         Slot = slotResult.Value;
         Tags = tagsResult.Value;
         FitTags = fitResult.Value;
-        Status = ItemStatus.Draft;
+        Status = ItemStatus.DRAFT;
         UpdatedAt = DateTime.UtcNow;
 
         return UnitResult.Success<Error>();
@@ -205,19 +205,31 @@ public sealed class Item
 
     public UnitResult<Error> Archive()
     {
-        if (Status == ItemStatus.Archived)
+        if (Status == ItemStatus.ARCHIVED)
         {
             return CatalogErrors.ItemAlreadyArchived;
         }
 
-        Status = ItemStatus.Archived;
+        Status = ItemStatus.ARCHIVED;
+        UpdatedAt = DateTime.UtcNow;
+        return UnitResult.Success<Error>();
+    }
+
+    public UnitResult<Error> Reactivate()
+    {
+        if (Status != ItemStatus.ARCHIVED)
+        {
+            return CatalogErrors.ItemNotArchived;
+        }
+
+        Status = ItemStatus.DRAFT;
         UpdatedAt = DateTime.UtcNow;
         return UnitResult.Success<Error>();
     }
 
     public void MarkPublished(long version)
     {
-        Status = ItemStatus.Published;
+        Status = ItemStatus.PUBLISHED;
         LastPublishedVersion = version;
         UpdatedAt = DateTime.UtcNow;
     }
@@ -275,7 +287,7 @@ public sealed class Item
         Slot = snapshot.Slot;
         Tags = [.. snapshot.Tags];
         FitTags = [.. snapshot.FitTags];
-        Status = ItemStatus.Published;
+        Status = ItemStatus.PUBLISHED;
         LastPublishedVersion = version;
         UpdatedAt = DateTime.UtcNow;
 
@@ -371,7 +383,7 @@ public sealed class Item
         var capabilities = new List<string>(Tags);
         if (!string.IsNullOrWhiteSpace(ModelCode))
         {
-            capabilities.Add(ModelCode);
+            capabilities.Add($"{CatalogConstants.MODEL_FIT_PREFIX}{ModelCode}");
         }
 
         return capabilities;
@@ -429,7 +441,7 @@ public sealed class Item
     {
         if (string.IsNullOrWhiteSpace(modelCode))
         {
-            return kind == ItemKind.Car ? CatalogErrors.ModelCodeRequired : (string?)null;
+            return kind == ItemKind.CAR ? CatalogErrors.ModelCodeRequired : (string?)null;
         }
 
         string normalized = modelCode.Trim().ToLowerInvariant();
@@ -461,7 +473,7 @@ public sealed class Item
         NormalizeTagList("tags", tags, required: false);
 
     private static Result<string[], Error> NormalizeFitTags(ItemKind kind, IReadOnlyList<string>? fitTags) =>
-        NormalizeTagList("fitTags", fitTags, required: kind == ItemKind.CarPart);
+        NormalizeTagList("fitTags", fitTags, required: kind == ItemKind.CAR_PART);
 
     private static Result<string[], Error> NormalizeTagList(
         string field,

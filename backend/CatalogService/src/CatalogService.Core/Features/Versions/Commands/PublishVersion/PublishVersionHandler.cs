@@ -2,7 +2,7 @@ using System.Text.Json;
 using CatalogService.Contracts.Dtos;
 using CatalogService.Core.Abstractions;
 using CatalogService.Core.Cache;
-using CatalogService.Core.Features.Items.Models;
+using CatalogService.Core.Features.Versions.Models;
 using CatalogService.Core.Messaging.Publishers;
 using CatalogService.Domain.Items;
 using CatalogService.Domain.Versions;
@@ -81,6 +81,6 @@ public sealed class PublishVersionHandler(
 
         await cacheInvalidator.InvalidateAllAsync(cancellationToken);
 
-        return ItemMapper.ToDto(version);
+        return VersionMapper.ToDto(version, isCurrent: true);
     }
 }

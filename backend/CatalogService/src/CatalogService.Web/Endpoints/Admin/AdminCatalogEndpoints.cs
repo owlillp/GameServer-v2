@@ -2,10 +2,13 @@ using CatalogService.Contracts.Dtos;
 using CatalogService.Contracts.Requests;
 using CatalogService.Core.Features.Items.Commands.ArchiveItem;
 using CatalogService.Core.Features.Items.Commands.CreateItem;
+using CatalogService.Core.Features.Items.Commands.ReactivateItem;
 using CatalogService.Core.Features.Items.Commands.UpdateItem;
 using CatalogService.Core.Features.Items.Queries.GetAdminItems;
 using CatalogService.Core.Features.Versions.Commands.PublishVersion;
 using CatalogService.Core.Features.Versions.Commands.RollbackVersion;
+using CatalogService.Core.Features.Versions.Queries.GetVersion;
+using CatalogService.Core.Features.Versions.Queries.GetVersions;
 using CatalogService.Domain.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Authentication.Authentication.UserScope;
@@ -46,6 +49,21 @@ public sealed class AdminCatalogEndpoints : IEndpointGroup
             .WithSummary("Архивировать предмет")
             .RequirePermissions(CatalogPermissions.Catalog.MANAGE);
 
+        group.MapPost("/items/{itemId:guid}/reactivate", ReactivateItem)
+            .WithName("Admin.Catalog.Items.Reactivate")
+            .WithSummary("Вернуть предмет в работу (из архива)")
+            .RequirePermissions(CatalogPermissions.Catalog.MANAGE);
+
+        group.MapGet("/versions", GetVersions)
+            .WithName("Admin.Catalog.Versions.List")
+            .WithSummary("Список опубликованных версий каталога")
+            .RequirePermissions(CatalogPermissions.Catalog.VIEW);
+
+        group.MapGet("/versions/{number:long}", GetVersion)
+            .WithName("Admin.Catalog.Versions.Get")
+            .WithSummary("Содержимое и статус выбранной версии каталога")
+            .RequirePermissions(CatalogPermissions.Catalog.VIEW);
+
         group.MapPost("/versions", PublishVersion)
             .WithName("Admin.Catalog.Versions.Publish")
             .WithSummary("Опубликовать новую версию каталога")
@@ -84,6 +102,23 @@ public sealed class AdminCatalogEndpoints : IEndpointGroup
         [FromServices] ICommandHandler<ItemDetailDto, ArchiveItemCommand> handler,
         CancellationToken ct) =>
         await handler.Handle(new ArchiveItemCommand(itemId), ct);
+
+    private static async Task<EndpointResult<ItemDetailDto>> ReactivateItem(
+        [FromRoute] Guid itemId,
+        [FromServices] ICommandHandler<ItemDetailDto, ReactivateItemCommand> handler,
+        CancellationToken ct) =>
+        await handler.Handle(new ReactivateItemCommand(itemId), ct);
+
+    private static async Task<EndpointResult<IReadOnlyList<CatalogVersionDto>>> GetVersions(
+        [FromServices] IQueryHandler<IReadOnlyList<CatalogVersionDto>, GetVersionsQuery> handler,
+        CancellationToken ct) =>
+        await handler.Handle(new GetVersionsQuery(), ct);
+
+    private static async Task<EndpointResult<CatalogVersionDetailDto>> GetVersion(
+        [FromRoute] long number,
+        [FromServices] IQueryHandler<CatalogVersionDetailDto, GetVersionQuery> handler,
+        CancellationToken ct) =>
+        await handler.Handle(new GetVersionQuery(number), ct);
 
     private static async Task<EndpointResult<CatalogVersionDto>> PublishVersion(
         [FromBody] PublishVersionRequest request,

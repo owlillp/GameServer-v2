@@ -9,6 +9,7 @@ const items = [
   { href: routes.admin, label: "Обзор" },
   { href: routes.adminUsers, label: "Пользователи" },
   { href: routes.adminWallets, label: "Кошельки" },
+  { href: routes.adminCatalog, label: "Каталог" },
 ] as const;
 
 export function AdminNav() {

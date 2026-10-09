@@ -16,6 +16,9 @@ public static class CatalogErrors
     public static Error ItemAlreadyArchived { get; } =
         Error.Validation("catalog.item.already_archived", "Item is already archived", "itemId");
 
+    public static Error ItemNotArchived { get; } =
+        Error.Validation("catalog.item.not_archived", "Item is not archived", "itemId");
+
     public static Error FitTagsRequired { get; } =
         Error.Validation("catalog.item.fit_tags.required", "Car part must declare at least one fit tag", "fitTags");
 

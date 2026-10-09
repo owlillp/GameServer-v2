@@ -8,7 +8,7 @@ public static class CompatibilityEvaluator
 {
     public static bool IsCompatible(Item car, Item part)
     {
-        if (car.Kind != ItemKind.Car || part.Kind != ItemKind.CarPart)
+        if (car.Kind != ItemKind.CAR || part.Kind != ItemKind.CAR_PART)
         {
             return false;
         }

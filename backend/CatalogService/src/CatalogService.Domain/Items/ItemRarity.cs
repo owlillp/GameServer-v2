@@ -2,9 +2,9 @@ namespace CatalogService.Domain.Items;
 
 public enum ItemRarity
 {
-    Common,
-    Uncommon,
-    Rare,
-    Epic,
-    Legendary
+    COMMON,
+    UNCOMMON,
+    RARE,
+    EPIC,
+    LEGENDARY
 }

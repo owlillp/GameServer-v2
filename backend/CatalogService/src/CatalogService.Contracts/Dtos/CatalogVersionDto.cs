@@ -6,4 +6,5 @@ public sealed record CatalogVersionDto(
     string? Note,
     Guid? PublishedBy,
     DateTime PublishedAt,
-    int ItemCount);
+    int ItemCount,
+    string Status);

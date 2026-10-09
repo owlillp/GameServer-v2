@@ -19,7 +19,7 @@ public sealed class GetCompatiblePartsHandler(IReadDbContext dbContext)
         Item? car = await dbContext.ItemsRead
             .AsNoTracking()
             .FirstOrDefaultAsync(
-                item => item.Id == query.CarItemId && item.Status == ItemStatus.Published,
+                item => item.Id == query.CarItemId && item.Status == ItemStatus.PUBLISHED,
                 cancellationToken);
 
         if (car is null)
@@ -27,7 +27,7 @@ public sealed class GetCompatiblePartsHandler(IReadDbContext dbContext)
             return CatalogErrors.ItemNotFound(query.CarItemId);
         }
 
-        if (car.Kind != ItemKind.Car)
+        if (car.Kind != ItemKind.CAR)
         {
             return GeneralErrors.ValueIsInvalid("carItemId");
         }
@@ -36,7 +36,7 @@ public sealed class GetCompatiblePartsHandler(IReadDbContext dbContext)
 
         List<Item> parts = await dbContext.ItemsRead
             .AsNoTracking()
-            .Where(item => item.Kind == ItemKind.CarPart && item.Status == ItemStatus.Published)
+            .Where(item => item.Kind == ItemKind.CAR_PART && item.Status == ItemStatus.PUBLISHED)
             .ToListAsync(cancellationToken);
 
         IEnumerable<Item> compatible = parts.Where(part => CompatibilityEvaluator.IsCompatible(car, part));

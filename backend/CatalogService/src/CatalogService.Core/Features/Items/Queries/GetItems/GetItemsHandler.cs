@@ -55,7 +55,7 @@ public sealed class GetItemsHandler(
         IQueryable<Item> query = dbContext.ItemsRead
             .AsNoTracking()
             .Include(item => item.Prices)
-            .Where(item => item.Status == ItemStatus.Published);
+            .Where(item => item.Status == ItemStatus.PUBLISHED);
 
         if (kind is not null)
         {

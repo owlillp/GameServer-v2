@@ -2,11 +2,7 @@ namespace CatalogService.Domain.Items;
 
 public enum ItemKind
 {
-    Clothing,
-    Weapon,
-    Car,
-    CarPart,
-    Skin,
-    Consumable,
-    Emote
+    CLOTHING,
+    CAR,
+    CAR_PART,
 }

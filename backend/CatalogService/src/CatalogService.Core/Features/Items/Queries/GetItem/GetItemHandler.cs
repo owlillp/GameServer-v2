@@ -39,7 +39,7 @@ public sealed class GetItemHandler(
             .Include(entity => entity.Prices)
             .Include(entity => entity.Availability)
             .FirstOrDefaultAsync(
-                entity => entity.Id == itemId && entity.Status == ItemStatus.Published,
+                entity => entity.Id == itemId && entity.Status == ItemStatus.PUBLISHED,
                 cancellationToken);
 
         return item is null

@@ -2,7 +2,7 @@ using System.Text.Json;
 using CatalogService.Contracts.Dtos;
 using CatalogService.Core.Abstractions;
 using CatalogService.Core.Cache;
-using CatalogService.Core.Features.Items.Models;
+using CatalogService.Core.Features.Versions.Models;
 using CatalogService.Core.Messaging.Publishers;
 using CatalogService.Domain.Items;
 using CatalogService.Domain.Versions;
@@ -81,7 +81,7 @@ public sealed class RollbackVersionHandler(
         var restoredIds = restored.Select(item => item.Id).ToHashSet();
         foreach (Item item in existingResult.Value)
         {
-            if (!restoredIds.Contains(item.Id) && item.Status != ItemStatus.Archived)
+            if (!restoredIds.Contains(item.Id) && item.Status != ItemStatus.ARCHIVED)
             {
                 item.Archive();
             }
@@ -128,6 +128,6 @@ public sealed class RollbackVersionHandler(
 
         await cacheInvalidator.InvalidateAllAsync(cancellationToken);
 
-        return ItemMapper.ToDto(version);
+        return VersionMapper.ToDto(version, isCurrent: true);
     }
 }

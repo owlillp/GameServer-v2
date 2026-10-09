@@ -6,7 +6,7 @@ import type { OidcTokens } from "@/src/shared/stores/session-store";
 
 const AUTHORITY = process.env.NEXT_PUBLIC_API_URL ?? "";
 const CLIENT_ID = process.env.NEXT_PUBLIC_OIDC_CLIENT_ID ?? "gameserver-v2-web";
-const SCOPE = "openid profile email offline_access auth profiles wallet";
+const SCOPE = "openid profile email offline_access auth profiles wallet catalog";
 const STORAGE_KEY = "gameserver-v2-oidc";
 
 type PkceState = {

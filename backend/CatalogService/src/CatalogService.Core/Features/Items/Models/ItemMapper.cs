@@ -1,6 +1,5 @@
 using CatalogService.Contracts.Dtos;
 using CatalogService.Domain.Items;
-using CatalogService.Domain.Versions;
 
 namespace CatalogService.Core.Features.Items.Models;
 
@@ -51,13 +50,4 @@ internal static class ItemMapper
             [.. item.Availability.Select(window => new AvailabilityWindowDto(window.StartsAt, window.EndsAt, window.Channel))],
             item.CreatedAt,
             item.UpdatedAt);
-
-    public static CatalogVersionDto ToDto(CatalogVersion version) =>
-        new(
-            version.Id,
-            version.Number,
-            version.Note,
-            version.PublishedBy,
-            version.PublishedAt,
-            version.Items.Count);
 }
