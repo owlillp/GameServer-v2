@@ -11,6 +11,7 @@ Docker. Единый вход (OIDC) и разделение интерфейс�
 | `ProfileService` | Игровой профиль игрока (ник, регион) и identity-поля из access-токена |
 | `WalletService` | Балансы валют и ledger-журнал операций                                 |
 | `CatalogService` | Каталог контента: предметы, цены, характеристики, совместимость деталей, неизменяемые версии |
+| `InventoryService` | Владение игрока: предметы, аутфит, гараж и тюнинг машин, выдача/отзыв |
 
 AuthService выдаёт токены (Authorization Code + PKCE, refresh и
 client_credentials) и отдаёт админские данные:
@@ -48,6 +49,19 @@ CatalogService хранит контент каталога с неизменя�
 
 Порт разработки CatalogService — `5281`
 (`dotnet run --project backend/CatalogService/src/CatalogService.Web`).
+
+InventoryService ведёт владение игрока и предоставляет админ-методы редактирования:
+
+- `/inventory/me` — инвентарь текущего игрока;
+- `/inventory/outfit/{slot}` (PUT/DELETE), `/inventory/cars*` — аутфит и гараж;
+- `/inventory/{accountId}/grant`, `/inventory/{accountId}/revoke` — внутренние
+  выдача/отзыв (service-токен, идемпотентно по `operationId`);
+- `/admin/inventory/{accountId}` — карточка инвентаря (`inventory.view`);
+- `/admin/inventory/{accountId}/grant|revoke|outfit|cars...` — редактирование
+  инвентаря игрока админом (`inventory.manage`).
+
+Порт разработки InventoryService — `5283`
+(`dotnet run --project backend/InventoryService/src/InventoryService.Web`).
 
 Порт разработки AuthService — `5280`
 (`dotnet run --project backend/AuthService/src/AuthService.Web`).
