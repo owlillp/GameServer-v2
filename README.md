@@ -10,6 +10,7 @@ Docker. Единый вход (OIDC) и разделение интерфейс�
 | `AuthService` | OIDC-провайдер (OpenIddict + ASP.NET Identity) и JSON API аккаунтов      |
 | `ProfileService` | Игровой профиль игрока (ник, регион) и identity-поля из access-токена |
 | `WalletService` | Балансы валют и ledger-журнал операций                                 |
+| `CatalogService` | Каталог контента: предметы, цены, характеристики, совместимость деталей, неизменяемые версии |
 
 AuthService выдаёт токены (Authorization Code + PKCE, refresh и
 client_credentials) и отдаёт админские данные:
@@ -34,6 +35,19 @@ WalletService ведёт балансы и журнал операций:
 - `/admin/wallets/{id}`, `/admin/wallets/{id}/transactions` — карточка игрока
   (балансы и история, `wallets.view`);
 - `/admin/wallets/currencies` — создание/удаление валют (`wallets.manage`).
+
+CatalogService хранит контент каталога с неизменяемыми версиями (снапшоты в
+`jsonb`), кэширует чтения в Redis (`HybridCache`) и отдаёт ETag по номеру версии:
+
+- `/catalog/items`, `/catalog/items/{id}`, `/catalog/version` — опубликованный
+  каталог;
+- `/catalog/items/{carItemId}/compatible-parts` — совместимые детали машины
+  (способности машины + `FitTags` детали);
+- `/admin/catalog/items` — CRUD предметов, включая черновики (`catalog.manage`);
+- `/admin/catalog/versions` — публикация версии, `/versions/rollback` — откат.
+
+Порт разработки CatalogService — `5281`
+(`dotnet run --project backend/CatalogService/src/CatalogService.Web`).
 
 Порт разработки AuthService — `5280`
 (`dotnet run --project backend/AuthService/src/AuthService.Web`).
@@ -195,6 +209,16 @@ dotnet test
 | GET   | `/admin/wallets/{id}/transactions` | `wallets.view` | История операций игрока         |
 | POST  | `/admin/wallets/currencies`  | `wallets.manage` | Создание валюты                     |
 | DELETE | `/admin/wallets/currencies/{code}` | `wallets.manage` | Удаление (деактивация) валюты |
+| GET   | `/catalog/items` | аутентификация | Список опубликованных предметов (CatalogService) |
+| GET   | `/catalog/items/{id}` | аутентификация | Карточка опубликованного предмета |
+| GET   | `/catalog/items/{carId}/compatible-parts` | аутентификация | Совместимые детали машины |
+| GET   | `/catalog/version` | аутентификация | Текущая опубликованная версия каталога |
+| GET   | `/admin/catalog/items` | `catalog.view` | Список предметов (включая черновики) |
+| POST  | `/admin/catalog/items` | `catalog.manage` | Создать предмет |
+| PUT   | `/admin/catalog/items/{id}` | `catalog.manage` | Обновить предмет |
+| DELETE | `/admin/catalog/items/{id}` | `catalog.manage` | Архивировать предмет |
+| POST  | `/admin/catalog/versions` | `catalog.manage` | Опубликовать новую версию каталога |
+| POST  | `/admin/catalog/versions/rollback` | `catalog.manage` | Откатить каталог к версии |
 | GET   | `/admin/users`   | `users.view`   | Список аккаунтов с поиском и пагинацией    |
 | GET   | `/admin/stats`   | `users.view`   | Сводка: всего/админы/модераторы/заблокированы |
 | GET   | `/health`        | —              | Health-check (Postgres)                    |

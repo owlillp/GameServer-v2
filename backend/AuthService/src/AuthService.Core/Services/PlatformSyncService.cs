@@ -18,11 +18,13 @@ public sealed class PlatformSyncService(
         await UpsertScopeAsync(OidcScopes.CLANS, "ClanService API Access", OidcScopes.Resources.CLANS_RESOURCE, cancellationToken);
         await UpsertScopeAsync(OidcScopes.PROFILES, "ProfileService API Access", OidcScopes.Resources.PROFILES_RESOURCE, cancellationToken);
         await UpsertScopeAsync(OidcScopes.WALLET, "WalletService API Access", OidcScopes.Resources.WALLET_RESOURCE, cancellationToken);
+        await UpsertScopeAsync(OidcScopes.CATALOG, "CatalogService API Access", OidcScopes.Resources.CATALOG_RESOURCE, cancellationToken);
 
         await UpsertPublicClientAsync(options.Clients.Web, allowPasswordGrant: false, cancellationToken);
         await UpsertPublicClientAsync(options.Clients.Unity, allowPasswordGrant: true, cancellationToken);
         await UpsertServiceClientAsync(options.Clients.ClanService, [OidcScopes.AUTH], cancellationToken);
         await UpsertServiceClientAsync(options.Clients.WalletService, [OidcScopes.WALLET], cancellationToken);
+        await UpsertServiceClientAsync(options.Clients.CatalogService, [OidcScopes.CATALOG], cancellationToken);
     }
 
     private async Task SeedRolesAsync()
@@ -94,6 +96,7 @@ public sealed class PlatformSyncService(
                 OpenIddictConstants.Permissions.Prefixes.Scope + OidcScopes.CLANS,
                 OpenIddictConstants.Permissions.Prefixes.Scope + OidcScopes.PROFILES,
                 OpenIddictConstants.Permissions.Prefixes.Scope + OidcScopes.WALLET,
+                OpenIddictConstants.Permissions.Prefixes.Scope + OidcScopes.CATALOG,
             },
         };
 

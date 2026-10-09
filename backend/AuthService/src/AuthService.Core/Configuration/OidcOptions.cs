@@ -22,6 +22,8 @@ public sealed class OidcClientsOptions
     public OidcClientOptions ClanService { get; init; } = new();
 
     public OidcClientOptions WalletService { get; init; } = new();
+
+    public OidcClientOptions CatalogService { get; init; } = new();
 }
 
 public sealed class OidcClientOptions
