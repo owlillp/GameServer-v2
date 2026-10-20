@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Protobuf Include="..\Protos\wallet.proto" GrpcServices="Both" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Google.Protobuf" />
+      <PackageReference Include="Grpc.Core.Api" />
+      <PackageReference Include="Grpc.Tools" PrivateAssets="All" />
+    </ItemGroup>
+
+</Project>

@@ -217,6 +217,57 @@ services:
         condition: service_completed_successfully
     restart: always
 
+  store-migrator:
+    container_name: gameserver-v2-store-migrator
+    build:
+      context: ./backend
+      dockerfile: StoreService/Dockerfile
+      target: migrations
+      args:
+        NUGET_USERNAME: ${NUGET_USERNAME}
+      secrets:
+        - nuget_password
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ConnectionStrings__StoreDb=${ConnectionStrings__StoreDb}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["--connection", "${ConnectionStrings__StoreDb}"]
+    restart: "no"
+
+  store-service:
+    container_name: gameserver-v2-store-service
+    build:
+      context: ./backend
+      dockerfile: StoreService/Dockerfile
+      args:
+        NUGET_USERNAME: ${NUGET_USERNAME}
+      secrets:
+        - nuget_password
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_URLS=http://+:8080
+      - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
+      - ConnectionStrings__StoreDb=${ConnectionStrings__StoreDb}
+      - ConnectionStrings__RabbitMQ=${ConnectionStrings__RabbitMQ}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+      wallet-service:
+        condition: service_started
+      catalog-service:
+        condition: service_started
+      inventory-service:
+        condition: service_started
+      store-migrator:
+        condition: service_completed_successfully
+    restart: always
+
   postgres:
     container_name: gameserver-v2-postgres
     image: postgres:17-alpine
@@ -298,6 +349,7 @@ services:
       - wallet-service
       - catalog-service
       - inventory-service
+      - store-service
       - frontend
     restart: always
 

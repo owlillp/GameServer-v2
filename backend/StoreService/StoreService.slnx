@@ -1,0 +1,19 @@
+<Solution>
+  <Folder Name="/SolutionFolder/">
+    <File Path="../.editorconfig" />
+    <File Path="../.gitignore" />
+    <File Path="../Directory.Build.props" />
+    <File Path="../Directory.Packages.props" />
+    <File Path="../nuget.config" />
+  </Folder>
+  <Project Path="src/StoreService.Contracts/StoreService.Contracts.csproj" />
+  <Project Path="src/StoreService.Core/StoreService.Core.csproj" />
+  <Project Path="src/StoreService.Domain/StoreService.Domain.csproj" />
+  <Project Path="src/StoreService.Infrastructure.Postgres/StoreService.Infrastructure.Postgres.csproj" />
+  <Project Path="src/StoreService.Web/StoreService.Web.csproj" />
+  <Project Path="../Shared/IntegrationEvents/Shared.IntegrationEvents.csproj" />
+  <Project Path="../Shared/Grpc/Shared.Grpc.Contracts.csproj" />
+  <Project Path="../Shared/Communication/Shared.Communication.csproj" />
+  <Project Path="../CatalogService/src/CatalogService.Contracts/CatalogService.Contracts.csproj" />
+  <Project Path="../WalletService/src/WalletService.Contracts/WalletService.Contracts.csproj" />
+</Solution>

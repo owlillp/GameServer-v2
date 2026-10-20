@@ -12,4 +12,5 @@
   <Project Path="src/CatalogService.Infrastructure.Postgres/CatalogService.Infrastructure.Postgres.csproj" />
   <Project Path="src/CatalogService.Web/CatalogService.Web.csproj" />
   <Project Path="../Shared/IntegrationEvents/Shared.IntegrationEvents.csproj" />
+  <Project Path="../Shared/Communication/Shared.Communication.csproj" />
 </Solution>

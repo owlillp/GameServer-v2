@@ -12,4 +12,6 @@
   <Project Path="src/WalletService.Infrastructure.Postgres/WalletService.Infrastructure.Postgres.csproj" />
   <Project Path="src/WalletService.Web/WalletService.Web.csproj" />
   <Project Path="../Shared/IntegrationEvents/Shared.IntegrationEvents.csproj" />
+  <Project Path="../Shared/Grpc/Shared.Grpc.Contracts.csproj" />
+  <Project Path="../Shared/Communication/Shared.Communication.csproj" />
 </Solution>

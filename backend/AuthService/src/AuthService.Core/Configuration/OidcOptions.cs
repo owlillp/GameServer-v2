@@ -26,6 +26,8 @@ public sealed class OidcClientsOptions
     public OidcClientOptions CatalogService { get; init; } = new();
 
     public OidcClientOptions InventoryService { get; init; } = new();
+
+    public OidcClientOptions StoreService { get; init; } = new();
 }
 
 public sealed class OidcClientOptions

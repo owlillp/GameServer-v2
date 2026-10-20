@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using WalletService.Core.Abstractions;
 using WalletService.Domain.Wallets;
+using WalletService.Domain.Wallets.Holds;
 using WalletService.Domain.Wallets.Ledgers;
 using Wolverine.EntityFrameworkCore;
 
@@ -17,11 +18,15 @@ public class WalletServiceDbContext(DbContextOptions<WalletServiceDbContext> opt
 
     public DbSet<CurrencyDefinition> Currencies => Set<CurrencyDefinition>();
 
+    public DbSet<Hold> Holds => Set<Hold>();
+
     public IQueryable<Wallet> WalletsRead => Wallets.AsQueryable().AsNoTracking();
 
     public IQueryable<LedgerEntry> LedgerRead => LedgerEntries.AsQueryable().AsNoTracking();
 
     public IQueryable<CurrencyDefinition> CurrenciesRead => Currencies.AsQueryable().AsNoTracking();
+
+    public IQueryable<Hold> HoldsRead => Holds.AsQueryable().AsNoTracking();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -25,6 +25,7 @@ public static class AppConfigurationExtensions
         }
 
         app.MapHealthChecks("/health").AllowAnonymous();
+        app.MapGrpcService<WalletService.Web.Grpc.WalletReservationGrpcService>().RequireAuthorization();
         app.MapEndpoints();
         app.MapEndpointGroups(typeof(AppConfigurationExtensions).Assembly);
 

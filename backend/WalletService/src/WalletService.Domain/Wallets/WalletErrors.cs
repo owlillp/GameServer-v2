@@ -15,4 +15,13 @@ public static class WalletErrors
 
     public static Error OperationAlreadyProcessed { get; } =
         Error.Conflict("wallet.operation.duplicate", "Operation has already been processed", "operationId");
+
+    public static Error HoldNotFound { get; } =
+        Error.Validation("wallet.hold.not_found", "Hold was not found", "holdId");
+
+    public static Error HoldAlreadyCommitted { get; } =
+        Error.Conflict("wallet.hold.committed", "Hold has already been committed", "holdId");
+
+    public static Error HoldAlreadyReleased { get; } =
+        Error.Conflict("wallet.hold.released", "Hold has already been released", "holdId");
 }

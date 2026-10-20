@@ -7,6 +7,7 @@ using WalletService.Core.Abstractions;
 using WalletService.Core.Features.Wallets.Models;
 using WalletService.Core.Messaging.Publishers;
 using WalletService.Domain.Wallets;
+using WalletService.Domain.Wallets.Holds;
 using WalletService.Domain.Wallets.Ledgers;
 
 namespace WalletService.Core.Services;
@@ -16,6 +17,15 @@ public interface IWalletService
     Task<Result<WalletDto, Error>> CreditAsync(WalletOperation operation, CancellationToken cancellationToken);
 
     Task<Result<WalletDto, Error>> DebitAsync(WalletOperation operation, CancellationToken cancellationToken);
+
+    Task<Result<Hold, Error>> ReserveAsync(
+        WalletOperation operation,
+        TimeSpan lifetime,
+        CancellationToken cancellationToken);
+
+    Task<Result<Hold, Error>> CommitAsync(Guid holdId, CancellationToken cancellationToken);
+
+    Task<Result<Hold, Error>> ReleaseAsync(Guid holdId, CancellationToken cancellationToken);
 }
 
 public sealed class WalletService(
@@ -29,6 +39,185 @@ public sealed class WalletService(
 
     public Task<Result<WalletDto, Error>> DebitAsync(WalletOperation operation, CancellationToken cancellationToken) =>
         WriteAsync(operation, LedgerDirection.Debit, cancellationToken);
+
+    public async Task<Result<Hold, Error>> ReserveAsync(
+        WalletOperation operation,
+        TimeSpan lifetime,
+        CancellationToken cancellationToken)
+    {
+        Hold? existing = await dbContext.HoldsRead.FirstOrDefaultAsync(
+            hold => hold.WalletId == operation.WalletId && hold.OperationId == operation.OperationId,
+            cancellationToken);
+
+        if (existing is not null)
+        {
+            return existing.Status == HoldStatus.RELEASED
+                ? WalletErrors.HoldAlreadyReleased
+                : existing;
+        }
+
+        bool currencyAvailable = await dbContext.CurrenciesRead.AnyAsync(
+            currency => currency.Code == operation.Currency.Code && currency.IsActive,
+            cancellationToken);
+
+        if (!currencyAvailable)
+        {
+            return WalletErrors.CurrencyUnavailable;
+        }
+
+        var transactionResult = await transactionManager.BeginTransactionAsync(cancellationToken);
+        if (transactionResult.IsFailure)
+        {
+            return transactionResult.Error;
+        }
+
+        var walletResult = await walletRepository.GetByAsync(
+            wallet => wallet.Id == operation.WalletId,
+            cancellationToken);
+
+        if (walletResult.IsFailure)
+        {
+            return walletResult.Error;
+        }
+
+        var wallet = walletResult.Value;
+        var debitResult = wallet.Debit(
+            operation.Currency,
+            operation.Amount,
+            operation.Reason,
+            operation.OperationId,
+            operation.ReferenceId,
+            operation.ActorType,
+            operation.ActorId,
+            operation.Comment);
+
+        if (debitResult.IsFailure)
+        {
+            return debitResult.Error;
+        }
+
+        var ledgerResult = await walletRepository.AddLedgerEntryAsync(debitResult.Value, cancellationToken);
+        if (ledgerResult.IsFailure)
+        {
+            return ledgerResult.Error;
+        }
+
+        var holdResult = Hold.Create(
+            operation.WalletId,
+            operation.OperationId,
+            operation.Currency,
+            operation.Amount,
+            operation.ReferenceId,
+            DateTime.UtcNow.Add(lifetime));
+
+        if (holdResult.IsFailure)
+        {
+            return holdResult.Error;
+        }
+
+        await walletRepository.AddHoldAsync(holdResult.Value, cancellationToken);
+
+        await eventPublisher.PublishDebitedAsync(
+            wallet.Id,
+            operation.Currency.Code,
+            operation.Amount,
+            operation.Reason,
+            operation.OperationId);
+
+        var commitResult = await transactionManager.CommitTransactionAsync(cancellationToken);
+        if (commitResult.IsFailure)
+        {
+            return commitResult.Error;
+        }
+
+        return holdResult.Value;
+    }
+
+    public async Task<Result<Hold, Error>> CommitAsync(Guid holdId, CancellationToken cancellationToken)
+    {
+        var holdResult = await walletRepository.GetHoldAsync(holdId, cancellationToken);
+        if (holdResult.IsFailure)
+        {
+            return holdResult.Error;
+        }
+
+        var hold = holdResult.Value;
+        var commitResult = hold.Commit();
+        if (commitResult.IsFailure)
+        {
+            return commitResult.Error;
+        }
+
+        var saveResult = await transactionManager.SaveChangesAsync(cancellationToken);
+        return saveResult.IsFailure ? saveResult.Error : hold;
+    }
+
+    public async Task<Result<Hold, Error>> ReleaseAsync(Guid holdId, CancellationToken cancellationToken)
+    {
+        var holdResult = await walletRepository.GetHoldAsync(holdId, cancellationToken);
+        if (holdResult.IsFailure)
+        {
+            return holdResult.Error;
+        }
+
+        var hold = holdResult.Value;
+        if (hold.Status == HoldStatus.RELEASED)
+        {
+            return hold;
+        }
+
+        var releaseResult = hold.Release();
+        if (releaseResult.IsFailure)
+        {
+            return releaseResult.Error;
+        }
+
+        var transactionResult = await transactionManager.BeginTransactionAsync(cancellationToken);
+        if (transactionResult.IsFailure)
+        {
+            return transactionResult.Error;
+        }
+
+        var walletResult = await walletRepository.GetByAsync(
+            wallet => wallet.Id == hold.WalletId,
+            cancellationToken);
+
+        if (walletResult.IsFailure)
+        {
+            return walletResult.Error;
+        }
+
+        var creditResult = walletResult.Value.Credit(
+            hold.Currency,
+            hold.Amount,
+            LedgerReason.Compensation,
+            hold.OperationId,
+            hold.Id.ToString(),
+            LedgerActorType.Service,
+            actorId: null,
+            comment: "Hold released");
+
+        if (creditResult.IsFailure)
+        {
+            return creditResult.Error;
+        }
+
+        var ledgerResult = await walletRepository.AddLedgerEntryAsync(creditResult.Value, cancellationToken);
+        if (ledgerResult.IsFailure)
+        {
+            return ledgerResult.Error;
+        }
+
+        await eventPublisher.PublishCreditedAsync(
+            hold.WalletId,
+            hold.Currency.Code,
+            hold.Amount,
+            LedgerReason.Compensation,
+            hold.OperationId);
+
+        var commitResult = await transactionManager.CommitTransactionAsync(cancellationToken);
+        return commitResult.IsFailure ? commitResult.Error : hold;
+    }
 
     private async Task<Result<WalletDto, Error>> WriteAsync(
         WalletOperation operation,
