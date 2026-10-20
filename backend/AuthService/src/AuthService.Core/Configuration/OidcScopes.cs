@@ -14,6 +14,8 @@ public static class OidcScopes
     public const string CATALOG = "catalog";
     public const string INVENTORY = "inventory";
     public const string STORE = "store";
+    public const string EVENTS = "events";
+    public const string REALTIME = "realtime";
 
     public static IReadOnlyList<string> All { get; } =
     [
@@ -28,6 +30,8 @@ public static class OidcScopes
         CATALOG,
         INVENTORY,
         STORE,
+        EVENTS,
+        REALTIME,
     ];
 
     public static class Resources
@@ -39,5 +43,7 @@ public static class OidcScopes
         public const string CATALOG_RESOURCE = "catalog-service";
         public const string INVENTORY_RESOURCE = "inventory-service";
         public const string STORE_RESOURCE = "store-service";
+        public const string EVENT_RESOURCE = "event-service";
+        public const string REALTIME_RESOURCE = "realtime-service";
     }
 }

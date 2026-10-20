@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/SolutionFolder/">
+    <File Path="../.editorconfig" />
+    <File Path="../.gitignore" />
+    <File Path="../Directory.Build.props" />
+    <File Path="../Directory.Packages.props" />
+    <File Path="../nuget.config" />
+  </Folder>
+  <Project Path="src/EventService.Contracts/EventService.Contracts.csproj" />
+  <Project Path="src/EventService.Core/EventService.Core.csproj" />
+  <Project Path="src/EventService.Domain/EventService.Domain.csproj" />
+  <Project Path="src/EventService.Infrastructure.Postgres/EventService.Infrastructure.Postgres.csproj" />
+  <Project Path="src/EventService.Web/EventService.Web.csproj" />
+  <Project Path="../Shared/IntegrationEvents/Shared.IntegrationEvents.csproj" />
+</Solution>

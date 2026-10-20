@@ -51,6 +51,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IInventoryRepository, InventoryRepository>();
         services.AddScoped<IInventoryEventPublisher, InventoryEventPublisher>();
         services.AddScoped<IStorePurchaseResultPublisher, StorePurchaseResultPublisher>();
+        services.AddScoped<IEventRewardResultPublisher, EventRewardResultPublisher>();
 
         services.AddSingleton<IWolverineExtension, InventoryWolverineExtension>();
 

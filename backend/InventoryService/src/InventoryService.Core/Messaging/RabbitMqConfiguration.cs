@@ -1,3 +1,6 @@
+using Shared.IntegrationEvents.Events;
+using Shared.IntegrationEvents.Events.Commands;
+using Shared.IntegrationEvents.Events.Events;
 using Shared.IntegrationEvents.Identity;
 using Shared.IntegrationEvents.Inventories;
 using Shared.IntegrationEvents.Inventories.Events;
@@ -13,6 +16,7 @@ public static class RabbitMqConfiguration
 {
     private const string ACCOUNT_EVENTS_QUEUE = "inventory.account-events";
     private const string STORE_COMMANDS_QUEUE = "inventory.store-commands";
+    private const string EVENT_COMMANDS_QUEUE = "inventory.event-commands";
 
     extension(WolverineOptions options)
     {
@@ -42,12 +46,24 @@ public static class RabbitMqConfiguration
                 {
                     exchange.ExchangeType = ExchangeType.Topic;
                     exchange.IsDurable = true;
+                })
+                .DeclareExchange(EventRouting.COMMANDS_EXCHANGE, exchange =>
+                {
+                    exchange.ExchangeType = ExchangeType.Topic;
+                    exchange.IsDurable = true;
+                })
+                .DeclareExchange(EventRouting.EVENTS_EXCHANGE, exchange =>
+                {
+                    exchange.ExchangeType = ExchangeType.Topic;
+                    exchange.IsDurable = true;
                 });
 
             options.ConfigureInventoryEventPublishing();
             options.ConfigureStoreEventPublishing();
+            options.ConfigureEventRewardPublishing();
             options.ConfigureAccountEventsListeners();
             options.ConfigureStoreCommandListeners();
+            options.ConfigureEventCommandListeners();
         }
 
         private void ConfigureInventoryEventPublishing()
@@ -71,6 +87,19 @@ public static class RabbitMqConfiguration
                 .UseDurableOutbox();
         }
 
+        private void ConfigureEventRewardPublishing()
+        {
+            options.PublishMessagesToRabbitMqExchange<EventRewardGrantedEvent>(
+                    EventRouting.EVENTS_EXCHANGE,
+                    _ => EventRouting.RoutingKeys.REWARD_GRANTED)
+                .UseDurableOutbox();
+
+            options.PublishMessagesToRabbitMqExchange<EventRewardGrantFailedEvent>(
+                    EventRouting.EVENTS_EXCHANGE,
+                    _ => EventRouting.RoutingKeys.REWARD_FAILED)
+                .UseDurableOutbox();
+        }
+
         private void ConfigureAccountEventsListeners()
         {
             options.ListenToRabbitQueue(ACCOUNT_EVENTS_QUEUE, queue =>
@@ -81,6 +110,12 @@ public static class RabbitMqConfiguration
         {
             options.ListenToRabbitQueue(STORE_COMMANDS_QUEUE, queue =>
                 queue.BindExchange(StoreEventRouting.COMMANDS_EXCHANGE, StoreEventRouting.RoutingKeys.GRANT_ITEMS));
+        }
+
+        private void ConfigureEventCommandListeners()
+        {
+            options.ListenToRabbitQueue(EVENT_COMMANDS_QUEUE, queue =>
+                queue.BindExchange(EventRouting.COMMANDS_EXCHANGE, EventRouting.RoutingKeys.GRANT_REWARD));
         }
     }
 }

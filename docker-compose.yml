@@ -268,6 +268,77 @@ services:
         condition: service_completed_successfully
     restart: always
 
+  event-migrator:
+    container_name: gameserver-v2-event-migrator
+    build:
+      context: ./backend
+      dockerfile: EventService/Dockerfile
+      target: migrations
+      args:
+        NUGET_USERNAME: ${NUGET_USERNAME}
+      secrets:
+        - nuget_password
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ConnectionStrings__EventDb=${ConnectionStrings__EventDb}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["--connection", "${ConnectionStrings__EventDb}"]
+    restart: "no"
+
+  event-service:
+    container_name: gameserver-v2-event-service
+    build:
+      context: ./backend
+      dockerfile: EventService/Dockerfile
+      args:
+        NUGET_USERNAME: ${NUGET_USERNAME}
+      secrets:
+        - nuget_password
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_URLS=http://+:8080
+      - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
+      - ConnectionStrings__EventDb=${ConnectionStrings__EventDb}
+      - ConnectionStrings__RabbitMQ=${ConnectionStrings__RabbitMQ}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+      inventory-service:
+        condition: service_started
+      event-migrator:
+        condition: service_completed_successfully
+    restart: always
+
+  realtime-service:
+    container_name: gameserver-v2-realtime-service
+    build:
+      context: ./backend
+      dockerfile: RealtimeService/Dockerfile
+      args:
+        NUGET_USERNAME: ${NUGET_USERNAME}
+      secrets:
+        - nuget_password
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_URLS=http://+:8080
+      - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
+      - ConnectionStrings__RabbitMQ=${ConnectionStrings__RabbitMQ}
+      - ConnectionStrings__Redis=${ConnectionStrings__Redis}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    restart: always
+
   postgres:
     container_name: gameserver-v2-postgres
     image: postgres:17-alpine
@@ -350,6 +421,8 @@ services:
       - catalog-service
       - inventory-service
       - store-service
+      - event-service
+      - realtime-service
       - frontend
     restart: always
 

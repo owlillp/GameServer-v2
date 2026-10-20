@@ -13,6 +13,8 @@ Docker. Единый вход (OIDC) и разделение интерфейс�
 | `CatalogService` | Каталог контента: предметы, цены, характеристики, совместимость деталей, неизменяемые версии |
 | `InventoryService` | Владение игрока: предметы, аутфит, гараж и тюнинг машин, выдача/отзыв |
 | `StoreService` | Витрина офферов, заказы и сага покупки: резерв в Wallet → выдача в Inventory → commit |
+| `EventService` | Сезонные ивенты: календарь и фазы, ивент-задания и очки, награды за очки, feature-события для клиента |
+| `RealtimeService` | WebSocket/SignalR push для клиентов: `liveops`-события и персональные уведомления |
 
 AuthService выдаёт токены (Authorization Code + PKCE, refresh и
 client_credentials) и отдаёт админские данные:
@@ -99,6 +101,44 @@ HTTP- и gRPC-клиенты других сервисов живут в их co
 
 Порт разработки StoreService — `5285`, gRPC Wallet в dev — `5284`
 (`dotnet run --project backend/StoreService/src/StoreService.Web`).
+
+EventService ведёт сезонные ивенты и прогресс игрока:
+
+- `/events`, `/events/active`, `/events/{code}` — опубликованные ивенты, текущая
+  фаза (`SCHEDULED`/`ANNOUNCED`/`ACTIVE`/`GRACE`/`CLOSED`), задания, награды и
+  прогресс игрока;
+- `/events/{code}/rewards/{rewardCode}/claim` — обмен ивент-очков на награду
+  (`Idempotency-Key`), выдача предметов идёт командой в `InventoryService`;
+- `/events/me/claims` — история обменов;
+- `/admin/events` — CRUD черновиков, публикация и архивация ивентов
+  (`events.view`/`events.manage`), ручная корректировка очков.
+
+Фазы вычисляются из расписания (`AnnounceAt`/`StartsAt`/`EndsAt`/`GraceEndsAt`),
+а фоновый `EventLifecycleService` публикует `started.event`/`ended.event` один раз
+на переход. Прогресс заданий обновляется по `match-completed.session` от
+SessionService (дедуп по `(event, account, match)`); очки начисляются только в
+фазе `ACTIVE`, обмены доступны в `ACTIVE` и `GRACE`. Если выдача награды не
+удалась, Inventory присылает `reward-failed.event`, и EventService возвращает
+очки. Порт разработки — `5286`
+(`dotnet run --project backend/EventService/src/EventService.Web`). UI: `/events`
+для игрока и `/admin/events` для админки.
+
+RealtimeService доставляет клиентам live-уведомления через SignalR (WebSocket) с
+Redis backplane:
+
+- `POST /realtime/ticket` — одноразовый тикет для WebSocket (Bearer-токен);
+- `/realtime` — SignalR hub: после подключения клиент вызывает `Authenticate(ticket)`
+  и автоматически попадает в `liveops` и `player:{accountId}`;
+- события: `event.started`, `event.ended`, `event.reward.granted`,
+  `wallet.credited`, `wallet.debited`, `inventory.items.granted`.
+
+Gateway ничего не хранит: он потребляет RabbitMQ-события (`event-events`,
+`wallet-events`, `inventory-events`) и пересылает их в группы. Wallet-события
+маршрутизируются по `WalletId`, который совпадает с `accountId` (`Wallet.Id`).
+Клиент дедуплицирует по `Id`, при переподключении заново берёт снапшот
+(`/events`, `/wallets/me`, `/inventory/me`). Порт разработки — `5287`
+(`dotnet run --project backend/RealtimeService/src/RealtimeService.Web`). Пример
+Unity-клиента — `clients/unity/RealtimeClient.cs`.
 
 Порт разработки AuthService — `5280`
 (`dotnet run --project backend/AuthService/src/AuthService.Web`).
@@ -282,6 +322,19 @@ dotnet test
 | PUT   | `/admin/store/offers/{id}` | `store.manage` | Обновить оффер |
 | POST  | `/admin/store/offers/{id}/activate` | `store.manage` | Активировать оффер |
 | DELETE | `/admin/store/offers/{id}` | `store.manage` | Архивировать оффер |
+| GET   | `/events`        | аутентификация | Опубликованные ивенты (фильтр по фазе)     |
+| GET   | `/events/active` | аутентификация | Ивенты в активной фазе                     |
+| GET   | `/events/{code}` | аутентификация | Ивент: задания, награды, прогресс игрока   |
+| POST  | `/events/{code}/rewards/{rewardCode}/claim` | аутентификация | Обмен очков на награду |
+| GET   | `/events/me/claims` | аутентификация | История обменов наград                  |
+| GET   | `/admin/events`  | `events.view`  | Все ивенты, включая черновики              |
+| GET   | `/admin/events/{id}` | `events.view` | Ивент по id                             |
+| POST  | `/admin/events`  | `events.manage` | Создать черновик ивента                  |
+| PUT   | `/admin/events/{id}` | `events.manage` | Обновить черновик ивента              |
+| POST  | `/admin/events/{id}/publish` | `events.manage` | Опубликовать ивент            |
+| DELETE | `/admin/events/{id}` | `events.manage` | Архивировать ивент                  |
+| POST  | `/admin/events/{id}/accounts/{accountId}/points` | `events.manage` | Скорректировать очки |
+| POST  | `/realtime/ticket` | аутентификация | Одноразовый тикет для SignalR/WebSocket |
 | GET   | `/health`        | —              | Health-check (Postgres)                    |
 
 Все ответы обёрнуты в общий `Shared.SharedKernel.Envelope`.
