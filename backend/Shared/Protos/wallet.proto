@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+option csharp_namespace = "Shared.Grpc.Wallet";
+
+package wallet.v1;
+
+service WalletReservation {
+  rpc Reserve (ReserveRequest) returns (ReserveReply);
+  rpc Commit (CommitRequest) returns (CommitReply);
+  rpc Release (ReleaseRequest) returns (ReleaseReply);
+}
+
+message ReserveRequest {
+  string wallet_id = 1;
+  string currency = 2;
+  int64 amount = 3;
+  string operation_id = 4;
+  string reference_id = 5;
+}
+
+message ReserveReply {
+  bool success = 1;
+  string hold_id = 2;
+  string error_code = 3;
+  string error_message = 4;
+}
+
+message CommitRequest {
+  string hold_id = 1;
+}
+
+message CommitReply {
+  bool success = 1;
+  string hold_id = 2;
+  string error_code = 3;
+  string error_message = 4;
+}
+
+message ReleaseRequest {
+  string hold_id = 1;
+}
+
+message ReleaseReply {
+  bool success = 1;
+  string hold_id = 2;
+  string error_code = 3;
+  string error_message = 4;
+}

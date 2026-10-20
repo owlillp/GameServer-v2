@@ -10,6 +10,7 @@ const items = [
   { href: routes.adminUsers, label: "Пользователи" },
   { href: routes.adminWallets, label: "Кошельки" },
   { href: routes.adminCatalog, label: "Каталог" },
+  { href: routes.adminStore, label: "Магазин" },
   { href: routes.adminInventory, label: "Инвентарь" },
 ] as const;
 

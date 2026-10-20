@@ -50,6 +50,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IOutboxService, OutboxService>();
         services.AddScoped<IInventoryRepository, InventoryRepository>();
         services.AddScoped<IInventoryEventPublisher, InventoryEventPublisher>();
+        services.AddScoped<IStorePurchaseResultPublisher, StorePurchaseResultPublisher>();
 
         services.AddSingleton<IWolverineExtension, InventoryWolverineExtension>();
 

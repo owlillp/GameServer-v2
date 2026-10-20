@@ -8,6 +8,7 @@ using WalletService.Core;
 using WalletService.Core.Messaging;
 using WalletService.Domain.Authorization;
 using WalletService.Infrastructure.Postgres;
+using WalletService.Web.Grpc;
 
 namespace WalletService.Web.Configurations;
 
@@ -25,6 +26,9 @@ public static class DependencyInjectionExtensions
 
             builder.Services.AddPlatformAuthentication(configuration, RolePermissions.Map, AUTHENTICATION_SECTION_NAME);
             builder.Services.AddFrameworkCors(configuration);
+            builder.Services.Configure<GrpcAuthOptions>(configuration.GetSection(GrpcAuthOptions.SECTION_NAME));
+            builder.Services.AddSingleton<ServiceTokenInterceptor>();
+            builder.Services.AddGrpc(options => options.Interceptors.Add<ServiceTokenInterceptor>());
             builder.Services.AddOpenApiSpec(Constants.SERVICE_NAME, Constants.VERSION);
             builder.Services.AddHealthChecks()
                 .AddDbContextCheck<WalletServiceDbContext>(POSTGRESQL_HEALTH_CHECK)
@@ -33,6 +37,7 @@ public static class DependencyInjectionExtensions
 
             builder.Services.AddCore();
             builder.Services.AddInfrastructurePostgres(configuration);
+            builder.Services.AddHostedService<WalletService.Web.Services.HoldExpiryService>();
 
             return builder;
         }

@@ -13,6 +13,7 @@ public static class OidcScopes
     public const string WALLET = "wallet";
     public const string CATALOG = "catalog";
     public const string INVENTORY = "inventory";
+    public const string STORE = "store";
 
     public static IReadOnlyList<string> All { get; } =
     [
@@ -26,6 +27,7 @@ public static class OidcScopes
         WALLET,
         CATALOG,
         INVENTORY,
+        STORE,
     ];
 
     public static class Resources
@@ -36,5 +38,6 @@ public static class OidcScopes
         public const string WALLET_RESOURCE = "wallet-service";
         public const string CATALOG_RESOURCE = "catalog-service";
         public const string INVENTORY_RESOURCE = "inventory-service";
+        public const string STORE_RESOURCE = "store-service";
     }
 }

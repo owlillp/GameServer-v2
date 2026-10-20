@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Shared.SharedKernel.Errors;
 using WalletService.Core.Abstractions;
 using WalletService.Domain.Wallets;
+using WalletService.Domain.Wallets.Holds;
 using WalletService.Domain.Wallets.Ledgers;
 
 namespace WalletService.Infrastructure.Postgres.Repositories;
@@ -75,5 +76,17 @@ public sealed class WalletRepository(
             logger.LogError(ex, "Unexpected error while creating ledger entry");
             return Task.FromResult<Result<Guid, Error>>(GeneralErrors.Failure());
         }
+    }
+
+    public async Task<Result<Hold, Error>> GetHoldAsync(Guid holdId, CancellationToken cancellationToken)
+    {
+        Hold? hold = await dbContext.Holds.FirstOrDefaultAsync(entity => entity.Id == holdId, cancellationToken);
+        return hold is not null ? hold : WalletErrors.HoldNotFound;
+    }
+
+    public Task AddHoldAsync(Hold hold, CancellationToken cancellationToken)
+    {
+        dbContext.Holds.Add(hold);
+        return Task.CompletedTask;
     }
 }

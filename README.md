@@ -12,6 +12,7 @@ Docker. Единый вход (OIDC) и разделение интерфейс�
 | `WalletService` | Балансы валют и ledger-журнал операций                                 |
 | `CatalogService` | Каталог контента: предметы, цены, характеристики, совместимость деталей, неизменяемые версии |
 | `InventoryService` | Владение игрока: предметы, аутфит, гараж и тюнинг машин, выдача/отзыв |
+| `StoreService` | Витрина офферов, заказы и сага покупки: резерв в Wallet → выдача в Inventory → commit |
 
 AuthService выдаёт токены (Authorization Code + PKCE, refresh и
 client_credentials) и отдаёт админские данные:
@@ -62,6 +63,42 @@ InventoryService ведёт владение игрока и предостав�
 
 Порт разработки InventoryService — `5283`
 (`dotnet run --project backend/InventoryService/src/InventoryService.Web`).
+
+StoreService публикует витрину и проводит покупки за игровую валюту:
+
+- `/store/offers`, `/store/offers/{id}` — активные офферы;
+- `/store/purchases` — покупка оффера (`Idempotency-Key`, ответ — заказ);
+- `/store/orders`, `/store/orders/{id}` — история и статус покупок;
+- `/admin/store/offers` — CRUD и активация офферов (`store.view`/`store.manage`).
+
+Покупка идёт сагой: Store резервирует средства в Wallet по gRPC
+(`Reserve`), публикует команду выдачи в RabbitMQ, Inventory выдаёт предметы
+(для `CAR` автоматически создаётся машина в гараже) и отвечает событием;
+Store делает `Commit` и завершает заказ. При ошибке — `Release`, при
+таймауте hold освобождается фоновыми sweeper'ами.
+
+gRPC-контракт лежит в `backend/Shared/Grpc` (`Shared.Grpc.Contracts` +
+`Shared/Protos/wallet.proto`) и переиспользуется сервером Wallet и клиентом
+Store. Вызовы идут по HTTP/2 на внутренний порт `8081`, с service-токеном
+(`store-service-client`) в metadata, дедлайном 3 с и одним retry на
+`Unavailable`/`DeadlineExceeded`.
+
+HTTP- и gRPC-клиенты других сервисов живут в их contracts-проектах и
+переиспользуются по образцу DirectoryService:
+
+- `CatalogService.Contracts/Communication` — `ICatalogClient`, `CatalogHttpClient`,
+  `CatalogServiceOptions`, `AddCatalogServiceHttpCommunication`;
+- `WalletService.Contracts/Communication` — `IWalletClient`, `WalletGrpcClient`,
+  `WalletServiceOptions`, `AddWalletServiceGrpcCommunication`;
+- `Shared.Communication` — общий `IServiceTokenProvider` (client_credentials)
+  и `ServiceAuthOptions`.
+
+Конфиг Store: `CatalogService:Url` и `WalletService:GrpcAddress`. Для REST-вызовов
+в Catalog Store использует контракты `CatalogService.Contracts`, без локальных
+копий DTO.
+
+Порт разработки StoreService — `5285`, gRPC Wallet в dev — `5284`
+(`dotnet run --project backend/StoreService/src/StoreService.Web`).
 
 Порт разработки AuthService — `5280`
 (`dotnet run --project backend/AuthService/src/AuthService.Web`).
@@ -235,6 +272,16 @@ dotnet test
 | POST  | `/admin/catalog/versions/rollback` | `catalog.manage` | Откатить каталог к версии |
 | GET   | `/admin/users`   | `users.view`   | Список аккаунтов с поиском и пагинацией    |
 | GET   | `/admin/stats`   | `users.view`   | Сводка: всего/админы/модераторы/заблокированы |
+| GET   | `/store/offers`  | аутентификация | Активные офферы магазина (StoreService) |
+| GET   | `/store/offers/{id}` | аутентификация | Карточка активного оффера |
+| POST  | `/store/purchases` | аутентификация | Купить оффер (идемпотентно по `Idempotency-Key`) |
+| GET   | `/store/orders`  | аутентификация | История покупок игрока |
+| GET   | `/store/orders/{id}` | аутентификация | Статус покупки |
+| GET   | `/admin/store/offers` | `store.view` | Все офферы |
+| POST  | `/admin/store/offers` | `store.manage` | Создать оффер |
+| PUT   | `/admin/store/offers/{id}` | `store.manage` | Обновить оффер |
+| POST  | `/admin/store/offers/{id}/activate` | `store.manage` | Активировать оффер |
+| DELETE | `/admin/store/offers/{id}` | `store.manage` | Архивировать оффер |
 | GET   | `/health`        | —              | Health-check (Postgres)                    |
 
 Все ответы обёрнуты в общий `Shared.SharedKernel.Envelope`.

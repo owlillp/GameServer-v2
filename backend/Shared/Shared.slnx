@@ -7,4 +7,6 @@
     <File Path="../nuget.config" />
   </Folder>
   <Project Path="IntegrationEvents/Shared.IntegrationEvents.csproj" />
+  <Project Path="Grpc/Shared.Grpc.Contracts.csproj" />
+  <Project Path="Communication/Shared.Communication.csproj" />
 </Solution>

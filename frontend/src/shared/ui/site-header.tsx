@@ -37,6 +37,7 @@ export function SiteHeader() {
   const navItems: NavItem[] = isAuthenticated
     ? [
         { href: routes.dashboard, label: "Панель" },
+        { href: routes.store, label: "Магазин" },
         { href: routes.inventory, label: "Инвентарь" },
         { href: routes.profile, label: "Профиль" },
         ...(staff
