@@ -9,7 +9,14 @@ import {
 } from "@/src/shared/stores/session-store";
 import { RoleBadge } from "@/src/shared/ui/role-badge";
 import { SiteHeader } from "@/src/shared/ui/site-header";
-import { KeyRound, Package, ShieldCheck, ShoppingBag, UserRound } from "lucide-react";
+import {
+  KeyRound,
+  Package,
+  ShieldCheck,
+  ShoppingBag,
+  Sparkles,
+  UserRound,
+} from "lucide-react";
 import Link from "next/link";
 
 export default function DashboardPage() {
@@ -127,6 +134,27 @@ export default function DashboardPage() {
               className="mt-4 inline-flex h-9 items-center justify-center rounded-md border border-slate-300 px-4 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
             >
               Открыть магазин
+            </Link>
+          </div>
+
+          <div className="rounded-lg border border-slate-200 bg-white p-5">
+            <span
+              aria-hidden="true"
+              className="inline-flex rounded-md bg-violet-50 p-2 text-violet-700"
+            >
+              <Sparkles className="h-5 w-5" />
+            </span>
+            <h2 className="mt-3 text-sm font-semibold text-slate-900">
+              Ивенты
+            </h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Сезонные события, задания и награды за ивент-очки.
+            </p>
+            <Link
+              href={routes.events}
+              className="mt-4 inline-flex h-9 items-center justify-center rounded-md border border-slate-300 px-4 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
+            >
+              Открыть ивенты
             </Link>
           </div>
 

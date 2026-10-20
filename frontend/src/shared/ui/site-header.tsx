@@ -38,6 +38,7 @@ export function SiteHeader() {
     ? [
         { href: routes.dashboard, label: "Панель" },
         { href: routes.store, label: "Магазин" },
+        { href: routes.events, label: "Ивенты" },
         { href: routes.inventory, label: "Инвентарь" },
         { href: routes.profile, label: "Профиль" },
         ...(staff

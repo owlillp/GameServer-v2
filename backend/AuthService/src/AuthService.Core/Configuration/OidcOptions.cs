@@ -28,6 +28,8 @@ public sealed class OidcClientsOptions
     public OidcClientOptions InventoryService { get; init; } = new();
 
     public OidcClientOptions StoreService { get; init; } = new();
+
+    public OidcClientOptions EventsService { get; init; } = new();
 }
 
 public sealed class OidcClientOptions

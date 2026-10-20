@@ -11,6 +11,7 @@ const items = [
   { href: routes.adminWallets, label: "Кошельки" },
   { href: routes.adminCatalog, label: "Каталог" },
   { href: routes.adminStore, label: "Магазин" },
+  { href: routes.adminEvents, label: "Ивенты" },
   { href: routes.adminInventory, label: "Инвентарь" },
 ] as const;
 

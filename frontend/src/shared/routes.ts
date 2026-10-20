@@ -5,6 +5,7 @@ export const routes = {
   profile: "/profile",
   inventory: "/inventory",
   store: "/store",
+  events: "/events",
   dashboard: "/dashboard",
   admin: "/admin",
   adminUsers: "/admin/users",
@@ -12,6 +13,7 @@ export const routes = {
   adminCatalog: "/admin/catalog",
   adminInventory: "/admin/inventory",
   adminStore: "/admin/store",
+  adminEvents: "/admin/events",
   adminPlayer: (walletId: string) => `/admin/players/${walletId}`,
 } as const;
 
