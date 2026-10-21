@@ -34,6 +34,11 @@ public interface IEventParticipationRepository
 
     Task AddQuestProgressAsync(EventQuestProgress progress, CancellationToken cancellationToken);
 
+    Task<int> DeleteStaleQuestProgressAsync(
+        DateTime dailyPeriodStart,
+        DateTime weeklyPeriodStart,
+        CancellationToken cancellationToken);
+
     Task<bool> MatchProcessedAsync(
         Guid eventId,
         Guid accountId,

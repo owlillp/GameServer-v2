@@ -1,5 +1,5 @@
 using EventService.Core.Configuration;
-using EventService.Core.Services;
+using EventService.Core.Scheduling;
 using FluentValidation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,7 +18,8 @@ public static class DependencyInjectionExtensions
 
             services.Configure<EventsOptions>(configuration.GetSection(EventsOptions.SECTION_NAME));
 
-            services.AddHostedService<EventLifecycleService>();
+            services.AddScoped<IEventScheduler, EventScheduler>();
+            services.AddHostedService<EventSchedulingInitializer>();
 
             return services;
         }

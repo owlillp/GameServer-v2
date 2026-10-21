@@ -38,6 +38,9 @@
     <PackageVersion Include="OpenIddict.Validation.ServerIntegration" Version="7.7.1" />
     <PackageVersion Include="owlip.shared.authentication" Version="0.1.1" />
     <PackageVersion Include="Owlip.Shared.Messaging" Version="0.1.0" />
+    <PackageVersion Include="Quartz" Version="3.20.1" />
+    <PackageVersion Include="Quartz.Extensions.Hosting" Version="3.20.1" />
+    <PackageVersion Include="Quartz.Serialization.Json" Version="3.20.1" />
     <PackageVersion Include="Respawn" Version="7.0.0" />
     <PackageVersion Include="Scalar.AspNetCore" Version="2.17.3" />
     <PackageVersion Include="StackExchange.Redis" Version="2.7.27" />

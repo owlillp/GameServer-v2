@@ -22,6 +22,7 @@
       <PackageReference Include="Owlip.Shared.Authentication" />
       <PackageReference Include="owlip.shared.core" />
       <PackageReference Include="Owlip.Shared.Messaging" />
+      <PackageReference Include="Quartz" />
       <PackageReference Include="WolverineFx.EntityFrameworkCore" />
       <PackageReference Include="WolverineFx.Postgresql" />
       <PackageReference Include="WolverineFx.RabbitMQ" />

@@ -23,6 +23,7 @@ public sealed class PlatformSyncService(
         await UpsertScopeAsync(OidcScopes.STORE, "StoreService API Access", OidcScopes.Resources.STORE_RESOURCE, cancellationToken);
         await UpsertScopeAsync(OidcScopes.EVENTS, "EventService API Access", OidcScopes.Resources.EVENT_RESOURCE, cancellationToken);
         await UpsertScopeAsync(OidcScopes.REALTIME, "RealtimeService API Access", OidcScopes.Resources.REALTIME_RESOURCE, cancellationToken);
+        await UpsertScopeAsync(OidcScopes.MATCHMAKING, "MatchmakingService API Access", OidcScopes.Resources.MATCHMAKING_RESOURCE, cancellationToken);
 
         await UpsertPublicClientAsync(options.Clients.Web, allowPasswordGrant: false, cancellationToken);
         await UpsertPublicClientAsync(options.Clients.Unity, allowPasswordGrant: true, cancellationToken);
@@ -35,6 +36,10 @@ public sealed class PlatformSyncService(
             [OidcScopes.STORE, OidcScopes.WALLET, OidcScopes.CATALOG, OidcScopes.INVENTORY],
             cancellationToken);
         await UpsertServiceClientAsync(options.Clients.EventsService, [OidcScopes.EVENTS], cancellationToken);
+        await UpsertServiceClientAsync(
+            options.Clients.MatchmakingService,
+            [OidcScopes.MATCHMAKING, OidcScopes.WALLET],
+            cancellationToken);
     }
 
     private async Task SeedRolesAsync()
@@ -111,6 +116,7 @@ public sealed class PlatformSyncService(
                 OpenIddictConstants.Permissions.Prefixes.Scope + OidcScopes.STORE,
                 OpenIddictConstants.Permissions.Prefixes.Scope + OidcScopes.EVENTS,
                 OpenIddictConstants.Permissions.Prefixes.Scope + OidcScopes.REALTIME,
+                OpenIddictConstants.Permissions.Prefixes.Scope + OidcScopes.MATCHMAKING,
             },
         };
 

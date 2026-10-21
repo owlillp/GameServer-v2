@@ -326,3 +326,5 @@ dotnet_naming_style.private_constants_style.word_separator = _
 dotnet_naming_rule.private_constants_rule.symbols = private_constants
 dotnet_naming_rule.private_constants_rule.style = private_constants_style
 dotnet_naming_rule.private_constants_rule.severity = suggestion
+[**/Migrations/*.cs]
+dotnet_diagnostic.MA0005.severity = none

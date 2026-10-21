@@ -1,6 +1,8 @@
 using Serilog;
 using Shared.Framework.Logging;
+using EventService.Infrastructure.Postgres;
 using EventService.Web.Configurations;
+using Constants = EventService.Web.Configurations.Constants;
 
 Log.Logger = LoggingExtensions.CreateBootstrapLogger(Constants.SERVICE_NAME);
 
@@ -13,6 +15,8 @@ try
     builder.AddDependency(builder.Configuration);
 
     var app = builder.Build();
+
+    await app.Services.EnsureQuartzSchemaAsync();
 
     app.Configure();
 

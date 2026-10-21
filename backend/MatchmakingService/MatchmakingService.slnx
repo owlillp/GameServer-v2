@@ -1,0 +1,17 @@
+<Solution>
+  <Folder Name="/SolutionFolder/">
+    <File Path="../.editorconfig" />
+    <File Path="../.gitignore" />
+    <File Path="../Directory.Build.props" />
+    <File Path="../Directory.Packages.props" />
+    <File Path="../nuget.config" />
+  </Folder>
+  <Project Path="src/MatchmakingService.Contracts/MatchmakingService.Contracts.csproj" />
+  <Project Path="src/MatchmakingService.Core/MatchmakingService.Core.csproj" />
+  <Project Path="src/MatchmakingService.Domain/MatchmakingService.Domain.csproj" />
+  <Project Path="src/MatchmakingService.Infrastructure.Postgres/MatchmakingService.Infrastructure.Postgres.csproj" />
+  <Project Path="src/MatchmakingService.Infrastructure.Redis/MatchmakingService.Infrastructure.Redis.csproj" />
+  <Project Path="src/MatchmakingService.Web/MatchmakingService.Web.csproj" />
+  <Project Path="tests/MatchmakingService.UnitTests/MatchmakingService.UnitTests.csproj" />
+  <Project Path="../Shared/IntegrationEvents/Shared.IntegrationEvents.csproj" />
+</Solution>

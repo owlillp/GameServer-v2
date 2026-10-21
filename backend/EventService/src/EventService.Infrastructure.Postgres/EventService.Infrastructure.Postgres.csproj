@@ -16,4 +16,8 @@
       <ProjectReference Include="..\EventService.Core\EventService.Core.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <EmbeddedResource Include="Quartz\quartz_schema.sql" LogicalName="EventService.Infrastructure.Postgres.Quartz.quartz_schema.sql" />
+    </ItemGroup>
+
 </Project>

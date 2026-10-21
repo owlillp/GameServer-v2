@@ -1,6 +1,7 @@
 using CSharpFunctionalExtensions;
 using EventService.Core.Abstractions;
 using EventService.Domain;
+using EventService.Domain.Events;
 using EventService.Domain.Progress;
 using Microsoft.EntityFrameworkCore;
 using Shared.SharedKernel.Errors;
@@ -68,6 +69,32 @@ public sealed class EventParticipationRepository(EventServiceDbContext dbContext
     {
         dbContext.QuestProgress.Add(progress);
         return Task.CompletedTask;
+    }
+
+    public async Task<int> DeleteStaleQuestProgressAsync(
+        DateTime dailyPeriodStart,
+        DateTime weeklyPeriodStart,
+        CancellationToken cancellationToken)
+    {
+        IQueryable<Guid> dailyQuestIds = dbContext.EventQuests
+            .Where(quest => quest.Kind == EventQuestKind.DAILY)
+            .Select(quest => quest.Id);
+
+        IQueryable<Guid> weeklyQuestIds = dbContext.EventQuests
+            .Where(quest => quest.Kind == EventQuestKind.WEEKLY)
+            .Select(quest => quest.Id);
+
+        int deleted = await dbContext.QuestProgress
+            .Where(progress => progress.PeriodStart < dailyPeriodStart
+                && dailyQuestIds.Contains(progress.QuestId))
+            .ExecuteDeleteAsync(cancellationToken);
+
+        deleted += await dbContext.QuestProgress
+            .Where(progress => progress.PeriodStart < weeklyPeriodStart
+                && weeklyQuestIds.Contains(progress.QuestId))
+            .ExecuteDeleteAsync(cancellationToken);
+
+        return deleted;
     }
 
     public Task<bool> MatchProcessedAsync(

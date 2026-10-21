@@ -6,6 +6,7 @@ export const routes = {
   inventory: "/inventory",
   store: "/store",
   events: "/events",
+  matchmaking: "/matchmaking",
   dashboard: "/dashboard",
   admin: "/admin",
   adminUsers: "/admin/users",

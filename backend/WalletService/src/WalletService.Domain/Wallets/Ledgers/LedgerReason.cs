@@ -12,4 +12,5 @@ public enum LedgerReason
     AdminAdjustment = 7,
     Transfer = 8,
     Compensation = 9,
+    MatchReward = 10,
 }

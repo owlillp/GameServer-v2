@@ -31,6 +31,7 @@ public static class DependencyInjectionExtensions
                 .AddRabbitMqCheck(configuration);
             builder.Services.AddEndpoints(typeof(DependencyInjectionExtensions).Assembly);
 
+            builder.Services.AddEventQuartz(configuration);
             builder.Services.AddCore(configuration);
             builder.Services.AddInfrastructurePostgres(configuration);
 

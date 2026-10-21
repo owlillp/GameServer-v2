@@ -16,6 +16,7 @@ public static class OidcScopes
     public const string STORE = "store";
     public const string EVENTS = "events";
     public const string REALTIME = "realtime";
+    public const string MATCHMAKING = "matchmaking";
 
     public static IReadOnlyList<string> All { get; } =
     [
@@ -32,6 +33,7 @@ public static class OidcScopes
         STORE,
         EVENTS,
         REALTIME,
+        MATCHMAKING,
     ];
 
     public static class Resources
@@ -45,5 +47,6 @@ public static class OidcScopes
         public const string STORE_RESOURCE = "store-service";
         public const string EVENT_RESOURCE = "event-service";
         public const string REALTIME_RESOURCE = "realtime-service";
+        public const string MATCHMAKING_RESOURCE = "matchmaking-service";
     }
 }

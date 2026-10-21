@@ -315,6 +315,56 @@ services:
         condition: service_completed_successfully
     restart: always
 
+  matchmaking-migrator:
+    container_name: gameserver-v2-matchmaking-migrator
+    build:
+      context: ./backend
+      dockerfile: MatchmakingService/Dockerfile
+      target: migrations
+      args:
+        NUGET_USERNAME: ${NUGET_USERNAME}
+      secrets:
+        - nuget_password
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ConnectionStrings__MatchmakingDb=${ConnectionStrings__MatchmakingDb}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["--connection", "${ConnectionStrings__MatchmakingDb}"]
+    restart: "no"
+
+  matchmaking-service:
+    container_name: gameserver-v2-matchmaking-service
+    build:
+      context: ./backend
+      dockerfile: MatchmakingService/Dockerfile
+      args:
+        NUGET_USERNAME: ${NUGET_USERNAME}
+      secrets:
+        - nuget_password
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_URLS=http://+:8080
+      - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
+      - ConnectionStrings__MatchmakingDb=${ConnectionStrings__MatchmakingDb}
+      - ConnectionStrings__RabbitMQ=${ConnectionStrings__RabbitMQ}
+      - ConnectionStrings__Redis=${ConnectionStrings__Redis}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+      wallet-service:
+        condition: service_started
+      matchmaking-migrator:
+        condition: service_completed_successfully
+    restart: always
+
   realtime-service:
     container_name: gameserver-v2-realtime-service
     build:
@@ -422,6 +472,7 @@ services:
       - inventory-service
       - store-service
       - event-service
+      - matchmaking-service
       - realtime-service
       - frontend
     restart: always

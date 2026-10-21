@@ -4,6 +4,11 @@
 > Стек: .NET 10, PostgreSQL, RabbitMQ + Kafka, Redis, nginx → YARP.
 > Базис: AuthService уже реализован (OIDC + Identity), остальные сервисы строятся
 > по его слоям: `Domain / Contracts / Core / Infrastructure.Postgres / Web`.
+>
+> Решение (2026-10-21): кланы и клан-войны исключены. Вместо них —
+> `MatchmakingService`: пати 2–5, простая очередь, длительные матчи двух пати,
+> награды за матч и глобальный лидерборд. Упоминания кланов ниже — исторический
+> контекст раннего черновика.
 
 ## 1. Цели и принципы
 
@@ -13,8 +18,8 @@
 2. профиль игрока;
 3. battle pass (сезоны, уровни, награды, задания);
 4. сезонные ивенты (летний, новогодний и т.п.);
-5. кланы: версус между N кланами, клановые сезоны с выплатой наград, клановые
-   награды и лидерборды за сезон;
+5. матчмейкинг: сбор пати, подбор соперников, длительные матчи 2 пати,
+   награды за матч и лидерборд;
 6. инвентарь и кастомизация: одежда, оружие, машины, тюнинг машин деталями;
 7. покупки за игровую валюту и за реальные деньги (донат).
 
@@ -58,12 +63,10 @@
 | 7 | **PaymentService** | Реальные деньги: PSP-интеграция, checkout, вебхуки, возвраты/чарджбеки, идемпотентность | `payments` | 3 |
 | 8 | **BattlePassService** | BP-сезоны, уровни/награды (free/premium), прогресс, задания (ежедневные/недельные/сезонные), клеймы | `battlepass` | 2 |
 | 9 | **EventsService** | Сезонные ивенты: календарь и фазы, ивент-задания/очки, ивент-награды, feature flags для клиента | `events` | 2 |
-| 10 | **ClanService** | Клан как соц. единица: создание, состав, роли (лидер/офицер/участник), заявки/инвайты, уровень и перки клана | `clans` + Redis | 2 |
-| 11 | **ClanWarService** | Войны N кланов, очки (authoritative ledger), клан-сезоны, финальные standings, выплата наград | `clanwars` | 2 |
-| 12 | **SessionService** | Приём результатов матчей от игровых серверов: валидация, дедуп, античит-эвристики, канонический `MatchCompleted` | `sessions` | 1 |
-| 13 | **LeaderboardService** | Read-model лидербордов (игроки/кланы/сезоны) на Redis ZSET, «топ-N» и «моё место». Ребилд из Kafka | Redis + снапшоты в S3/PG | 2 |
-| 14 | **PlayerHub BFF** *(опц.)* | Агрегация экрана входа: профиль + кошелёк + BP + клан + активные ивенты одним вызовом, кэш в Redis | — | 3 |
-| 15 | **Notification/Mail** *(опц.)* | Внутриигровая почта (выдача наград/компенсаций), push/e-mail, шаблоны, локализация | `notifications` | 3 |
+| 10 | **MatchmakingService** | Пати 2–5 игроков, простая FIFO-очередь, длительные матчи двух пати (дни), результаты, награды за матч, глобальный лидерборд | `matchmaking` + Redis ZSET | 2 |
+| 11 | **SessionService** | Приём результатов матчей от игровых серверов: валидация, дедуп, античит-эвристики, канонический `MatchCompleted` | `sessions` | 3 |
+| 12 | **PlayerHub BFF** *(опц.)* | Агрегация экрана входа: профиль + кошелёк + BP + пати + активные ивенты одним вызовом, кэш в Redis | — | 3 |
+| 13 | **Notification/Mail** *(опц.)* | Внутриигровая почта (выдача наград/компенсаций), push/e-mail, шаблоны, локализация | `notifications` | 3 |
 
 Прагматика: на старте `Wallet`+`Store` можно запустить одним сервисом
 `CommerceService` и разделить по мере роста нагрузки/команды. `BattlePass` и
@@ -72,16 +75,19 @@
 
 ### Почему именно такие границы
 
-- `ClanService` (социальный граф) отделён от `ClanWarService` (соревновательный
-  цикл): у войн свой календарь, нагрузка и денежные выплаты; состав клана меняется
-  независимо от сезона.
+- `MatchmakingService` держит пати, очередь и длительные матчи в одном bounded
+  context: у них общий жизненный цикл (пати → очередь → матч → результат →
+  награда). Лидерборд — read-model внутри него: истина в PostgreSQL (очки и
+  результаты), Redis ZSET только ускоряет топ и «моё место» и пересобирается.
 - `WalletService` отделён от `StoreService`: ledger — критичный инвариант
   (идемпотентность, аудит), витрина и саги меняются часто.
 - `SessionService` — единственная точка контакта игровых серверов и ворота
-  античита: всё остальное потребляет уже очищенный `MatchCompleted`.
-- `LeaderboardService` — производная read-model: истина по очкам и standings
-  живёт в `ClanWarService`/`PlayerService`, сортированные множества можно
-  пересобрать реплеем Kafka.
+  античита: всё остальное потребляет уже очищенный `MatchCompleted`. Пока
+  результаты матчей вводит админ (`/admin/matchmaking/*`), контракт события
+  `match-completed.session` уже совместим с будущим SessionService.
+- Выдача наград матча идёт через существующие Wallet (REST + service-токен) и
+  Inventory (RabbitMQ-команда), идемпотентно по id гранта, без отдельного
+  «сервиса наград».
 
 ## 3. Схема связей
 
@@ -108,10 +114,8 @@ flowchart LR
         PAY["PaymentService"]
         BP["BattlePassService"]
         EVENTS["EventsService"]
-        CLAN["ClanService"]
-        WAR["ClanWarService"]
+        MATCH["MatchmakingService"]
         SESSION["SessionService"]
-        LB["LeaderboardService"]
     end
 
     subgraph INFRA["Инфраструктура"]
@@ -132,19 +136,17 @@ flowchart LR
     GW --> STORE
     GW --> BP
     GW --> EVENTS
-    GW --> CLAN
-    GW --> WAR
-    GW --> LB
+    GW --> MATCH
     BFF -.-> PLAYER
     BFF -.-> WALLET
     BFF -.-> INV
     BFF -.-> BP
     BFF -.-> EVENTS
-    BFF -.-> CLAN
+    BFF -.-> MATCH
     CORE -.->|"команды и доменные события"| RMQ
     RMQ <-->|"outbox → CDC / bridge"| KAFKA
-    KAFKA -.->|"read-модели, аналитика, реплей"| LB
-    LB --- REDIS
+    KAFKA -.->|"read-модели, аналитика, реплей"| PLAYER
+    MATCH --- REDIS
     CORE --- PG
 ```
 
@@ -159,7 +161,7 @@ flowchart LR
 | Store → Wallet | gRPC | Reserve / Commit / Release — критичный путь покупки |
 | Store → Catalog | REST (кэш Redis) | снапшот цены и состава оффера |
 | BFF → сервисы | REST/gRPC параллельно | агрегация экрана входа |
-| ClanWar → Player/Clan | REST (batch) | имена/теги для снапшотов (не хот-пас) |
+| Matchmaking → Wallet | REST + service token | начисление валютной награды за матч |
 
 Правила синхронного вызова: таймаут 1–2 s; retry только для идемпотентных
 операций (GET, Reserve/Commit по operation_id); circuit breaker и bulkhead на
@@ -177,7 +179,7 @@ flowchart LR
 Debezium читает WAL и льёт те же события в Kafka-топики. Консьюмеры
 идемпотентны по `EventId`, поэтому at-least-once на обеих шинах безопасен.
 
-Kafka-топики ключуются по `player_id` / `clan_id` — порядок событий по
+Kafka-топики ключуются по `player_id` / `match_id` — порядок событий по
 «сущности» гарантирован. Имена версионируются: `game.match.completed.v1`.
 На MVP можно начать только с RabbitMQ и включить Kafka-поток на фазе 2, не меняя
 контракты событий.
@@ -202,16 +204,16 @@ Kafka-топики ключуются по `player_id` / `clan_id` — поря�
 | Событие | Продюсер | Шина | Консьюмеры |
 | --- | --- | --- | --- |
 | `identity.account.registered` | Auth | Rabbit | Player (провижининг профиля) |
-| `identity.account.blocked` | Auth | Rabbit | Player, Clan, Leaderboard (исключение) |
-| `game.match.completed` | Session | Rabbit + Kafka | Player, BattlePass, Events, ClanWar, Leaderboard, аналитика |
+| `identity.account.blocked` | Auth | Rabbit | Player, Matchmaking (исключение из очереди) |
+| `match-completed.session` | Matchmaking (позже Session) | Rabbit + Kafka | Player, BattlePass, Events, аналитика |
+| `grant-reward.matchmaking` | Matchmaking | Rabbit | Inventory (выдача предметов) |
+| `reward-granted/failed.matchmaking` | Inventory | Rabbit | Matchmaking (статус гранта) |
 | `economy.purchase.completed` | Store | Rabbit | Inventory, BattlePass, Events, аналитика |
 | `economy.wallet.credited/debited` | Wallet | Kafka | аналитика, антифрод |
 | `payment.succeeded/failed/refunded` | Payment | Rabbit | Store, Wallet, аналитика |
 | `inventory.items.granted` | Inventory | Kafka | аналитика, PlayerHub-кэш |
 | `battlepass.tier.reached` | BattlePass | Rabbit | Inventory/Wallet (выдача), Gateway (пуш) |
 | `liveops.event.started/ended` | Events | Rabbit | Gateway (флаги), Store, аналитика |
-| `clan.war.points.updated` | ClanWar | Kafka | Leaderboard, аналитика |
-| `clan.season.locked/payout.completed` | ClanWar | Rabbit + Kafka | Inventory/Wallet/Mail, Leaderboard, аналитика |
 
 ### 4.5 Переход на gRPC (план)
 
@@ -264,13 +266,13 @@ Kafka-топики ключуются по `player_id` / `clan_id` — поря�
 - Бизнес-сервисы **не держат клиентские соединения** — они публикуют события,
   рассылкой занимается отдельный **RealtimeGateway** (кандидат — расширение
   `Notification/Mail`).
-- **Группы/каналы**: `player:{id}`, `clan:{id}`, `liveops` (и `chat:{room}` —
+- **Группы/каналы**: `player:{id}`, `match:{id}`, `liveops` (и `chat:{room}` —
   если появится ChatService). Подписка авторизуется по OIDC-токену и правам на
   группу.
 - **Масштабирование**: несколько инстансов gateway, событие раздаётся всем через
   **Redis backplane** (Redis уже в compose). Порядок по сущности — ключ
-  Kafka/Rabbit по `player_id`/`clan_id`; дедуп на клиенте по `event_id`;
-  высокочастотные события (очки клана) — coalesce/throttle.
+  Kafka/Rabbit по `player_id`/`match_id`; дедуп на клиенте по `event_id`;
+  высокочастотные события (счёт матча) — coalesce/throttle.
 - **Клиент**: паттерн «REST-снимок + подписка на дельты» — сначала `GET`
   текущего состояния, затем `subscribe` на группу (иначе события между
   загрузкой и подпиской теряются).
@@ -293,10 +295,8 @@ Kafka-топики ключуются по `player_id` / `clan_id` — поря�
 | Payment | PaymentOrder, PspTransaction, WebhookEvent, Refund, Chargeback |
 | BattlePass | BpSeason, BpTier, BpProgress, BpMission, BpMissionProgress, BpClaim |
 | Events | Event, EventPhase, EventQuest, EventProgress, EventRewardGrant |
-| Clan | Clan, ClanMember, ClanInvite, ClanJoinRequest, ClanLevel |
-| ClanWar | WarSeason, War, WarParticipant, WarRound, WarPointEntry, SeasonStanding, RewardPayout |
+| Matchmaking | Party, PartyMember, QueueTicket, Match, MatchParty, MatchParticipant, MatchResult, MatchRewardDefinition, MatchRewardGrant, LeaderboardEntry |
 | Session | GameSession, SessionParticipant, RawReport, Dedup |
-| Leaderboard | Redis ZSET + периодические снапшоты (PG/S3) |
 
 ### 5.2 Консистентность и саги
 
@@ -307,7 +307,13 @@ Kafka-топики ключуются по `player_id` / `clan_id` — поря�
   без маппинг-сервиса.
 - Реферальные/статистические данные не шарятся, а проецируются событиями.
 - Reconciliation-джобы: «orders ↔ wallet ledger», «grants ↔ purchases»,
-  «season payouts ↔ reward receipts» — ежедневно.
+  «match rewards ↔ wallet ledger / inventory receipts» — ежедневно.
+- Планирование событий: Quartz с persistent store в PostgreSQL (`QRTZ_*` в
+  `public`, `quartz.jobStore.clustered` включается опцией) хранит триггеры на
+  `AnnounceAt`/`StartsAt`/`EndsAt`/`GraceEndsAt`; пропущенные границы
+  догоняются по `misfire = FireNow`, при старте расписание пересобирается из БД.
+  Дневной cron чистит устаревшие daily/weekly-прогрессы. Это не заменяет
+  доменные таймеры матчей (Wolverine/coordinator), а покрывает календарь и ops.
 
 ### 5.3 Кэш и масштабирование данных
 
@@ -413,59 +419,56 @@ stateDiagram-v2
 смена валюты/множителей — через версию конфигурации, а не правку активного
 ивента; закрытие идемпотентно (batch id на ивент).
 
-### 6.5 Клан-сезон: войны N кланов и выплаты
+### 6.5 Длительный матч и лидерборд
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Registration: старт сезона, набор кланов
-    Registration --> Active: дивизионы зафиксированы (ростер-lock)
-    Active --> Active: раунды войн N кланов, очки
-    Active --> Locked: конец сезона (scheduler + distributed lock)
-    Locked --> Payout: расчёт standings и наград (идемпотентный batch)
-    Payout --> Archived: архив, снапшот лидерборда
-    Archived --> [*]
+    [*] --> Queued: пати 2–5 собрана, все ready
+    Queued --> Active: координатор спарил две пати
+    Active --> Active: админ вводит/обновляет результаты
+    Active --> Finished: finish вручную или sweep по EndsAt
+    Active --> Cancelled: нет результатов к EndsAt или отмена админом
+    Finished --> [*]
 ```
 
-Начисление очков за матч:
+Завершение матча и выдача наград:
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant SS as SessionService
-    participant CW as ClanWarService
-    participant DB as Postgres (clanwars)
-    participant K as Kafka
-    participant LB as LeaderboardService
+    participant A as Админ / Coordinator
+    participant M as MatchmakingService
+    participant DB as Postgres (matchmaking)
+    participant R as Redis ZSET
+    participant W as WalletService
+    participant I as InventoryService
+    participant E as EventService
 
-    SS->>CW: game.match.completed (участники + их кланы) [Rabbit]
-    CW->>CW: война активна? оба клана — участники? ростер-lock? лимиты/анти-фрод?
-    CW->>DB: WarPointEntry (идемпотентно: match_id + clan_id)
-    CW->>DB: пересчёт SeasonStanding
-    CW->>K: clan.war.points.updated
-    K->>LB: обновление Redis ZSET сезонной таблицы
+    A->>M: POST /admin/matchmaking/matches/{id}/finish
+    M->>DB: Match.Finished + MatchRewardGrant(Pending), результаты фиксируются
+    M->>DB: LeaderboardEntry += score (идемпотентно по match_id + account_id)
+    M->>R: ZADD очки игроков (read-model, best-effort)
+    M->>W: Credit(MatchReward, operation_id = grant_id) [REST + service token]
+    M->>I: grant-reward.matchmaking [Rabbit, durable outbox]
+    I-->>M: reward-granted/failed.matchmaking
+    M->>E: match-completed.session (по одному на игрока)
+    Note over M,I: грант = Pending, пока не подтверждены и валюта, и предметы
 ```
 
-Выплата в конце сезона:
-
-1. scheduler берёт distributed lock, переводит сезон в `Locked` — новые очки не
-   принимаются, standings заморожены;
-2. формируется `RewardPayout` на каждый клан: награда клану (казна/перки/эмблема)
-   по занятому месту + награды участникам по вкладу (доля от очков сезона,
-   зафиксированный ростер);
-3. выплата идёт идемпотентными командами `GrantItems`/`Credit`/`Mail`
-   (по `payout_id`), частичные сбои ретраятся до `payout.completed`;
-4. архив сезона + снапшот лидерборда в S3; только после этого открывается
-   регистрация следующего сезона.
-
-Продуктовые параметры (в конфиге сезона): N кланов в войне, длительность раунда
-и сезона, таблицы наград, веса вклада, политика выхода из клана во время сезона.
+Правила: результаты матча кумулятивны и обновляются админом, финализация
+выполняется один раз (статус матча — гард); лидерборд считается по `score`
+в PostgreSQL, Redis ZSET — ускоряющая проекция с пересборкой из PG; награды
+идемпотентны по `grant_id` (валюта — `operation_id`, предметы — inbox Inventory),
+неудачная выдача ретраится фоновым sweep'ом. Параметры (в конфиге
+`Matchmaking`): размер пати 2–5, длительность матча, режимы, размер/бонус
+награды, интервал подбора и пересборки лидерборда.
 
 ## 7. Доменные модели (кратко)
 
 ### 7.1 Инвентарь и кастомизация
 
 - `OwnedItem(owner_id, item_id, kind, source, acquired_at)` — источник:
-  `purchase | bp_reward | event_reward | clan_season_reward | admin`.
+  `purchase | bp_reward | event_reward | match_reward | admin`.
 - `Outfit(owner_id, slot, item_id)` — слоты одежды (голова/торс/ноги/обувь/
   аксессуары); экипировка — идемпотентная замена слота.
 - `Weapon(owner_id, item_id, skin_id?)`, `Loadout(owner_id, slot, weapon_id)`.
@@ -492,24 +495,27 @@ XP-правила — конфиг сезона (режим, место, кил�
 `EventRewardGrant`. Ивент-валюта — отдельный код валюты в Wallet ledger, не
 отдельный сервис. Магазин ивента — офферы Store с окном доступности.
 
-### 7.4 Кланы
+### 7.4 Пати и очередь
 
-`Clan(tag, name, emblem, level, xp, perks, is_open)`; `ClanMember(role:
-leader|officer|member, joined_at, contribution)`; `ClanInvite`, `ClanJoinRequest`.
-Лимит состава и перки зависят от уровня клана. История состава важна для
-сезонных выплат (ростер-lock на момент старта войны).
+`Party(code, leader_account_id, status: forming|queued|in_match|closed)` +
+`PartyMember(account_id, is_ready, joined_at)` — 2–5 игроков, вход по инвайт-коду,
+лидер ставит пати в очередь только когда все ready. `QueueTicket(party_id, mode,
+party_size, status, enqueued_at, match_id)` — FIFO; координатор спаривает две
+пати одного размера и режима.
 
-### 7.5 Clan Wars
+### 7.5 Матчи, награды и лидерборд
 
-`WarSeason(starts_at, ends_at, reward_table, roster_lock_at)`;
-`War(season_id, division, starts_at, ends_at, status)`;
-`WarParticipant(war_id, clan_id, points)` — N кланов; `WarRound` — временные окна;
-`WarPointEntry(war_id, clan_id, match_id, points, reason)` — append-only,
-идемпотентно по `(match_id, clan_id)`; `SeasonStanding(season_id, clan_id,
-rank, points)`; `RewardPayout(payout_id, season_id, clan_id, status)`.
+`Match(mode, status: active|finished|cancelled, starts_at, ends_at, winner_party_id)`;
+`MatchParty(match_id, party_id, side)`; `MatchParticipant(match_id, account_id,
+party_id)` (уникально по `match_id + account_id`); `MatchResult(match_id,
+account_id, score, kills, is_win)` — кумулятивно, обновляется админом;
+`MatchRewardDefinition` (валюта, участие/бонус за победу, предметы) и
+`MatchRewardGrant` (по игроку, статус Pending/Granted/Failed, `wallet_operation_id`,
+флаги выдачи валюты/предметов); `LeaderboardEntry(account_id, points, wins,
+matches_played)` — истина, Redis ZSET `matchmaking:leaderboard:global` — проекция.
 
-Анти-абьюз: очки только из валидированных матчей, дневные капы,
-клан-свитч-кулдаун, сравнение аномалий (вклад одного игрока > X% очков войны).
+Анти-абьюз: результаты принимаются только для участников матча, дедуп по
+`match_id + account_id`, финализация один раз, награды идемпотентны по `grant_id`.
 
 ## 8. Безопасность и авторизация
 
@@ -517,8 +523,8 @@ rank, points)`; `RewardPayout(payout_id, season_id, clan_id, status)`.
 | --- | --- | --- |
 | Игрок | OIDC user token (Authorization Code + PKCE) | свои данные: профиль, инвентарь, покупки, клеймы |
 | Игровой сервер | client_credentials, scope `session.write` | только отчёты о матчах |
-| Сервис | client_credentials, scope на операцию (`wallet.write`, `inventory.write`, `catalog.read`, `clan.read`, …) | внутренние вызовы |
-| Модератор/админ | user token + permissions | `users.manage`, `catalog.manage`, `liveops.manage`, `clanwars.manage`, `economy.audit` |
+| Сервис | client_credentials, scope на операцию (`wallet.write`, `inventory.write`, `catalog.read`, `matchmaking.manage`, …) | внутренние вызовы |
+| Модератор/админ | user token + permissions | `users.manage`, `catalog.manage`, `liveops.manage`, `matchmaking.manage`, `economy.audit` |
 
 - Gateway валидирует JWT, лимитирует по IP/аккаунту, отсекает всё кроме
   известных префиксов; внутри — mTLS (service mesh) или подписанные токены.
@@ -570,23 +576,23 @@ rank, points)`; `RewardPayout(payout_id, season_id, clan_id, status)`.
 | 0. Фундамент | Shared.Messaging (outbox/inbox, MassTransit), конверт событий, шаблон сервиса, Redis/RabbitMQ в compose, observability | новый сервис поднимается из шаблона, событие доходит end-to-end |
 | 1. Игрок и экономика | Player, Catalog, Inventory, Wallet, Store (игровая валюта), Session-контракт (заглушка отчётов) | покупка одежды/оружия/машины/детали, гараж и тюнинг, профиль |
 | 1.5 gRPC-транспорт | `.proto`-контракт Wallet `Reserve/Commit/Release`, gRPC-сервер рядом с REST, gRPC-клиент в Store; общий маппер ошибок | Store вызывает Wallet по gRPC, REST-эндпоинты кошелька продолжают работать |
-| 2. Сезонный контент | BattlePass, Events, Clan, ClanWar, Leaderboard, реальные отчёты матчей | BP-сезон, летний/новогодний ивент, клан-войны и выплата сезона |
+| 2. Сезонный контент | BattlePass, Events (Quartz-планировщик фаз), **Matchmaking (реализовано)**, реальные отчёты матчей | BP-сезон, летний/новогодний ивент, пати/очередь/длительные матчи, награды и лидерборд |
 | 3. Донат и сервис-полировка | Payment, hard-валюта, premium BP, Notification/Mail, BFF, аналитика | донат end-to-end, возвраты, почта, агрегированный экран входа |
-| 3.5 Realtime-оповещения | SignalR-hub (RealtimeGateway), Redis backplane, группы `player/clan/liveops`, консьюмеры событий, «снимок + подписка» на клиенте, nginx WebSocket | клиент получает старт сезона, изменение очков клана и личные события в реальном времени |
+| 3.5 Realtime-оповещения | SignalR-hub (RealtimeGateway), Redis backplane, группы `player/match/liveops`, консьюмеры событий, «снимок + подписка» на клиенте, nginx WebSocket | клиент получает старт сезона, статус матча и личные события в реальном времени |
 | 4. Масштаб | реплики/шардирование PG, Kafka-реплей, canary, anti-fraud ML-сигналы | нагрузочный тест 50k+ CCU, сезонный «шторм» выдерживается |
 
 ## 13. Открытые вопросы
 
 1. **Игровые серверы**: какой движок/протокол, сервер-авторитативность, как
    передаются отчёты (gRPC-стрим или батчи)? От этого зависит SessionService.
-2. **Мир один или регионы**: шардирование по `player_id`, кросс-региональные
-   клан-войны (общий клан-сервис или федерация?).
-3. **Продуктовые параметры кланов**: N кланов в войне, размер клана, длина
-   сезона/раунда, политика выхода во время сезона, сгорают ли невыплаченные
-   награды.
+2. **Мир один или регионы**: шардирование по `player_id`, региональные
+   очереди матчмейкинга (отдельный координатор на регион?).
+3. **Продуктовые параметры матчмейкинга**: размер пати (сейчас 2–5), пара пати
+   одного размера, длительность матча (сейчас 48 ч), формула очков лидерборда,
+   сгорают ли награды при отмене матча.
 4. **Ники**: уникальность и правила смены (Player), фильтр мата, резервация.
-5. **Чат/друзья/пати**: отдельный ChatService (WebSocket) не заложен — нужен ли
-   в фазе 2–3.
+5. **Чат/друзья/приглашения**: пати уже есть; нужен ли отдельный ChatService
+   (WebSocket) в фазе 2–3.
 6. **Торговля между игроками/аукцион**: нет в плане; сильно влияет на экономику
    и антифрод.
 7. **PSP**: выбор провайдера (Stripe/Xsolla/Steam), регионы, налоги, возвраты.

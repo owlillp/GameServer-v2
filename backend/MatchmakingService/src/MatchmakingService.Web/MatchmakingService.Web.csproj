@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" />
+        <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
+        <PackageReference Include="Scalar.AspNetCore" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="owlip.shared.framework" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\MatchmakingService.Contracts\MatchmakingService.Contracts.csproj" />
+      <ProjectReference Include="..\MatchmakingService.Core\MatchmakingService.Core.csproj" />
+      <ProjectReference Include="..\MatchmakingService.Domain\MatchmakingService.Domain.csproj" />
+      <ProjectReference Include="..\MatchmakingService.Infrastructure.Postgres\MatchmakingService.Infrastructure.Postgres.csproj" />
+      <ProjectReference Include="..\MatchmakingService.Infrastructure.Redis\MatchmakingService.Infrastructure.Redis.csproj" />
+    </ItemGroup>
+
+</Project>

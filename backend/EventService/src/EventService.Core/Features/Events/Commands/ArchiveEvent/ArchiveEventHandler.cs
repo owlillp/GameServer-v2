@@ -2,6 +2,8 @@ using CSharpFunctionalExtensions;
 using EventService.Contracts.Dtos;
 using EventService.Core.Abstractions;
 using EventService.Core.Features.Events.Models;
+using EventService.Core.Scheduling;
+using Microsoft.Extensions.Logging;
 using Shared.Core.Abstractions;
 using Shared.Core.Database;
 using Shared.SharedKernel.Errors;
@@ -10,7 +12,9 @@ namespace EventService.Core.Features.Events.Commands.ArchiveEvent;
 
 public sealed class ArchiveEventHandler(
     IEventRepository eventRepository,
-    ITransactionManager transactionManager) : ICommandHandler<EventDto, ArchiveEventCommand>
+    IEventScheduler eventScheduler,
+    ITransactionManager transactionManager,
+    ILogger<ArchiveEventHandler> logger) : ICommandHandler<EventDto, ArchiveEventCommand>
 {
     public async Task<Result<EventDto, Error>> Handle(
         ArchiveEventCommand command,
@@ -33,8 +37,23 @@ public sealed class ArchiveEventHandler(
         }
 
         var saveResult = await transactionManager.SaveChangesAsync(cancellationToken);
-        return saveResult.IsFailure
-            ? saveResult.Error
-            : EventMapper.ToDto(eventResult.Value, DateTime.UtcNow);
+        if (saveResult.IsFailure)
+        {
+            return saveResult.Error;
+        }
+
+        try
+        {
+            await eventScheduler.UnscheduleAsync(command.EventId, cancellationToken);
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                exception,
+                "Event {EventId} was archived but its scheduler triggers were not removed",
+                command.EventId);
+        }
+
+        return EventMapper.ToDto(eventResult.Value, DateTime.UtcNow);
     }
 }

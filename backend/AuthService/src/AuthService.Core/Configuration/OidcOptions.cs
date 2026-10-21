@@ -30,6 +30,8 @@ public sealed class OidcClientsOptions
     public OidcClientOptions StoreService { get; init; } = new();
 
     public OidcClientOptions EventsService { get; init; } = new();
+
+    public OidcClientOptions MatchmakingService { get; init; } = new();
 }
 
 public sealed class OidcClientOptions
