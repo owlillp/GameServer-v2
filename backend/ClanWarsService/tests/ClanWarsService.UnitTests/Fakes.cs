@@ -49,6 +49,14 @@ internal sealed class RecordingPublisher : IClanWarsEventPublisher
 
     public Task PublishBattleCreatedAsync(Battle battle, string mode, string region) => Task.CompletedTask;
 
+    public List<AbuseSignal> Signals { get; } = [];
+
+    public Task PublishAbuseSignalAsync(AbuseSignal signal)
+    {
+        Signals.Add(signal);
+        return Task.CompletedTask;
+    }
+
     public Task PublishClanPointsGrantedAsync(SeasonRewardGrant grant, int seasonNumber, DateTime now) => Task.CompletedTask;
 
     public Task PublishGrantItemsAsync(SeasonRewardGrant grant, DateTime now) => Task.CompletedTask;
@@ -194,6 +202,20 @@ internal sealed class FakeBattles : IBattleRepository
     }
 
     public Task<bool> HasOpenBattleAsync(Guid clanId, CancellationToken cancellationToken) => Task.FromResult(false);
+
+    public List<AbuseSignal> Signals { get; } = [];
+
+    public Task<int> CountFinishedBetweenAsync(Guid seasonId, Guid clanA, Guid clanB, CancellationToken cancellationToken) =>
+        Task.FromResult(Battles.Values.Count(entry => entry.Status == BattleStatus.Finished));
+
+    public Task AddSignalsAsync(IReadOnlyCollection<AbuseSignal> signals, CancellationToken cancellationToken)
+    {
+        Signals.AddRange(signals);
+        return Task.CompletedTask;
+    }
+
+    public Task<IReadOnlyList<AbuseSignal>> ListSignalsAsync(Guid? seasonId, int limit, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<AbuseSignal>>(Signals);
 
     public Task<int> CountBattlesBetweenSinceAsync(Guid clanA, Guid clanB, DateTime since, CancellationToken cancellationToken) => Task.FromResult(0);
 

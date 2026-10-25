@@ -2,7 +2,9 @@ using ClanWarsService.Core.Abstractions;
 using ClanWarsService.Domain;
 using ClanWarsService.Domain.Battles;
 using ClanWarsService.Domain.Seasons;
+using ClanWarsService.Core.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Shared.Core.Database;
 
 namespace ClanWarsService.Core.Services;
@@ -19,13 +21,20 @@ public sealed class BattleResultService(
     ScoreService scoreService,
     IClanWarsEventPublisher eventPublisher,
     ITransactionManager transactionManager,
+    IOptionsMonitor<ClanWarsOptions> options,
     TimeProvider timeProvider,
     ILogger<BattleResultService> logger)
 {
     public const string FINISHED = "finished";
     public const string CANCELLED = "cancelled";
 
-    public async Task ApplyResultAsync(Guid battleId, Guid matchId, int? winnerSide, CancellationToken cancellationToken)
+    public async Task ApplyResultAsync(
+        Guid battleId,
+        Guid matchId,
+        int? winnerSide,
+        CancellationToken cancellationToken,
+        long scoreA = -1,
+        long scoreB = -1)
     {
         DateTime now = timeProvider.GetUtcNow().UtcDateTime;
 
@@ -48,7 +57,9 @@ public sealed class BattleResultService(
             return;
         }
 
-        BattleOutcome outcome = battle.Score(season.ScoringRules, winnerSide);
+        ClanWarsOptions current = options.CurrentValue;
+        var weakOpponent = new WeakOpponentPolicy(current.WeakOpponentGap, current.WeakOpponentScale, current.WeakOpponentMinFactor);
+        BattleOutcome outcome = battle.Score(season.ScoringRules, winnerSide, weakOpponent);
         bool firstDelivery = await battleRepository.TryFinishAsync(battleId, matchId, outcome, now, cancellationToken);
 
         if (!firstDelivery && (await battleRepository.GetBattleAsync(battleId, cancellationToken))?.Status != BattleStatus.Finished)
@@ -65,6 +76,7 @@ public sealed class BattleResultService(
         if (firstDelivery)
         {
             await eventPublisher.PublishBattleFinishedAsync(battle, FINISHED, outcome, now);
+            await DetectAbuseAsync(battle, winnerSide, scoreA, scoreB, current, now, cancellationToken);
         }
 
         (await transactionManager.CommitTransactionAsync(cancellationToken)).ThrowIfFailed();
@@ -102,6 +114,42 @@ public sealed class BattleResultService(
             await eventPublisher.PublishBattleFinishedAsync(battle, CANCELLED, null, now);
             logger.LogInformation("Battle {BattleId} cancelled: {Reason}", battle.Id, reason);
         }
+    }
+
+    private async Task DetectAbuseAsync(
+        Battle battle,
+        int? winnerSide,
+        long scoreA,
+        long scoreB,
+        ClanWarsOptions current,
+        DateTime now,
+        CancellationToken cancellationToken)
+    {
+        int pairBattles = await battleRepository.CountFinishedBetweenAsync(battle.SeasonId, battle.ClanAId, battle.ClanBId, cancellationToken);
+
+        IReadOnlyList<AbuseSignal> signals = AbuseDetector.Check(
+            battle,
+            winnerSide,
+            scoreA,
+            scoreB,
+            pairBattles,
+            new AbuseRules(current.WeakOpponentGap, current.RepeatedPairThreshold),
+            now);
+
+        if (signals.Count == 0)
+        {
+            return;
+        }
+
+        await battleRepository.AddSignalsAsync(signals, cancellationToken);
+
+        foreach (AbuseSignal signal in signals)
+        {
+            await eventPublisher.PublishAbuseSignalAsync(signal);
+            logger.LogWarning("Abuse signal {Kind} for battle {BattleId}: {Details}", signal.Kind, battle.Id, signal.Details);
+        }
+
+        (await transactionManager.SaveChangesAsync(cancellationToken)).ThrowIfFailed();
     }
 
     private async Task ApplyAsync(ScoreChange change, IReadOnlyList<Guid> squad, CancellationToken cancellationToken)

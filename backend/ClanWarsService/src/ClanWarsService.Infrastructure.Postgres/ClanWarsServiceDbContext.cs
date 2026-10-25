@@ -30,6 +30,8 @@ public class ClanWarsServiceDbContext(DbContextOptions<ClanWarsServiceDbContext>
 
     public DbSet<Battle> Battles => Set<Battle>();
 
+    public DbSet<AbuseSignal> AbuseSignals => Set<AbuseSignal>();
+
     public DbSet<RewardTable> RewardTables => Set<RewardTable>();
 
     public DbSet<SeasonRewardGrant> RewardGrants => Set<SeasonRewardGrant>();

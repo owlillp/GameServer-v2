@@ -62,6 +62,16 @@ public sealed class ClanWarsEventPublisher(IOutboxService outbox) : IClanWarsEve
             outcome?.PointsB ?? 0,
             finishedAt));
 
+    public Task PublishAbuseSignalAsync(AbuseSignal signal) =>
+        outbox.PublishAsync(new AbuseSignalDetectedEvent(
+            signal.Id,
+            signal.Kind,
+            signal.SeasonId,
+            signal.ClanIds,
+            signal.BattleId,
+            signal.Details,
+            signal.DetectedAt));
+
     /// <summary>
     /// ClanService applies it to its points ledger once per operation id (= grant id).
     /// </summary>

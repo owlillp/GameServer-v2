@@ -81,6 +81,31 @@ public sealed class ClanWarsOptions
     [Range(1, 24 * 60)]
     public int BattleTimeoutMinutes { get; init; } = 90;
 
+    /// <summary>
+    /// A player must have been in the clan this long to fight for it (no borrowed players).
+    /// </summary>
+    [Range(0, 24 * 30)]
+    public int MinSquadTenureHours { get; init; } = 24;
+
+    /// <summary>
+    /// Rating advantage after which win points shrink, down to <see cref="WeakOpponentMinFactor"/>
+    /// at gap + scale. The same gap raises a weak-opponent abuse signal.
+    /// </summary>
+    [Range(0, long.MaxValue)]
+    public long WeakOpponentGap { get; init; } = 300;
+
+    [Range(1, long.MaxValue)]
+    public long WeakOpponentScale { get; init; } = 600;
+
+    [Range(0, 1)]
+    public double WeakOpponentMinFactor { get; init; } = 0.25;
+
+    /// <summary>
+    /// Every N-th battle between the same two clans in a season raises a repeated-pair signal.
+    /// </summary>
+    [Range(1, 1000)]
+    public int RepeatedPairThreshold { get; init; } = 10;
+
     [Range(1, 3600)]
     public int RewardIntervalSeconds { get; init; } = 5;
 

@@ -64,6 +64,9 @@ public static class ClanWarsErrors
     public static Error ClanInBattle { get; } =
         Error.Conflict("clanwars.battle.in_battle", "The clan is already in a battle", "clanId");
 
+    public static Error SquadMemberTooNew { get; } =
+        Error.Conflict("clanwars.battle.squad.too_new", "A squad member joined the clan too recently to fight for it", "accountIds");
+
     public static Error NotQueued { get; } =
         Error.NotFound("clanwars.battle.not_queued", "The clan has no squad in the queue", "clanId");
 

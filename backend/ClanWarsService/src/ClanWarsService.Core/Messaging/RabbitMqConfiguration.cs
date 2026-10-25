@@ -71,6 +71,11 @@ public static class RabbitMqConfiguration
                     _ => ClanWarsEventRouting.RoutingKeys.BATTLE_FINISHED)
                 .UseDurableOutbox();
 
+            options.PublishMessagesToRabbitMqExchange<AbuseSignalDetectedEvent>(
+                    ClanWarsEventRouting.EVENTS_EXCHANGE,
+                    _ => ClanWarsEventRouting.RoutingKeys.ABUSE_SIGNAL)
+                .UseDurableOutbox();
+
             options.PublishMessagesToRabbitMqExchange<ClanPointsGrantedEvent>(
                     ClanWarsEventRouting.EVENTS_EXCHANGE,
                     _ => ClanWarsEventRouting.RoutingKeys.CLAN_POINTS_GRANTED)

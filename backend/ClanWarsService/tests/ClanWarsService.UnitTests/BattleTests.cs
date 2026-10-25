@@ -135,7 +135,7 @@ public sealed class BattleTests
             clock,
             NullLogger<ScoreService>.Instance);
 
-        var service = new BattleResultService(battles, seasons, scoreService, publisher, transactions, clock, NullLogger<BattleResultService>.Instance);
+        var service = new BattleResultService(battles, seasons, scoreService, publisher, transactions, new StaticOptions(), clock, NullLogger<BattleResultService>.Instance);
 
         return (season, battle, battles, scores, publisher, service);
     }

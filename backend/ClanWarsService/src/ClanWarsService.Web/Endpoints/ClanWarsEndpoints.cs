@@ -114,6 +114,7 @@ public sealed class AdminClanWarsEndpoints : IEndpointGroup
         group.MapPost("/seasons/{seasonId:guid}/publish", Publish).WithName("Admin.ClanWars.Seasons.Publish").WithSummary("Publish: phases follow the schedule from now on").RequirePermissions(ClanWarsPermissions.ClanWars.MANAGE);
         group.MapGet("/seasons/{seasonId:guid}/scores", Receipts).WithName("Admin.ClanWars.Scores.List").WithSummary("Score receipts (audit)").RequirePermissions(ClanWarsPermissions.ClanWars.VIEW);
         group.MapPost("/seasons/{seasonId:guid}/scores", Adjust).WithName("Admin.ClanWars.Scores.Adjust").WithSummary("Correct a clan's season points").RequirePermissions(ClanWarsPermissions.ClanWars.MANAGE);
+        group.MapGet("/abuse-signals", Signals).WithName("Admin.ClanWars.AbuseSignals").WithSummary("Suspicious battles for review").RequirePermissions(ClanWarsPermissions.ClanWars.VIEW);
         group.MapGet("/reward-tables", ListTables).WithName("Admin.ClanWars.RewardTables.List").WithSummary("Reward tables").RequirePermissions(ClanWarsPermissions.ClanWars.VIEW);
         group.MapPost("/reward-tables", CreateTable).WithName("Admin.ClanWars.RewardTables.Create").WithSummary("Create a reward table (rank ranges)").RequirePermissions(ClanWarsPermissions.ClanWars.MANAGE);
         group.MapGet("/seasons/{seasonId:guid}/rewards", SeasonRewards).WithName("Admin.ClanWars.Rewards.List").WithSummary("Reward grants and delivery summary").RequirePermissions(ClanWarsPermissions.ClanWars.VIEW);
@@ -162,6 +163,13 @@ public sealed class AdminClanWarsEndpoints : IEndpointGroup
         [FromServices] UserScopedData userScope,
         CancellationToken ct) =>
         await handler.Handle(new AdjustScoreCommand(userScope.Id ?? Guid.Empty, seasonId, request), ct);
+
+    private static async Task<EndpointResult<IReadOnlyList<AbuseSignalDto>>> Signals(
+        [FromQuery] Guid? seasonId,
+        [FromQuery] int? limit,
+        [FromServices] IQueryHandler<IReadOnlyList<AbuseSignalDto>, ListAbuseSignalsQuery> handler,
+        CancellationToken ct) =>
+        await handler.Handle(new ListAbuseSignalsQuery(seasonId, limit ?? 100), ct);
 
     private static async Task<EndpointResult<IReadOnlyList<RewardTableDto>>> ListTables(
         [FromServices] IQueryHandler<IReadOnlyList<RewardTableDto>, ListRewardTablesQuery> handler,

@@ -12,6 +12,7 @@ public static class ClanWarsEventRouting
         public const string SEASON_ENDED = "season-ended.clanwars";
         public const string BATTLE_FOUND = "battle-found.clanwars";
         public const string BATTLE_FINISHED = "battle-finished.clanwars";
+        public const string ABUSE_SIGNAL = "abuse-signal.clanwars";
 
         public const string GRANT_ITEMS = "grant-items.clanwars";
         public const string REWARD_ITEMS_GRANTED = "reward-items-granted.clanwars";

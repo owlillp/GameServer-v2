@@ -40,6 +40,12 @@ public interface IBattleRepository
     /// </summary>
     Task<IReadOnlyList<Guid>> ListOpenAsync(Guid? seasonId, DateTime? createdBefore, int limit, CancellationToken cancellationToken);
 
+    Task<int> CountFinishedBetweenAsync(Guid seasonId, Guid clanA, Guid clanB, CancellationToken cancellationToken);
+
+    Task AddSignalsAsync(IReadOnlyCollection<AbuseSignal> signals, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<AbuseSignal>> ListSignalsAsync(Guid? seasonId, int limit, CancellationToken cancellationToken);
+
     /// <summary>Scheduled → InProgress; false if the battle is no longer scheduled.</summary>
     Task<bool> TryStartAsync(Guid battleId, Guid matchId, DateTime now, CancellationToken cancellationToken);
 

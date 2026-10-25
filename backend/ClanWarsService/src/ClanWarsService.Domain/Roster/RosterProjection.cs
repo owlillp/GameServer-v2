@@ -46,6 +46,11 @@ public sealed class RosterEntry
 
     public string Role { get; private set; } = null!;
 
+    /// <summary>
+    /// When the player joined this clan; role changes keep it. Used for the squad tenure rule.
+    /// </summary>
+    public DateTime JoinedAt { get; private set; }
+
     public DateTime EventAt { get; private set; }
 
     // EF Core
@@ -56,6 +61,7 @@ public sealed class RosterEntry
         AccountId = accountId;
         ClanId = clanId;
         Role = role;
+        JoinedAt = eventAt;
         EventAt = eventAt;
     }
 
@@ -63,6 +69,11 @@ public sealed class RosterEntry
 
     public void Apply(Guid clanId, string role, DateTime eventAt)
     {
+        if (clanId != ClanId)
+        {
+            JoinedAt = eventAt;
+        }
+
         ClanId = clanId;
         Role = role;
         EventAt = eventAt;

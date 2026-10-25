@@ -60,6 +60,12 @@ public sealed class BattleQueueService(
             return ClanWarsErrors.SquadNotInClan;
         }
 
+        DateTime joinedBefore = now.AddHours(-options.CurrentValue.MinSquadTenureHours);
+        if (roster.Any(entry => squad.Contains(entry.AccountId) && entry.JoinedAt > joinedBefore))
+        {
+            return ClanWarsErrors.SquadMemberTooNew;
+        }
+
         if (await battleRepository.GetQueuedAsync(clanId, cancellationToken) is not null)
         {
             return ClanWarsErrors.ClanAlreadyQueued;

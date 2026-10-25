@@ -24,6 +24,49 @@ namespace ClanWarsService.Infrastructure.Postgres.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("ClanWarsService.Domain.Battles.AbuseSignal", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("BattleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("battle_id");
+
+                    b.PrimitiveCollection<Guid[]>("ClanIds")
+                        .IsRequired()
+                        .HasColumnType("uuid[]")
+                        .HasColumnName("clan_ids");
+
+                    b.Property<string>("Details")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("details");
+
+                    b.Property<DateTime>("DetectedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("detected_at");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("kind");
+
+                    b.Property<Guid>("SeasonId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("season_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SeasonId", "DetectedAt")
+                        .HasDatabaseName("ix_abuse_signals_season");
+
+                    b.ToTable("abuse_signals", "clanwars");
+                });
+
             modelBuilder.Entity("ClanWarsService.Domain.Battles.Battle", b =>
                 {
                     b.Property<Guid>("Id")
@@ -62,6 +105,14 @@ namespace ClanWarsService.Infrastructure.Postgres.Migrations
                     b.Property<long>("PointsB")
                         .HasColumnType("bigint")
                         .HasColumnName("points_b");
+
+                    b.Property<long>("RatingA")
+                        .HasColumnType("bigint")
+                        .HasColumnName("rating_a");
+
+                    b.Property<long>("RatingB")
+                        .HasColumnType("bigint")
+                        .HasColumnName("rating_b");
 
                     b.Property<Guid>("SeasonId")
                         .HasColumnType("uuid")
@@ -394,6 +445,10 @@ namespace ClanWarsService.Infrastructure.Postgres.Migrations
                     b.Property<DateTime>("EventAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("event_at");
+
+                    b.Property<DateTime>("JoinedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("joined_at");
 
                     b.Property<string>("Role")
                         .IsRequired()

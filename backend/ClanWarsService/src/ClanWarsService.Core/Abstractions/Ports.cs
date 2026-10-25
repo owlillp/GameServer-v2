@@ -36,6 +36,8 @@ public interface IClanWarsEventPublisher
 
     Task PublishBattleFinishedAsync(Battle battle, string status, BattleOutcome? outcome, DateTime finishedAt);
 
+    Task PublishAbuseSignalAsync(AbuseSignal signal);
+
     Task PublishClanPointsGrantedAsync(SeasonRewardGrant grant, int seasonNumber, DateTime now);
 
     Task PublishGrantItemsAsync(SeasonRewardGrant grant, DateTime now);

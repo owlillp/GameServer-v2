@@ -25,7 +25,10 @@ public sealed class ExternalMatchHandler(
     {
         if (Battle.TryParseExternalRef(@event.ExternalRef, out Guid battleId))
         {
-            await resultService.ApplyResultAsync(battleId, @event.MatchId, @event.WinnerSide, cancellationToken);
+            long scoreA = @event.Teams.FirstOrDefault(team => team.Side == 1)?.Score ?? -1;
+            long scoreB = @event.Teams.FirstOrDefault(team => team.Side == 2)?.Score ?? -1;
+
+            await resultService.ApplyResultAsync(battleId, @event.MatchId, @event.WinnerSide, cancellationToken, scoreA, scoreB);
         }
     }
 

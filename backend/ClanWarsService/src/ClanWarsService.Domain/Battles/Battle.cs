@@ -34,6 +34,13 @@ public sealed class Battle
 
     public IReadOnlyList<Guid> SquadB { get; private set; } = [];
 
+    /// <summary>
+    /// Clan ratings (season points) when the battle was made; used to discount wins over weak clans.
+    /// </summary>
+    public long RatingA { get; private set; }
+
+    public long RatingB { get; private set; }
+
     public BattleStatus Status { get; private set; }
 
     // Set only by the conditional SQL transitions of the repository; EF reads them.
@@ -70,6 +77,8 @@ public sealed class Battle
             ClanBId = b.ClanId,
             SquadA = a.Squad,
             SquadB = b.Squad,
+            RatingA = a.Rating,
+            RatingB = b.Rating,
             Status = BattleStatus.Scheduled,
             CreatedAt = now,
         };
@@ -84,12 +93,28 @@ public sealed class Battle
     public bool Involves(Guid clanId) => ClanAId == clanId || ClanBId == clanId;
 
     /// <summary>
-    /// Side 1 is clan A, side 2 is clan B; null side is a draw.
+    /// Side 1 is clan A, side 2 is clan B; null side is a draw. A win over a much weaker clan is
+    /// worth less (<see cref="WeakOpponentPolicy"/>), so farming weak or friendly clans does not pay.
     /// </summary>
-    public BattleOutcome Score(ScoringRules rules, int? winnerSide) => winnerSide switch
+    public BattleOutcome Score(ScoringRules rules, int? winnerSide, WeakOpponentPolicy? policy = null)
     {
-        1 => new BattleOutcome(ClanAId, rules.WinPoints, rules.LossPoints, 1, 0),
-        2 => new BattleOutcome(ClanBId, rules.LossPoints, rules.WinPoints, 0, 1),
-        _ => new BattleOutcome(null, rules.DrawPoints, rules.DrawPoints, 0, 0),
+        policy ??= WeakOpponentPolicy.None;
+
+        return winnerSide switch
+        {
+            1 => new BattleOutcome(ClanAId, policy.WinPoints(rules.WinPoints, RatingA, RatingB), rules.LossPoints, 1, 0),
+            2 => new BattleOutcome(ClanBId, rules.LossPoints, policy.WinPoints(rules.WinPoints, RatingB, RatingA), 0, 1),
+            _ => new BattleOutcome(null, rules.DrawPoints, rules.DrawPoints, 0, 0),
+        };
+    }
+
+    /// <summary>
+    /// How far the winner was above the loser in rating (0 if the weaker side won or it was a draw).
+    /// </summary>
+    public long WinnerAdvantage(int? winnerSide) => winnerSide switch
+    {
+        1 => Math.Max(0, RatingA - RatingB),
+        2 => Math.Max(0, RatingB - RatingA),
+        _ => 0,
     };
 }

@@ -122,3 +122,12 @@ public sealed record RewardGrantDto(
     DateTime? CompletedAt);
 
 public sealed record SeasonRewardsDto(int Pending, int Granted, int Failed, IReadOnlyList<RewardGrantDto> Grants);
+
+public sealed record AbuseSignalDto(
+    Guid Id,
+    string Kind,
+    Guid SeasonId,
+    IReadOnlyList<Guid> ClanIds,
+    Guid? BattleId,
+    string Details,
+    DateTime DetectedAt);

@@ -89,6 +89,24 @@ public sealed class BattleRepository(ClanWarsServiceDbContext dbContext) : IBatt
             .Select(battle => battle.Id)
             .ToListAsync(cancellationToken);
 
+    public Task<int> CountFinishedBetweenAsync(Guid seasonId, Guid clanA, Guid clanB, CancellationToken cancellationToken) =>
+        dbContext.Battles.CountAsync(
+            battle => battle.SeasonId == seasonId
+                && battle.Status == BattleStatus.Finished
+                && ((battle.ClanAId == clanA && battle.ClanBId == clanB) || (battle.ClanAId == clanB && battle.ClanBId == clanA)),
+            cancellationToken);
+
+    public Task AddSignalsAsync(IReadOnlyCollection<AbuseSignal> signals, CancellationToken cancellationToken) =>
+        dbContext.AbuseSignals.AddRangeAsync(signals, cancellationToken);
+
+    public async Task<IReadOnlyList<AbuseSignal>> ListSignalsAsync(Guid? seasonId, int limit, CancellationToken cancellationToken) =>
+        await dbContext.AbuseSignals
+            .AsNoTracking()
+            .Where(signal => seasonId == null || signal.SeasonId == seasonId)
+            .OrderByDescending(signal => signal.DetectedAt)
+            .Take(limit)
+            .ToListAsync(cancellationToken);
+
     public async Task<bool> TryStartAsync(Guid battleId, Guid matchId, DateTime now, CancellationToken cancellationToken) =>
         await dbContext.Database.ExecuteSqlAsync(
             $"""

@@ -80,6 +80,7 @@ internal sealed class RosterEntryConfiguration : IEntityTypeConfiguration<Roster
         builder.Property(entry => entry.AccountId).HasColumnName("account_id").ValueGeneratedNever();
         builder.Property(entry => entry.ClanId).HasColumnName("clan_id");
         builder.Property(entry => entry.Role).HasColumnName("role").HasMaxLength(16);
+        builder.Property(entry => entry.JoinedAt).HasColumnName("joined_at");
         builder.Property(entry => entry.EventAt).HasColumnName("event_at");
 
         builder.HasKey(entry => entry.AccountId);
@@ -226,6 +227,8 @@ internal sealed class BattleConfiguration : IEntityTypeConfiguration<Battle>
         builder.Property(battle => battle.ClanBId).HasColumnName("clan_b_id");
         builder.Property(battle => battle.SquadA).HasColumnName("squad_a").HasColumnType("uuid[]");
         builder.Property(battle => battle.SquadB).HasColumnName("squad_b").HasColumnType("uuid[]");
+        builder.Property(battle => battle.RatingA).HasColumnName("rating_a");
+        builder.Property(battle => battle.RatingB).HasColumnName("rating_b");
         builder.Property(battle => battle.Status).HasColumnName("status").HasConversion<string>().HasMaxLength(16);
         builder.Property(battle => battle.MatchId).HasColumnName("match_id");
         builder.Property(battle => battle.WinnerClanId).HasColumnName("winner_clan_id");
@@ -343,5 +346,24 @@ internal sealed class SeasonRewardGrantConfiguration : IEntityTypeConfiguration<
         builder.Ignore(grant => grant.NeedsPoints);
         builder.Ignore(grant => grant.NeedsWallet);
         builder.Ignore(grant => grant.NeedsItemsPublish);
+    }
+}
+
+internal sealed class AbuseSignalConfiguration : IEntityTypeConfiguration<AbuseSignal>
+{
+    public void Configure(EntityTypeBuilder<AbuseSignal> builder)
+    {
+        builder.ToTable("abuse_signals");
+
+        builder.Property(signal => signal.Id).HasColumnName("id").ValueGeneratedNever();
+        builder.Property(signal => signal.Kind).HasColumnName("kind").HasMaxLength(32);
+        builder.Property(signal => signal.SeasonId).HasColumnName("season_id");
+        builder.Property(signal => signal.ClanIds).HasColumnName("clan_ids").HasColumnType("uuid[]");
+        builder.Property(signal => signal.BattleId).HasColumnName("battle_id");
+        builder.Property(signal => signal.Details).HasColumnName("details").HasMaxLength(512);
+        builder.Property(signal => signal.DetectedAt).HasColumnName("detected_at");
+
+        builder.HasKey(signal => signal.Id);
+        builder.HasIndex(signal => new { signal.SeasonId, signal.DetectedAt }).HasDatabaseName("ix_abuse_signals_season");
     }
 }
