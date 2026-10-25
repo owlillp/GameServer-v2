@@ -94,6 +94,8 @@ public static class RabbitMqConfiguration
             {
                 queue.BindExchange(ClanWarsEventRouting.EVENTS_EXCHANGE, ClanWarsEventRouting.RoutingKeys.SEASON_STARTED);
                 queue.BindExchange(ClanWarsEventRouting.EVENTS_EXCHANGE, ClanWarsEventRouting.RoutingKeys.SEASON_ENDED);
+                queue.BindExchange(ClanWarsEventRouting.EVENTS_EXCHANGE, ClanWarsEventRouting.RoutingKeys.BATTLE_FOUND);
+                queue.BindExchange(ClanWarsEventRouting.EVENTS_EXCHANGE, ClanWarsEventRouting.RoutingKeys.BATTLE_FINISHED);
             });
         }
     }

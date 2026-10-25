@@ -1,4 +1,5 @@
 using System.Text.Json;
+using ClanWarsService.Domain.Battles;
 using ClanWarsService.Domain.Roster;
 using ClanWarsService.Domain.Scores;
 using ClanWarsService.Domain.Seasons;
@@ -29,6 +30,12 @@ internal sealed class SeasonConfiguration : IEntityTypeConfiguration<Season>
                 rules => JsonSerializer.Serialize(rules, JSON),
                 json => JsonSerializer.Deserialize<ScoringRules>(json, JSON) ?? ScoringRules.Default);
         builder.Property(season => season.RewardTableId).HasColumnName("reward_table_id");
+        builder.Property(season => season.BattleWindowTemplate)
+            .HasColumnName("battle_window_template")
+            .HasColumnType("jsonb")
+            .HasConversion(
+                template => template == null ? null : JsonSerializer.Serialize(template, JSON),
+                json => json == null ? null : JsonSerializer.Deserialize<BattleWindowTemplate>(json, JSON));
         builder.Property(season => season.CreatedAt).HasColumnName("created_at");
         builder.Property(season => season.PublishedAt).HasColumnName("published_at");
         builder.Property(season => season.StartedAt).HasColumnName("started_at");
@@ -155,5 +162,86 @@ internal sealed class SeasonResultConfiguration : IEntityTypeConfiguration<Seaso
 
         builder.HasKey(result => new { result.SeasonId, result.ClanId });
         builder.HasIndex(result => new { result.SeasonId, result.Rank }).HasDatabaseName("ix_season_results_rank");
+    }
+}
+
+internal sealed class BattleWindowConfiguration : IEntityTypeConfiguration<BattleWindow>
+{
+    public void Configure(EntityTypeBuilder<BattleWindow> builder)
+    {
+        builder.ToTable("battle_windows");
+
+        builder.Property(window => window.Id).HasColumnName("id").ValueGeneratedNever();
+        builder.Property(window => window.SeasonId).HasColumnName("season_id");
+        builder.Property(window => window.StartsAt).HasColumnName("starts_at");
+        builder.Property(window => window.EndsAt).HasColumnName("ends_at");
+
+        builder.HasKey(window => window.Id);
+        builder.HasIndex(window => new { window.SeasonId, window.StartsAt })
+            .IsUnique()
+            .HasDatabaseName("uq_battle_windows_season_start");
+    }
+}
+
+internal sealed class BattleQueueEntryConfiguration : IEntityTypeConfiguration<BattleQueueEntry>
+{
+    public void Configure(EntityTypeBuilder<BattleQueueEntry> builder)
+    {
+        builder.ToTable("battle_queue");
+
+        builder.Property(entry => entry.Id).HasColumnName("id").ValueGeneratedNever();
+        builder.Property(entry => entry.SeasonId).HasColumnName("season_id");
+        builder.Property(entry => entry.ClanId).HasColumnName("clan_id");
+        builder.Property(entry => entry.Squad).HasColumnName("squad").HasColumnType("uuid[]");
+        builder.Property(entry => entry.Rating).HasColumnName("rating");
+        builder.Property(entry => entry.QueuedBy).HasColumnName("queued_by");
+        builder.Property(entry => entry.QueuedAt).HasColumnName("queued_at");
+        builder.Property(entry => entry.Status).HasColumnName("status").HasConversion<string>().HasMaxLength(16);
+        builder.Property(entry => entry.BattleId).HasColumnName("battle_id");
+        builder.Property(entry => entry.ResolvedAt).HasColumnName("resolved_at");
+
+        builder.HasKey(entry => entry.Id);
+        builder.Property<uint>(Constants.ROW_VERSION).IsRowVersion();
+
+        // One squad in the queue per clan.
+        builder.HasIndex(entry => entry.ClanId)
+            .IsUnique()
+            .HasFilter("status = 'Queued'")
+            .HasDatabaseName("uq_battle_queue_clan_queued");
+        builder.HasIndex(entry => new { entry.SeasonId, entry.Status, entry.QueuedAt })
+            .HasDatabaseName("ix_battle_queue_season_status");
+    }
+}
+
+internal sealed class BattleConfiguration : IEntityTypeConfiguration<Battle>
+{
+    public void Configure(EntityTypeBuilder<Battle> builder)
+    {
+        builder.ToTable("battles");
+
+        builder.Property(battle => battle.Id).HasColumnName("id").ValueGeneratedNever();
+        builder.Property(battle => battle.SeasonId).HasColumnName("season_id");
+        builder.Property(battle => battle.ClanAId).HasColumnName("clan_a_id");
+        builder.Property(battle => battle.ClanBId).HasColumnName("clan_b_id");
+        builder.Property(battle => battle.SquadA).HasColumnName("squad_a").HasColumnType("uuid[]");
+        builder.Property(battle => battle.SquadB).HasColumnName("squad_b").HasColumnType("uuid[]");
+        builder.Property(battle => battle.Status).HasColumnName("status").HasConversion<string>().HasMaxLength(16);
+        builder.Property(battle => battle.MatchId).HasColumnName("match_id");
+        builder.Property(battle => battle.WinnerClanId).HasColumnName("winner_clan_id");
+        builder.Property(battle => battle.PointsA).HasColumnName("points_a");
+        builder.Property(battle => battle.PointsB).HasColumnName("points_b");
+        builder.Property(battle => battle.CancelReason).HasColumnName("cancel_reason").HasMaxLength(64);
+        builder.Property(battle => battle.CreatedAt).HasColumnName("created_at");
+        builder.Property(battle => battle.StartedAt).HasColumnName("started_at");
+        builder.Property(battle => battle.FinishedAt).HasColumnName("finished_at");
+
+        builder.HasKey(battle => battle.Id);
+        builder.HasIndex(battle => new { battle.Status, battle.CreatedAt }).HasDatabaseName("ix_battles_status_created");
+        builder.HasIndex(battle => new { battle.ClanAId, battle.CreatedAt }).HasDatabaseName("ix_battles_clan_a");
+        builder.HasIndex(battle => new { battle.ClanBId, battle.CreatedAt }).HasDatabaseName("ix_battles_clan_b");
+        builder.HasIndex(battle => battle.SeasonId).HasDatabaseName("ix_battles_season_id");
+
+        builder.Ignore(battle => battle.ExternalRef);
+        builder.Ignore(battle => battle.IsOpen);
     }
 }

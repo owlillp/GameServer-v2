@@ -24,6 +24,154 @@ namespace ClanWarsService.Infrastructure.Postgres.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("ClanWarsService.Domain.Battles.Battle", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("CancelReason")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("cancel_reason");
+
+                    b.Property<Guid>("ClanAId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("clan_a_id");
+
+                    b.Property<Guid>("ClanBId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("clan_b_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("FinishedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("finished_at");
+
+                    b.Property<Guid?>("MatchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("match_id");
+
+                    b.Property<long>("PointsA")
+                        .HasColumnType("bigint")
+                        .HasColumnName("points_a");
+
+                    b.Property<long>("PointsB")
+                        .HasColumnType("bigint")
+                        .HasColumnName("points_b");
+
+                    b.Property<Guid>("SeasonId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("season_id");
+
+                    b.PrimitiveCollection<Guid[]>("SquadA")
+                        .IsRequired()
+                        .HasColumnType("uuid[]")
+                        .HasColumnName("squad_a");
+
+                    b.PrimitiveCollection<Guid[]>("SquadB")
+                        .IsRequired()
+                        .HasColumnType("uuid[]")
+                        .HasColumnName("squad_b");
+
+                    b.Property<DateTime?>("StartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid?>("WinnerClanId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("winner_clan_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SeasonId")
+                        .HasDatabaseName("ix_battles_season_id");
+
+                    b.HasIndex("ClanAId", "CreatedAt")
+                        .HasDatabaseName("ix_battles_clan_a");
+
+                    b.HasIndex("ClanBId", "CreatedAt")
+                        .HasDatabaseName("ix_battles_clan_b");
+
+                    b.HasIndex("Status", "CreatedAt")
+                        .HasDatabaseName("ix_battles_status_created");
+
+                    b.ToTable("battles", "clanwars");
+                });
+
+            modelBuilder.Entity("ClanWarsService.Domain.Battles.BattleQueueEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("BattleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("battle_id");
+
+                    b.Property<Guid>("ClanId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("clan_id");
+
+                    b.Property<DateTime>("QueuedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("queued_at");
+
+                    b.Property<Guid>("QueuedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("queued_by");
+
+                    b.Property<long>("Rating")
+                        .HasColumnType("bigint")
+                        .HasColumnName("rating");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("resolved_at");
+
+                    b.Property<Guid>("SeasonId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("season_id");
+
+                    b.PrimitiveCollection<Guid[]>("Squad")
+                        .IsRequired()
+                        .HasColumnType("uuid[]")
+                        .HasColumnName("squad");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("status");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClanId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_battle_queue_clan_queued")
+                        .HasFilter("status = 'Queued'");
+
+                    b.HasIndex("SeasonId", "Status", "QueuedAt")
+                        .HasDatabaseName("ix_battle_queue_season_status");
+
+                    b.ToTable("battle_queue", "clanwars");
+                });
+
             modelBuilder.Entity("ClanWarsService.Domain.Roster.ClanProjection", b =>
                 {
                     b.Property<Guid>("ClanId")
@@ -239,11 +387,42 @@ namespace ClanWarsService.Infrastructure.Postgres.Migrations
                     b.ToTable("season_scores", "clanwars");
                 });
 
+            modelBuilder.Entity("ClanWarsService.Domain.Seasons.BattleWindow", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("EndsAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ends_at");
+
+                    b.Property<Guid>("SeasonId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("season_id");
+
+                    b.Property<DateTime>("StartsAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("starts_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SeasonId", "StartsAt")
+                        .IsUnique()
+                        .HasDatabaseName("uq_battle_windows_season_start");
+
+                    b.ToTable("battle_windows", "clanwars");
+                });
+
             modelBuilder.Entity("ClanWarsService.Domain.Seasons.Season", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
                         .HasColumnName("id");
+
+                    b.Property<string>("BattleWindowTemplate")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("battle_window_template");
 
                     b.Property<DateTime?>("ClosedAt")
                         .HasColumnType("timestamp with time zone")

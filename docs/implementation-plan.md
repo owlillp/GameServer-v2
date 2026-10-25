@@ -1,7 +1,7 @@
 # План реализации: SessionService, MatchmakingService, кланы
 
-> Статус: этапы 0–5 реализованы на ветке `feature/sessions-and-matchmaking-reliability`
-> (интеграционные тесты на Testcontainers не написаны), этапы 6–8 не начаты. Дата: 2026-10-25.
+> Статус: этапы 0–6 реализованы на ветке `feature/sessions-and-matchmaking-reliability`
+> (интеграционные тесты на Testcontainers не написаны), этапы 7–8 не начаты. Дата: 2026-10-25.
 > Связанные документы: `docs/architecture.md`, схема кланов —
 > https://claude.ai/artifact/6CeKfSXPU2dT2qLShGztou
 >
@@ -321,25 +321,31 @@ join-тикету, сервер отчитывается о матчах.
 
 Цель: клановые битвы через существующий контур матчей.
 
-- [ ] `battle_windows`: окна битв в сезоне (генерация из шаблона «каждый день 19–23»)
-- [ ] Очередь отрядов `battle_queue`: офицер ставит отряд; проверки — окно
+- [x] `battle_windows`: окна битв в сезоне (генерация из шаблона «каждый день 19–23»)
+- [x] Очередь отрядов `battle_queue`: офицер ставит отряд; проверки — окно
   открыто, отряд в составе клана, клан не в битве
-- [ ] Подборщик (`BackgroundService` + `PeriodicTimer` + `SKIP LOCKED`):
+- [x] Подборщик (`BackgroundService` + `PeriodicTimer` + `SKIP LOCKED`):
   близкий рейтинг, окно допуска растёт со временем, лимит повторов с одним
   соперником в день
-- [ ] `battles`: SCHEDULED → IN_PROGRESS → FINISHED / CANCELLED, переходы
+- [x] `battles`: SCHEDULED → IN_PROGRESS → FINISHED / CANCELLED, переходы
   условным UPDATE
-- [ ] Matchmaking: «внешний» матч без пати — команда
+- [x] Matchmaking: «внешний» матч без пати — команда
   `create-external-match.matchmaking` (ExternalRef = battle_id, две команды
   игроков, режим `clan-battle`); результат — событие
   `external-match-completed.matchmaking` с тем же ExternalRef
-- [ ] ClanWars слушает результат: переход битвы, очки по `scoring_rules`,
+- [x] ClanWars слушает результат: переход битвы, очки по `scoring_rules`,
   `score_receipts` по battle_id, обновление ZSET, `member_season_stats`
-- [ ] Финализация сезона учитывает битвы, начатые до `ends_at`
-- [ ] Push: `battle-found`, `battle-finished` в группу `clan:{id}`
+- [x] Финализация сезона учитывает битвы, начатые до `ends_at`
+- [x] Push: `battle-found`, `battle-finished` в группу `clan:{id}`
 
 Готово, когда: две тестовые команды из двух кланов проходят битву на заглушке
 сервера, очки начисляются один раз даже при повторной доставке результата.
+
+> Сделано (см. README ClanWarsService). К контракту добавлены `external-match-started` и
+> `external-match-cancelled` — чтобы перевести битву в `InProgress` и отменить её, когда
+> сервер не выделен или упал. Внешние матчи не меняют рейтинг игроков Matchmaking и не дают
+> наград очереди. Повторная доставка результата проверена unit-тестом `BattleTests` (фейки
+> с теми же условными переходами); на заглушке сервера в Docker сценарий не прогонялся.
 
 ---
 

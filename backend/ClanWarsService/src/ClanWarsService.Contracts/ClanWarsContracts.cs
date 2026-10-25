@@ -43,12 +43,49 @@ public sealed record ScoreReceiptDto(
     Guid? ActorId,
     DateTime CreatedAt);
 
+/// <param name="BattleWindowStartUtc">Daily battle window start, "HH:mm" UTC; with the end, e.g. "19:00"–"23:00".
+/// Both empty: battles run all season long.</param>
 public sealed record CreateSeasonRequest(
     string Name,
     DateTime StartsAt,
     DateTime EndsAt,
     int? FinalizationGraceMinutes,
     ScoringRulesDto? ScoringRules,
-    Guid? RewardTableId);
+    Guid? RewardTableId,
+    string? BattleWindowStartUtc = null,
+    string? BattleWindowEndUtc = null);
+
+public sealed record BattleWindowDto(DateTime StartsAt, DateTime EndsAt, bool IsOpen);
+
+public sealed record QueueSquadRequest(IReadOnlyList<Guid> AccountIds);
+
+public sealed record BattleQueueEntryDto(
+    Guid Id,
+    Guid SeasonId,
+    Guid ClanId,
+    IReadOnlyList<Guid> Squad,
+    long Rating,
+    string Status,
+    Guid? BattleId,
+    DateTime QueuedAt);
+
+public sealed record BattleDto(
+    Guid Id,
+    Guid SeasonId,
+    Guid ClanAId,
+    Guid ClanBId,
+    IReadOnlyList<Guid> SquadA,
+    IReadOnlyList<Guid> SquadB,
+    string Status,
+    Guid? MatchId,
+    Guid? WinnerClanId,
+    long PointsA,
+    long PointsB,
+    string? CancelReason,
+    DateTime CreatedAt,
+    DateTime? StartedAt,
+    DateTime? FinishedAt);
+
+public sealed record MyBattlesDto(BattleQueueEntryDto? Queued, IReadOnlyList<BattleDto> Battles);
 
 public sealed record AdjustScoreRequest(Guid ClanId, long Amount, string Reason, Guid? OperationId);

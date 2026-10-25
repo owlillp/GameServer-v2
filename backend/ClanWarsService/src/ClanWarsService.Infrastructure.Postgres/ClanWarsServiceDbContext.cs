@@ -1,3 +1,4 @@
+using ClanWarsService.Domain.Battles;
 using ClanWarsService.Domain.Roster;
 using ClanWarsService.Domain.Scores;
 using ClanWarsService.Domain.Seasons;
@@ -21,6 +22,12 @@ public class ClanWarsServiceDbContext(DbContextOptions<ClanWarsServiceDbContext>
     public DbSet<MemberSeasonStats> MemberStats => Set<MemberSeasonStats>();
 
     public DbSet<SeasonResult> Results => Set<SeasonResult>();
+
+    public DbSet<BattleWindow> BattleWindows => Set<BattleWindow>();
+
+    public DbSet<BattleQueueEntry> BattleQueue => Set<BattleQueueEntry>();
+
+    public DbSet<Battle> Battles => Set<Battle>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

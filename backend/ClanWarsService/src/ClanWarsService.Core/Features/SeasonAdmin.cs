@@ -45,7 +45,8 @@ public sealed class CreateSeasonHandler(
             TimeSpan.FromMinutes(grace),
             request.ScoringRules.ToDomain(),
             request.RewardTableId,
-            timeProvider.GetUtcNow().UtcDateTime);
+            timeProvider.GetUtcNow().UtcDateTime,
+            request.ToBattleWindowTemplate());
 
         if (seasonResult.IsFailure)
         {
@@ -83,7 +84,8 @@ public sealed class UpdateSeasonHandler(
             TimeSpan.FromMinutes(grace),
             request.ScoringRules.ToDomain(),
             request.RewardTableId,
-            timeProvider.GetUtcNow().UtcDateTime);
+            timeProvider.GetUtcNow().UtcDateTime,
+            request.ToBattleWindowTemplate());
 
         if (updateResult.IsFailure)
         {
@@ -101,6 +103,7 @@ public sealed class UpdateSeasonHandler(
 /// </summary>
 public sealed class PublishSeasonHandler(
     ISeasonRepository seasonRepository,
+    IBattleRepository battleRepository,
     ISeasonScheduler scheduler,
     ITransactionManager transactionManager,
     TimeProvider timeProvider) : ICommandHandler<SeasonDto, PublishSeasonCommand>
@@ -123,6 +126,10 @@ public sealed class PublishSeasonHandler(
         {
             return publishResult.Error;
         }
+
+        await battleRepository.AddWindowsAsync(
+            [.. season.BattleWindows().Select(window => new BattleWindow(season.Id, window.StartsAt, window.EndsAt))],
+            cancellationToken);
 
         var saveResult = await transactionManager.SaveChangesAsync(cancellationToken);
         if (saveResult.IsFailure)

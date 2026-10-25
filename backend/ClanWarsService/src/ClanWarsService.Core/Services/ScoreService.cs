@@ -35,20 +35,20 @@ public sealed class ScoreService(
     TimeProvider timeProvider,
     ILogger<ScoreService> logger)
 {
+    /// <summary>
+    /// Standalone change (admin correction): own transaction, then cache refresh.
+    /// </summary>
     public async Task<Result<ScoreReceipt, Error>> ApplyAsync(ScoreChange change, CancellationToken cancellationToken)
     {
-        DateTime now = timeProvider.GetUtcNow().UtcDateTime;
+        if (change.Amount == 0)
+        {
+            return ClanWarsErrors.ScoreInvalid;
+        }
 
         ClanProjection? clan = await rosterRepository.GetClanAsync(change.ClanId, cancellationToken);
         if (clan is null || clan.IsDisbanded)
         {
             return ClanWarsErrors.ClanNotFound;
-        }
-
-        var receiptResult = ScoreReceipt.Create(change.SeasonId, change.ClanId, change.SourceId, change.Amount, change.Reason, change.ActorId, now);
-        if (receiptResult.IsFailure)
-        {
-            return receiptResult.Error;
         }
 
         var beginResult = await transactionManager.BeginTransactionAsync(cancellationToken);
@@ -68,6 +68,49 @@ public sealed class ScoreService(
             return ClanWarsErrors.SeasonNotScoring;
         }
 
+        var applyResult = await ApplyInTransactionAsync(change, [], cancellationToken);
+        if (applyResult.IsFailure)
+        {
+            return applyResult.Error;
+        }
+
+        if (applyResult.Value is null)
+        {
+            return ClanWarsErrors.ScoreAlreadyApplied;
+        }
+
+        var commitResult = await transactionManager.CommitTransactionAsync(cancellationToken);
+        if (commitResult.IsFailure)
+        {
+            return commitResult.Error;
+        }
+
+        await RefreshCacheAsync(change.SeasonId, [change.ClanId], cancellationToken);
+        return applyResult.Value;
+    }
+
+    /// <summary>
+    /// Inside the caller's transaction (season row already locked): records the receipt, adds the
+    /// points and the members' contributions. Returns null when this source was already applied.
+    /// </summary>
+    public async Task<Result<ScoreReceipt?, Error>> ApplyInTransactionAsync(
+        ScoreChange change,
+        IReadOnlyList<Guid> members,
+        CancellationToken cancellationToken)
+    {
+        if (await scoreRepository.ReceiptExistsAsync(change.SeasonId, change.ClanId, change.SourceId, cancellationToken))
+        {
+            return Result.Success<ScoreReceipt?, Error>(null);
+        }
+
+        DateTime now = timeProvider.GetUtcNow().UtcDateTime;
+
+        var receiptResult = ScoreReceipt.Create(change.SeasonId, change.ClanId, change.SourceId, change.Amount, change.Reason, change.ActorId, now);
+        if (receiptResult.IsFailure)
+        {
+            return receiptResult.Error;
+        }
+
         await scoreRepository.AddReceiptAsync(receiptResult.Value, cancellationToken);
 
         var saveResult = await transactionManager.SaveChangesAsync(cancellationToken);
@@ -78,25 +121,30 @@ public sealed class ScoreService(
 
         await scoreRepository.ApplyAsync(change.SeasonId, change.ClanId, change.Amount, change.Battles, change.Wins, now, cancellationToken);
 
-        var commitResult = await transactionManager.CommitTransactionAsync(cancellationToken);
-        if (commitResult.IsFailure)
+        foreach (Guid accountId in members)
         {
-            return commitResult.Error;
+            await scoreRepository.ApplyMemberAsync(
+                change.SeasonId,
+                accountId,
+                change.ClanId,
+                change.Amount,
+                change.Battles,
+                change.Wins,
+                cancellationToken);
         }
 
-        await UpdateCacheAsync(change.SeasonId, change.ClanId, cancellationToken);
         return receiptResult.Value;
     }
 
-    private async Task UpdateCacheAsync(Guid seasonId, Guid clanId, CancellationToken cancellationToken)
+    /// <summary>
+    /// After commit: writes the absolute values from PostgreSQL to Redis; a failure schedules a check.
+    /// </summary>
+    public async Task RefreshCacheAsync(Guid seasonId, IReadOnlyCollection<Guid> clanIds, CancellationToken cancellationToken)
     {
         try
         {
-            SeasonScore? score = await scoreRepository.GetAsync(seasonId, clanId, cancellationToken);
-            if (score is not null)
-            {
-                await leaderboardStore.SetAsync(seasonId, [score], cancellationToken);
-            }
+            IReadOnlyList<SeasonScore> scores = await scoreRepository.ListByClansAsync(seasonId, clanIds, cancellationToken);
+            await leaderboardStore.SetAsync(seasonId, scores, cancellationToken);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {

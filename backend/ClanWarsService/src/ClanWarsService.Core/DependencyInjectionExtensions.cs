@@ -30,12 +30,15 @@ public static class DependencyInjectionExtensions
             services.AddScoped<ISeasonScheduler, SeasonScheduler>();
             services.AddScoped<SeasonLifecycle>();
             services.AddScoped<ScoreService>();
+            services.AddScoped<BattleQueueService>();
+            services.AddScoped<BattleResultService>();
             services.AddScoped<LeaderboardSync>();
             services.AddScoped<LeaderboardReader>();
             services.AddSingleton<LeaderboardSyncSignal>();
 
             services.AddHostedService<SeasonSchedulingInitializer>();
             services.AddHostedService<LeaderboardSynchronizer>();
+            services.AddHostedService<BattleMatcher>();
 
             return services;
         }

@@ -23,6 +23,10 @@ public sealed class ClanWarsEndpoints : IEndpointGroup
         group.MapGet("/seasons/{seasonId:guid}/leaderboard/me", GetMine).WithName("ClanWars.Leaderboard.Me").WithSummary("The player's clan place with neighbours");
         group.MapGet("/seasons/{seasonId:guid}/clans/{clanId:guid}", GetClan).WithName("ClanWars.Leaderboard.Clan").WithSummary("A clan's place with neighbours");
         group.MapGet("/seasons/{seasonId:guid}/clans/{clanId:guid}/members", GetMembers).WithName("ClanWars.Clan.Members").WithSummary("Member contributions in a season");
+        group.MapGet("/seasons/{seasonId:guid}/windows", GetWindows).WithName("ClanWars.Windows").WithSummary("Battle windows of a season");
+        group.MapPost("/battles/queue", QueueSquad).WithName("ClanWars.Battles.Queue").WithSummary("Put a squad up for a battle (leader or officer)");
+        group.MapDelete("/battles/queue", LeaveQueue).WithName("ClanWars.Battles.Queue.Leave").WithSummary("Take the clan's squad out of the queue");
+        group.MapGet("/battles/me", GetMyBattles).WithName("ClanWars.Battles.Me").WithSummary("The clan's queued squad and recent battles");
 
         return group;
     }
@@ -61,6 +65,31 @@ public sealed class ClanWarsEndpoints : IEndpointGroup
         [FromServices] IQueryHandler<IReadOnlyList<MemberContributionDto>, GetMemberContributionsQuery> handler,
         CancellationToken ct) =>
         await handler.Handle(new GetMemberContributionsQuery(seasonId, clanId), ct);
+
+    private static async Task<EndpointResult<IReadOnlyList<BattleWindowDto>>> GetWindows(
+        [FromRoute] Guid seasonId,
+        [FromServices] IQueryHandler<IReadOnlyList<BattleWindowDto>, ListBattleWindowsQuery> handler,
+        CancellationToken ct) =>
+        await handler.Handle(new ListBattleWindowsQuery(seasonId), ct);
+
+    private static async Task<EndpointResult<BattleQueueEntryDto>> QueueSquad(
+        [FromBody] QueueSquadRequest request,
+        [FromServices] ICommandHandler<BattleQueueEntryDto, QueueSquadCommand> handler,
+        [FromServices] UserScopedData userScope,
+        CancellationToken ct) =>
+        await handler.Handle(new QueueSquadCommand(userScope.Id ?? Guid.Empty, request.AccountIds), ct);
+
+    private static async Task<EndpointResult<bool>> LeaveQueue(
+        [FromServices] ICommandHandler<bool, LeaveBattleQueueCommand> handler,
+        [FromServices] UserScopedData userScope,
+        CancellationToken ct) =>
+        await handler.Handle(new LeaveBattleQueueCommand(userScope.Id ?? Guid.Empty), ct);
+
+    private static async Task<EndpointResult<MyBattlesDto>> GetMyBattles(
+        [FromServices] IQueryHandler<MyBattlesDto, GetMyBattlesQuery> handler,
+        [FromServices] UserScopedData userScope,
+        CancellationToken ct) =>
+        await handler.Handle(new GetMyBattlesQuery(userScope.Id ?? Guid.Empty), ct);
 }
 
 public sealed class AdminClanWarsEndpoints : IEndpointGroup

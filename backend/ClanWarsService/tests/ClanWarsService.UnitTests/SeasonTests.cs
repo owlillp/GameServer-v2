@@ -93,7 +93,7 @@ public sealed class SeasonTests
     [Fact]
     public void ScoreReceipt_RequiresAmountSourceAndReason()
     {
-        Assert.Equal(ClanWarsErrors.ScoreInvalid, ScoreReceipt.Create(Guid.NewGuid(), Guid.NewGuid(), "battle:1", 0, "win", null, NOW).Error);
+        Assert.True(ScoreReceipt.Create(Guid.NewGuid(), Guid.NewGuid(), "battle:1", 0, "loss", null, NOW).IsSuccess);
         Assert.Equal(ClanWarsErrors.ScoreInvalid, ScoreReceipt.Create(Guid.NewGuid(), Guid.NewGuid(), " ", 10, "win", null, NOW).Error);
         Assert.True(ScoreReceipt.Create(Guid.NewGuid(), Guid.NewGuid(), "admin:1", -10, "penalty", Guid.NewGuid(), NOW).IsSuccess);
     }

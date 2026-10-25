@@ -30,6 +30,37 @@
 - Расхождение ZSET и PostgreSQL проверяется по таймеру и после ошибок записи; пересборка — во
   временный ключ пачками + `RENAME`, под advisory lock сезона. Чтение при недоступном Redis — из PostgreSQL.
 
+## Битвы
+
+1. Окна битв — из шаблона сезона (`battleWindowStartUtc` / `battleWindowEndUtc`, например
+   `19:00`–`23:00` UTC; окно через полночь тоже работает), нарезаются при публикации в
+   `battle_windows`. Без шаблона битвы идут весь сезон.
+2. Лидер или офицер ставит отряд: `POST /clanwars/battles/queue { accountIds }`. Проверки по
+   проекции состава: роль, все в клане, окно открыто, сезон `Active`, клан не в очереди
+   (ещё и уникальный индекс) и не в битве. Рейтинг — очки клана в сезоне на момент постановки.
+3. `BattleMatcher` (фон, `SKIP LOCKED`) пока открыто окно: тот же размер отряда, разница
+   рейтинга в пределах допуска, растущего с ожиданием (`BaseRatingTolerance` +
+   `RatingTolerancePerMinute` × минуты), и не больше `MaxBattlesPerPairPerDay` встреч пары за сутки.
+   Битва и команда `create-external-match.matchmaking` (ExternalRef = `clan-battle:{id}`,
+   режим `CLAN-BATTLE`, две команды) пишутся в одной транзакции; кланы получают `battle-found`.
+4. Matchmaking играет матч на игровом сервере как обычный (без пати, наград и рейтинга игроков)
+   и сообщает `external-match-started` → битва `InProgress`, `external-match-completed` → итог,
+   `external-match-cancelled` → битва отменяется.
+5. Итог (`BattleResultService`) — одна транзакция под блокировкой сезона: условный переход
+   `Scheduled/InProgress → Finished`, очки обоим кланам по `scoringRules` чеками
+   `battle:{id}` (уникальны), вклад участников отрядов в `member_season_stats`. Повторная
+   доставка ничего не задваивает; доставка, упавшая на полпути, дописывается следующей.
+6. Битва без результата дольше `BattleTimeoutMinutes` отменяется. После конца сезона очередь
+   снимается, а открытые битвы ещё могут прислать итог до `finalizesAt`; при закрытии
+   оставшиеся отменяются.
+
+| Метод | Путь | Что делает |
+| --- | --- | --- |
+| `GET` | `/clanwars/seasons/{id}/windows` | Окна битв |
+| `POST` | `/clanwars/battles/queue` | Поставить отряд |
+| `DELETE` | `/clanwars/battles/queue` | Снять отряд |
+| `GET` | `/clanwars/battles/me` | Отряд в очереди и последние битвы клана |
+
 ## Состав кланов
 
 Проекция `clans` / `clan_roster` из `clan-events` (создание, роспуск, вступление, выход, смена роли).
@@ -54,7 +85,9 @@
 
 ## События (exchange `clanwars-events`)
 
-`season-started.clanwars`, `season-ended.clanwars` → RealtimeService (всем подключённым).
+`season-started.clanwars`, `season-ended.clanwars` → RealtimeService (всем подключённым);
+`battle-found.clanwars`, `battle-finished.clanwars` → RealtimeService (группы обоих кланов).
+Команда `create-external-match.matchmaking`; слушает `external-match-*.matchmaking`.
 `clan-points-granted.clanwars` (этап 7) слушает ClanService.
 
 ## Конфигурация

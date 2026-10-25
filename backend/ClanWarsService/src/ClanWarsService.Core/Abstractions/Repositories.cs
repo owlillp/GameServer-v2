@@ -81,6 +81,13 @@ public interface IScoreRepository
 
     Task<int> CountAheadOfAsync(SeasonScore score, CancellationToken cancellationToken);
 
+    Task<bool> ReceiptExistsAsync(Guid seasonId, Guid clanId, string sourceId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Atomic upsert of a player's contribution in the current transaction.
+    /// </summary>
+    Task ApplyMemberAsync(Guid seasonId, Guid accountId, Guid clanId, long points, int battles, int wins, CancellationToken cancellationToken);
+
     Task<IReadOnlyList<MemberSeasonStats>> ListMemberStatsAsync(Guid seasonId, Guid clanId, CancellationToken cancellationToken);
 
     Task AddResultsAsync(IReadOnlyCollection<SeasonResult> results, CancellationToken cancellationToken);

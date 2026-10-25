@@ -43,8 +43,7 @@ public sealed class ScoreReceipt
         string source = (sourceId ?? string.Empty).Trim();
         string trimmedReason = (reason ?? string.Empty).Trim();
 
-        if (amount == 0
-            || source.Length is 0 or > SOURCE_MAX_LENGTH
+        if (source.Length is 0 or > SOURCE_MAX_LENGTH
             || trimmedReason.Length is 0 or > REASON_MAX_LENGTH)
         {
             return ClanWarsErrors.ScoreInvalid;

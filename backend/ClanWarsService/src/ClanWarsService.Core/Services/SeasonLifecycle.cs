@@ -17,6 +17,7 @@ namespace ClanWarsService.Core.Services;
 public sealed class SeasonLifecycle(
     ISeasonRepository seasonRepository,
     IScoreRepository scoreRepository,
+    IBattleRepository battleRepository,
     IClanWarsEventPublisher eventPublisher,
     ITransactionManager transactionManager,
     IOptionsMonitor<ClanWarsOptions> options,
@@ -44,8 +45,24 @@ public sealed class SeasonLifecycle(
             await eventPublisher.PublishSeasonStartedAsync(season);
         }
 
+        if (transitions.Contains(SeasonStatus.Finalizing))
+        {
+            // No new battles after the end; battles already running may still report during the grace.
+            await battleRepository.CancelQueuedAsync(season.Id, now, cancellationToken);
+        }
+
         if (season.IsReadyToClose(now))
         {
+            // Results are frozen now: battles still without a result do not count.
+            foreach (Guid battleId in await battleRepository.ListOpenAsync(season.Id, null, int.MaxValue, cancellationToken))
+            {
+                if (await battleRepository.TryCancelAsync(battleId, "season-closed", now, cancellationToken)
+                    && await battleRepository.GetBattleAsync(battleId, cancellationToken) is { } battle)
+                {
+                    await eventPublisher.PublishBattleFinishedAsync(battle, BattleResultService.CANCELLED, null, now);
+                }
+            }
+
             IReadOnlyList<SeasonResult> results = await SnapshotResultsAsync(season.Id, cancellationToken);
             season.Close(now);
 

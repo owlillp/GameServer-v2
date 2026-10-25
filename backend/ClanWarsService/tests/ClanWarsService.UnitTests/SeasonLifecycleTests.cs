@@ -1,4 +1,3 @@
-using System.Data.Common;
 using ClanWarsService.Core.Abstractions;
 using ClanWarsService.Core.Configuration;
 using ClanWarsService.Core.Services;
@@ -59,108 +58,10 @@ public sealed class SeasonLifecycleTests
         new(
             new FakeSeasons(season),
             scores,
+            new FakeBattles(),
             publisher,
             new NoTransaction(),
             new StaticOptions(),
             clock,
             NullLogger<SeasonLifecycle>.Instance);
-
-    private sealed class FixedClock(DateTime now) : TimeProvider
-    {
-        public override DateTimeOffset GetUtcNow() => new(now);
-    }
-
-    private sealed class StaticOptions : IOptionsMonitor<ClanWarsOptions>
-    {
-        public ClanWarsOptions CurrentValue { get; } = new();
-
-        public ClanWarsOptions Get(string? name) => CurrentValue;
-
-        public IDisposable? OnChange(Action<ClanWarsOptions, string?> listener) => null;
-    }
-
-    private sealed class RecordingPublisher : IClanWarsEventPublisher
-    {
-        public int Started { get; private set; }
-
-        public List<IReadOnlyList<SeasonResult>> Ended { get; } = [];
-
-        public Task PublishSeasonStartedAsync(Season season)
-        {
-            Started++;
-            return Task.CompletedTask;
-        }
-
-        public Task PublishSeasonEndedAsync(Season season, IReadOnlyList<SeasonResult> top)
-        {
-            Ended.Add(top);
-            return Task.CompletedTask;
-        }
-    }
-
-    private sealed class FakeSeasons(Season stored) : ISeasonRepository
-    {
-        public Task<Season?> GetAsync(Guid seasonId, CancellationToken cancellationToken) => Task.FromResult<Season?>(stored);
-
-        public Task<Season?> GetForUpdateAsync(Guid seasonId, CancellationToken cancellationToken) => Task.FromResult<Season?>(stored);
-
-        public Task<IReadOnlyList<Season>> ListAsync(CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<Season>>([stored]);
-
-        public Task<IReadOnlyList<Season>> ListOpenAsync(CancellationToken cancellationToken) => ListAsync(cancellationToken);
-
-        public Task<Season?> GetCurrentAsync(CancellationToken cancellationToken) => GetAsync(stored.Id, cancellationToken);
-
-        public Task<int> NextNumberAsync(CancellationToken cancellationToken) => Task.FromResult(2);
-
-        public Task<bool> OverlapsAsync(Guid seasonId, DateTime startsAt, DateTime finalizesAt, CancellationToken cancellationToken) => Task.FromResult(false);
-
-        public Task AddAsync(Season season, CancellationToken cancellationToken) => Task.CompletedTask;
-    }
-
-    private sealed class FakeScores(IReadOnlyList<SeasonScore> scores) : IScoreRepository
-    {
-        public List<SeasonResult> Results { get; } = [];
-
-        public Task<IReadOnlyList<SeasonScore>> ListTopAsync(Guid seasonId, int offset, int limit, CancellationToken cancellationToken) =>
-            Task.FromResult<IReadOnlyList<SeasonScore>>([.. scores.OrderByDescending(score => score.Points).Skip(offset).Take(limit)]);
-
-        public Task AddResultsAsync(IReadOnlyCollection<SeasonResult> results, CancellationToken cancellationToken)
-        {
-            Results.AddRange(results);
-            return Task.CompletedTask;
-        }
-
-        public Task AddReceiptAsync(ScoreReceipt receipt, CancellationToken cancellationToken) => throw new NotSupportedException();
-
-        public Task<IReadOnlyList<ScoreReceipt>> ListReceiptsAsync(Guid seasonId, Guid? clanId, int limit, CancellationToken cancellationToken) => throw new NotSupportedException();
-
-        public Task ApplyAsync(Guid seasonId, Guid clanId, long delta, int battles, int wins, DateTime now, CancellationToken cancellationToken) => throw new NotSupportedException();
-
-        public Task<SeasonScore?> GetAsync(Guid seasonId, Guid clanId, CancellationToken cancellationToken) => throw new NotSupportedException();
-
-        public Task<IReadOnlyList<SeasonScore>> ListByClansAsync(Guid seasonId, IReadOnlyCollection<Guid> clanIds, CancellationToken cancellationToken) => throw new NotSupportedException();
-
-        public Task<IReadOnlyList<SeasonScore>> ListAfterAsync(Guid seasonId, Guid? afterClanId, int limit, CancellationToken cancellationToken) => throw new NotSupportedException();
-
-        public Task<int> CountAsync(Guid seasonId, CancellationToken cancellationToken) => throw new NotSupportedException();
-
-        public Task<int> CountAheadOfAsync(SeasonScore score, CancellationToken cancellationToken) => throw new NotSupportedException();
-
-        public Task<IReadOnlyList<MemberSeasonStats>> ListMemberStatsAsync(Guid seasonId, Guid clanId, CancellationToken cancellationToken) => throw new NotSupportedException();
-
-        public Task<IAsyncDisposable?> TryAcquireRebuildLockAsync(Guid seasonId, CancellationToken cancellationToken) => throw new NotSupportedException();
-    }
-
-    private sealed class NoTransaction : ITransactionManager
-    {
-        public Task<UnitResult<Error>> BeginTransactionAsync(CancellationToken cancellationToken = default) => Task.FromResult(UnitResult.Success<Error>());
-
-        public Task<UnitResult<Error>> SaveChangesAsync(CancellationToken cancellationToken = default) => Task.FromResult(UnitResult.Success<Error>());
-
-        public Task<UnitResult<Error>> CommitTransactionAsync(CancellationToken cancellationToken = default) => Task.FromResult(UnitResult.Success<Error>());
-
-        public DbConnection GetDbConnection() => throw new NotSupportedException();
-
-        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
-    }
 }

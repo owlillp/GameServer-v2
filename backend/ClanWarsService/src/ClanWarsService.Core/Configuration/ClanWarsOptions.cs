@@ -43,4 +43,41 @@ public sealed class ClanWarsOptions
 
     [Range(1, 3600)]
     public int ReconcileRetrySeconds { get; init; } = 15;
+
+    [Required]
+    [MaxLength(32)]
+    public string BattleRegion { get; init; } = "eu-west";
+
+    [Range(1, 10)]
+    public int MinSquadSize { get; init; } = 1;
+
+    [Range(1, 10)]
+    public int MaxSquadSize { get; init; } = 5;
+
+    [Range(1, 3600)]
+    public int MatcherIntervalSeconds { get; init; } = 5;
+
+    [Range(1, 10000)]
+    public int MatcherBatchSize { get; init; } = 200;
+
+    /// <summary>
+    /// Allowed rating (season points) gap at once; grows by <see cref="RatingTolerancePerMinute"/> per waited minute.
+    /// </summary>
+    [Range(0, long.MaxValue)]
+    public long BaseRatingTolerance { get; init; } = 100;
+
+    [Range(0, long.MaxValue)]
+    public long RatingTolerancePerMinute { get; init; } = 50;
+
+    /// <summary>
+    /// The same two clans meet at most this many times per UTC day.
+    /// </summary>
+    [Range(1, 100)]
+    public int MaxBattlesPerPairPerDay { get; init; } = 3;
+
+    /// <summary>
+    /// A battle with no result after this long is cancelled.
+    /// </summary>
+    [Range(1, 24 * 60)]
+    public int BattleTimeoutMinutes { get; init; } = 90;
 }

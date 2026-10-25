@@ -1,3 +1,4 @@
+using ClanWarsService.Domain.Battles;
 using ClanWarsService.Domain.Scores;
 using ClanWarsService.Domain.Seasons;
 
@@ -29,6 +30,10 @@ public interface IClanWarsEventPublisher
     Task PublishSeasonStartedAsync(Season season);
 
     Task PublishSeasonEndedAsync(Season season, IReadOnlyList<SeasonResult> top);
+
+    Task PublishBattleCreatedAsync(Battle battle, string mode, string region);
+
+    Task PublishBattleFinishedAsync(Battle battle, string status, BattleOutcome? outcome, DateTime finishedAt);
 }
 
 public interface IOutboxService

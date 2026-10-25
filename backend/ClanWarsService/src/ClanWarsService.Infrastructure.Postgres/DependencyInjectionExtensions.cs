@@ -49,6 +49,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<ISeasonRepository, SeasonRepository>();
         services.AddScoped<IRosterRepository, RosterRepository>();
         services.AddScoped<IScoreRepository, ScoreRepository>();
+        services.AddScoped<IBattleRepository, BattleRepository>();
 
         return services;
     }

@@ -161,6 +161,23 @@ public sealed class ScoreRepository(ClanWarsServiceDbContext dbContext, NpgsqlDa
                 && (other.Points > score.Points || (other.Points == score.Points && other.UpdatedAt < score.UpdatedAt)),
             cancellationToken);
 
+    public Task<bool> ReceiptExistsAsync(Guid seasonId, Guid clanId, string sourceId, CancellationToken cancellationToken) =>
+        dbContext.Receipts.AnyAsync(
+            receipt => receipt.SeasonId == seasonId && receipt.ClanId == clanId && receipt.SourceId == sourceId,
+            cancellationToken);
+
+    public Task ApplyMemberAsync(Guid seasonId, Guid accountId, Guid clanId, long points, int battles, int wins, CancellationToken cancellationToken) =>
+        dbContext.Database.ExecuteSqlAsync(
+            $"""
+            INSERT INTO clanwars.member_season_stats (season_id, account_id, clan_id, points, battles, wins)
+            VALUES ({seasonId}, {accountId}, {clanId}, {points}, {battles}, {wins})
+            ON CONFLICT (season_id, account_id, clan_id) DO UPDATE SET
+                points = member_season_stats.points + EXCLUDED.points,
+                battles = member_season_stats.battles + EXCLUDED.battles,
+                wins = member_season_stats.wins + EXCLUDED.wins
+            """,
+            cancellationToken);
+
     public async Task<IReadOnlyList<MemberSeasonStats>> ListMemberStatsAsync(Guid seasonId, Guid clanId, CancellationToken cancellationToken) =>
         await dbContext.MemberStats
             .AsNoTracking()

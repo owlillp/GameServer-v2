@@ -18,7 +18,7 @@ public sealed class FakeGameServerOptions
 
     public string Region { get; init; } = "eu-west";
 
-    public IReadOnlyList<string> Modes { get; init; } = ["FREE-ROAM", "RANKED"];
+    public IReadOnlyList<string> Modes { get; init; } = ["FREE-ROAM", "RANKED", "CLAN-BATTLE"];
 
     public int Capacity { get; init; } = 64;
 

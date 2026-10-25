@@ -28,6 +28,11 @@ public sealed class Season
 
     public Guid? RewardTableId { get; private set; }
 
+    /// <summary>
+    /// Daily battle window (UTC), e.g. 19:00–23:00; null means battles run all season long.
+    /// </summary>
+    public BattleWindowTemplate? BattleWindowTemplate { get; private set; }
+
     public DateTime CreatedAt { get; private set; }
 
     public DateTime? PublishedAt { get; private set; }
@@ -49,7 +54,8 @@ public sealed class Season
         TimeSpan finalizationGrace,
         ScoringRules? rules,
         Guid? rewardTableId,
-        DateTime now)
+        DateTime now,
+        BattleWindowTemplate? battleWindows = null)
     {
         var season = new Season
         {
@@ -59,7 +65,7 @@ public sealed class Season
             CreatedAt = now,
         };
 
-        var updateResult = season.UpdateDraft(name, startsAt, endsAt, finalizationGrace, rules, rewardTableId, now);
+        var updateResult = season.UpdateDraft(name, startsAt, endsAt, finalizationGrace, rules, rewardTableId, now, battleWindows);
         return updateResult.IsFailure ? updateResult.Error : season;
     }
 
@@ -70,7 +76,8 @@ public sealed class Season
         TimeSpan finalizationGrace,
         ScoringRules? rules,
         Guid? rewardTableId,
-        DateTime now)
+        DateTime now,
+        BattleWindowTemplate? battleWindows = null)
     {
         if (Status != SeasonStatus.Draft)
         {
@@ -93,6 +100,11 @@ public sealed class Season
             return ClanWarsErrors.SeasonInPast;
         }
 
+        if (battleWindows is not null && battleWindows.DailyStartUtc == battleWindows.DailyEndUtc)
+        {
+            return ClanWarsErrors.BattleWindowInvalid;
+        }
+
         ScoringRules scoring = rules ?? ScoringRules.Default;
         if (!scoring.IsValid)
         {
@@ -105,8 +117,42 @@ public sealed class Season
         FinalizesAt = EndsAt.Add(finalizationGrace);
         ScoringRules = scoring;
         RewardTableId = rewardTableId;
+        BattleWindowTemplate = battleWindows;
 
         return UnitResult.Success<Error>();
+    }
+
+    /// <summary>
+    /// Concrete battle windows of the season, cut to [StartsAt, EndsAt). A window that ends before
+    /// it starts (22:00–02:00) runs past midnight.
+    /// </summary>
+    public IReadOnlyList<(DateTime StartsAt, DateTime EndsAt)> BattleWindows()
+    {
+        if (BattleWindowTemplate is null)
+        {
+            return [(StartsAt, EndsAt)];
+        }
+
+        var windows = new List<(DateTime, DateTime)>();
+        TimeSpan start = BattleWindowTemplate.DailyStartUtc.ToTimeSpan();
+        TimeSpan end = BattleWindowTemplate.DailyEndUtc.ToTimeSpan();
+        TimeSpan length = end > start ? end - start : end + TimeSpan.FromDays(1) - start;
+
+        for (DateTime day = StartsAt.Date.AddDays(-1); day < EndsAt; day = day.AddDays(1))
+        {
+            DateTime windowStart = day + start;
+            DateTime windowEnd = windowStart + length;
+
+            DateTime from = windowStart > StartsAt ? windowStart : StartsAt;
+            DateTime to = windowEnd < EndsAt ? windowEnd : EndsAt;
+
+            if (from < to)
+            {
+                windows.Add((DateTime.SpecifyKind(from, DateTimeKind.Utc), DateTime.SpecifyKind(to, DateTimeKind.Utc)));
+            }
+        }
+
+        return windows;
     }
 
     public UnitResult<Error> Publish(DateTime now)

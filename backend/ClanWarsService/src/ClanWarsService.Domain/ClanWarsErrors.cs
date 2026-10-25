@@ -43,6 +43,30 @@ public static class ClanWarsErrors
     public static Error NotInClan { get; } =
         Error.NotFound("clanwars.clan.not_member", "Player is not in a clan", "accountId");
 
+    public static Error BattleWindowInvalid { get; } =
+        Error.Validation("clanwars.battle.window.invalid", "Daily battle window start and end must differ", "battleWindow");
+
+    public static Error BattleWindowClosed { get; } =
+        Error.Conflict("clanwars.battle.window.closed", "Battles are not open right now", "seasonId");
+
+    public static Error SquadInvalid { get; } =
+        Error.Validation("clanwars.battle.squad.invalid", "Squad size is out of range or has duplicates", "accountIds");
+
+    public static Error SquadNotInClan { get; } =
+        Error.Validation("clanwars.battle.squad.not_in_clan", "Every squad member must be in your clan", "accountIds");
+
+    public static Error NotOfficer { get; } =
+        Error.Authorization("clanwars.battle.not_officer", "Only the leader or an officer can manage battles", "role");
+
+    public static Error ClanAlreadyQueued { get; } =
+        Error.Conflict("clanwars.battle.already_queued", "The clan already has a squad in the queue", "clanId");
+
+    public static Error ClanInBattle { get; } =
+        Error.Conflict("clanwars.battle.in_battle", "The clan is already in a battle", "clanId");
+
+    public static Error NotQueued { get; } =
+        Error.NotFound("clanwars.battle.not_queued", "The clan has no squad in the queue", "clanId");
+
     public static Error ClanNotRanked { get; } =
         Error.NotFound("clanwars.clan.not_ranked", "Clan has no score in this season", "clanId");
 }
