@@ -1,4 +1,4 @@
-using Grpc.Net.Client;
+﻿using Grpc.Net.Client;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Shared.Communication;
@@ -24,7 +24,12 @@ public static class WalletServiceExtensions
         services.AddSingleton(serviceProvider =>
             new WalletReservation.WalletReservationClient(
                 serviceProvider.GetRequiredService<GrpcChannel>()));
+        services.AddSingleton(serviceProvider =>
+            new WalletCredit.WalletCreditClient(
+                serviceProvider.GetRequiredService<GrpcChannel>()));
+        services.AddSingleton<WalletGrpcInvoker>();
         services.AddScoped<IWalletClient, WalletGrpcClient>();
+        services.AddScoped<IWalletCreditClient, WalletCreditGrpcClient>();
 
         return services;
     }

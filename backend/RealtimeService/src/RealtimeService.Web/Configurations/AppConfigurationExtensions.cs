@@ -1,8 +1,9 @@
-using RealtimeService.Web.Hubs;
+﻿using RealtimeService.Web.Hubs;
 using Scalar.AspNetCore;
 using Shared.Authentication;
 using Shared.Framework.Cors;
 using Shared.Framework.Endpoints;
+using Shared.Framework.HealthChecks;
 using Shared.Framework.Logging;
 using Shared.Framework.Middlewares;
 
@@ -12,11 +13,11 @@ public static class AppConfigurationExtensions
 {
     public static IApplicationBuilder Configure(this WebApplication app)
     {
-        app.UseRouting();
-        app.ConfigureCors();
-        app.UseSerilogHttpRequestLogging();
         app.UseExceptionMiddleware();
         app.UseRequestCorrelationId();
+        app.UseSerilogHttpRequestLogging();
+        app.UseRouting();
+        app.ConfigureCors();
         app.UsePlatformAuthentication();
 
         if (!app.Environment.IsProduction())
@@ -25,7 +26,7 @@ public static class AppConfigurationExtensions
             app.MapScalarApiReference().AllowAnonymous();
         }
 
-        app.MapHealthChecks("/health").AllowAnonymous();
+        app.MapPlatformHealthChecks();
         app.MapHub<RealtimeHub>("/realtime");
         app.MapEndpoints();
         app.MapEndpointGroups(typeof(AppConfigurationExtensions).Assembly);

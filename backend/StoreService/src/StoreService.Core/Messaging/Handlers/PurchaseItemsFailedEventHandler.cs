@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Shared.Core.Database;
 using Shared.IntegrationEvents.Stores.Events;
 using StoreService.Core.Abstractions;
@@ -38,11 +38,11 @@ public sealed class PurchaseItemsFailedEventHandler(
                     order.Id,
                     releaseResult.Error.ToString());
 
-                throw new InvalidOperationException($"Wallet release failed for order {order.Id}");
+                throw releaseResult.Error.AsTransient().ToException();
             }
         }
 
         order.Fail(@event.Reason);
-        await transactionManager.SaveChangesAsync(cancellationToken);
+        (await transactionManager.SaveChangesAsync(cancellationToken)).ThrowIfFailed();
     }
 }

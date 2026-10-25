@@ -45,7 +45,7 @@ public static class DependencyInjectionExtensions
             }
         });
 
-        services.AddScoped<IReadDbContext, StoreServiceDbContext>();
+        services.AddScoped<IReadDbContext>(serviceProvider => serviceProvider.GetRequiredService<StoreServiceDbContext>());
         services.AddScoped<ITransactionManager, TransactionManager>();
         services.AddScoped<IOutboxService, OutboxService>();
         services.AddScoped<IOfferRepository, OfferRepository>();

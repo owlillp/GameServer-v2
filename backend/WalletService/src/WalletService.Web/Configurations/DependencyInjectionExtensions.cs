@@ -1,6 +1,7 @@
-using Shared.Authentication;
+﻿using Shared.Authentication;
 using Shared.Framework.Cors;
 using Shared.Framework.Endpoints;
+using Shared.Framework.HealthChecks;
 using Shared.Framework.Logging;
 using Shared.Framework.OpenApi;
 using Shared.Messaging;
@@ -30,9 +31,9 @@ public static class DependencyInjectionExtensions
             builder.Services.AddSingleton<ServiceTokenInterceptor>();
             builder.Services.AddGrpc(options => options.Interceptors.Add<ServiceTokenInterceptor>());
             builder.Services.AddOpenApiSpec(Constants.SERVICE_NAME, Constants.VERSION);
-            builder.Services.AddHealthChecks()
-                .AddDbContextCheck<WalletServiceDbContext>(POSTGRESQL_HEALTH_CHECK)
-                .AddRabbitMqCheck(configuration);
+            builder.Services.AddPlatformHealthChecks()
+                .AddDbContextCheck<WalletServiceDbContext>(POSTGRESQL_HEALTH_CHECK, tags: [HealthCheckExtensions.READY_TAG])
+                .AddRabbitMqCheck(configuration, tags: [HealthCheckExtensions.READY_TAG]);
             builder.Services.AddEndpoints(typeof(DependencyInjectionExtensions).Assembly);
 
             builder.Services.AddCore();

@@ -36,8 +36,8 @@
     <PackageVersion Include="OpenIddict.Server.AspNetCore" Version="7.7.1" />
     <PackageVersion Include="OpenIddict.Validation.AspNetCore" Version="7.7.1" />
     <PackageVersion Include="OpenIddict.Validation.ServerIntegration" Version="7.7.1" />
-    <PackageVersion Include="owlip.shared.authentication" Version="0.1.1" />
-    <PackageVersion Include="Owlip.Shared.Messaging" Version="0.1.0" />
+    <PackageVersion Include="owlip.shared.authentication" Version="0.2.0" />
+    <PackageVersion Include="Owlip.Shared.Messaging" Version="0.2.0" />
     <PackageVersion Include="Quartz" Version="3.20.1" />
     <PackageVersion Include="Quartz.Extensions.Hosting" Version="3.20.1" />
     <PackageVersion Include="Quartz.Serialization.Json" Version="3.20.1" />
@@ -53,8 +53,8 @@
     <PackageVersion Include="xunit" Version="2.9.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
     <!-- Shared -->
-    <PackageVersion Include="owlip.shared.core" Version="0.1.0" />
-    <PackageVersion Include="owlip.shared.framework" Version="0.1.1" />
+    <PackageVersion Include="owlip.shared.core" Version="0.2.0" />
+    <PackageVersion Include="owlip.shared.framework" Version="0.2.0" />
     <PackageVersion Include="Owlip.Shared.SharedKernel" Version="0.1.0" />
     <!-- Code Quality (analyzers configured in root Directory.Build.props) -->
     <PackageVersion Include="Roslynator.Analyzers" Version="5.0.0" />

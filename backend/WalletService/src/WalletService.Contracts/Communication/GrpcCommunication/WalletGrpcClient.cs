@@ -1,7 +1,5 @@
 ﻿using CSharpFunctionalExtensions;
 using Grpc.Core;
-using Microsoft.Extensions.Options;
-using Shared.Communication;
 using Shared.Grpc.Wallet;
 using Shared.SharedKernel.Errors;
 
@@ -9,11 +7,8 @@ namespace WalletService.Contracts.Communication.GrpcCommunication;
 
 public sealed class WalletGrpcClient(
     WalletReservation.WalletReservationClient client,
-    IServiceTokenProvider tokenProvider,
-    IOptions<WalletServiceOptions> options) : IWalletClient
+    WalletGrpcInvoker invoker) : IWalletClient
 {
-    private static readonly TimeSpan RETRY_DELAY = TimeSpan.FromMilliseconds(200);
-
     public async Task<Result<string, Error>> ReserveAsync(
         Guid walletId,
         string currency,
@@ -33,7 +28,7 @@ public sealed class WalletGrpcClient(
 
         try
         {
-            ReserveReply reply = await InvokeAsync(
+            ReserveReply reply = await invoker.InvokeAsync(
                 callOptions => client.ReserveAsync(request, callOptions).ResponseAsync,
                 cancellationToken);
 
@@ -53,7 +48,7 @@ public sealed class WalletGrpcClient(
 
         try
         {
-            CommitReply reply = await InvokeAsync(
+            CommitReply reply = await invoker.InvokeAsync(
                 callOptions => client.CommitAsync(request, callOptions).ResponseAsync,
                 cancellationToken);
 
@@ -76,7 +71,7 @@ public sealed class WalletGrpcClient(
 
         try
         {
-            ReleaseReply reply = await InvokeAsync(
+            ReleaseReply reply = await invoker.InvokeAsync(
                 callOptions => client.ReleaseAsync(request, callOptions).ResponseAsync,
                 cancellationToken);
 
@@ -92,47 +87,4 @@ public sealed class WalletGrpcClient(
             return GeneralErrors.Failure($"Wallet is unavailable: {exception.Status.Detail}");
         }
     }
-
-    private async Task<TResponse> InvokeAsync<TResponse>(
-        Func<CallOptions, Task<TResponse>> action,
-        CancellationToken cancellationToken)
-    {
-        WalletServiceOptions current = options.Value;
-
-        for (int attempt = 1; attempt <= current.MaxAttempts; attempt++)
-        {
-            CallOptions callOptions = await CreateCallOptionsAsync(current, cancellationToken);
-
-            try
-            {
-                return await action(callOptions);
-            }
-            catch (RpcException exception)
-                when (attempt < current.MaxAttempts && IsTransient(exception.StatusCode))
-            {
-                await Task.Delay(RETRY_DELAY, cancellationToken);
-            }
-        }
-
-        throw new InvalidOperationException("Wallet call attempts were exhausted");
-    }
-
-    private async Task<CallOptions> CreateCallOptionsAsync(
-        WalletServiceOptions current,
-        CancellationToken cancellationToken)
-    {
-        string token = await tokenProvider.GetAccessTokenAsync(cancellationToken);
-        var headers = new Metadata
-        {
-            { "authorization", $"Bearer {token}" },
-        };
-
-        return new CallOptions(
-            headers: headers,
-            deadline: DateTime.UtcNow.AddSeconds(current.DeadlineSeconds));
-    }
-
-    private static bool IsTransient(StatusCode statusCode) =>
-        statusCode is StatusCode.Unavailable or StatusCode.DeadlineExceeded;
 }
-

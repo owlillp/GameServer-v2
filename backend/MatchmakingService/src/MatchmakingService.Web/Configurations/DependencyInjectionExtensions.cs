@@ -1,13 +1,15 @@
-using MatchmakingService.Contracts.Communication;
+﻿using MatchmakingService.Contracts.Communication;
 using MatchmakingService.Core;
 using MatchmakingService.Core.Messaging;
 using MatchmakingService.Domain.Authorization;
 using MatchmakingService.Infrastructure.Postgres;
 using MatchmakingService.Infrastructure.Redis;
 using MatchmakingService.Web.Services;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Shared.Authentication;
 using Shared.Framework.Cors;
 using Shared.Framework.Endpoints;
+using Shared.Framework.HealthChecks;
 using Shared.Framework.Logging;
 using Shared.Framework.OpenApi;
 using Shared.Messaging;
@@ -29,10 +31,10 @@ public static class DependencyInjectionExtensions
             builder.Services.AddPlatformAuthentication(configuration, RolePermissions.Map, AUTHENTICATION_SECTION_NAME);
             builder.Services.AddFrameworkCors(configuration);
             builder.Services.AddOpenApiSpec(Constants.SERVICE_NAME, Constants.VERSION);
-            builder.Services.AddHealthChecks()
-                .AddDbContextCheck<MatchmakingServiceDbContext>(POSTGRESQL_HEALTH_CHECK)
-                .AddRabbitMqCheck(configuration)
-                .AddCheck<RedisHealthCheck>("redis");
+            builder.Services.AddPlatformHealthChecks()
+                .AddDbContextCheck<MatchmakingServiceDbContext>(POSTGRESQL_HEALTH_CHECK, tags: [HealthCheckExtensions.READY_TAG])
+                .AddRabbitMqCheck(configuration, tags: [HealthCheckExtensions.READY_TAG])
+                .AddCheck<RedisHealthCheck>("redis", failureStatus: HealthStatus.Degraded);
             builder.Services.AddEndpoints(typeof(DependencyInjectionExtensions).Assembly);
 
             builder.Services.AddWalletCreditHttpCommunication(configuration);

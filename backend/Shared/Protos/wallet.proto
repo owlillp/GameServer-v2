@@ -10,6 +10,26 @@ service WalletReservation {
   rpc Release (ReleaseRequest) returns (ReleaseReply);
 }
 
+// Idempotent credit for service-to-service rewards (matchmaking, clan wars).
+service WalletCredit {
+  rpc Credit (CreditRequest) returns (CreditReply);
+}
+
+message CreditRequest {
+  string wallet_id = 1;
+  string currency = 2;
+  int64 amount = 3;
+  string operation_id = 4;
+  string reference_id = 5;
+  string reason = 6;
+}
+
+message CreditReply {
+  bool success = 1;
+  string error_code = 2;
+  string error_message = 3;
+}
+
 message ReserveRequest {
   string wallet_id = 1;
   string currency = 2;

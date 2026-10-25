@@ -1,4 +1,4 @@
-using Grpc.Core;
+﻿using Grpc.Core;
 using Grpc.Core.Interceptors;
 using Microsoft.Extensions.Options;
 
@@ -19,8 +19,8 @@ public sealed class ServiceTokenInterceptor(IOptions<GrpcAuthOptions> options) :
 
     private void EnsureServiceCaller(ServerCallContext context)
     {
-        string allowedClientId = options.Value.AllowedClientId;
-        if (string.IsNullOrWhiteSpace(allowedClientId))
+        string[] allowedClientIds = [.. options.Value.AllClientIds];
+        if (allowedClientIds.Length == 0)
         {
             throw new RpcException(new Status(
                 StatusCode.PermissionDenied,
@@ -32,7 +32,8 @@ public sealed class ServiceTokenInterceptor(IOptions<GrpcAuthOptions> options) :
         string? clientId = user.FindFirst("client_id")?.Value;
 
         if (user.Identity?.IsAuthenticated != true
-            || !string.Equals(clientId, allowedClientId, StringComparison.Ordinal)
+            || clientId is null
+            || !allowedClientIds.Contains(clientId, StringComparer.Ordinal)
             || !string.Equals(subject, clientId, StringComparison.Ordinal))
         {
             throw new RpcException(new Status(

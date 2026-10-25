@@ -1,4 +1,4 @@
-using RealtimeService.Core;
+﻿using RealtimeService.Core;
 using RealtimeService.Core.Configuration;
 using RealtimeService.Core.Messaging;
 using RealtimeService.Infrastructure.Redis;
@@ -7,6 +7,7 @@ using RealtimeService.Web.Services;
 using Shared.Authentication;
 using Shared.Framework.Cors;
 using Shared.Framework.Endpoints;
+using Shared.Framework.HealthChecks;
 using Shared.Framework.Logging;
 using Shared.Framework.OpenApi;
 using Shared.Messaging;
@@ -37,9 +38,9 @@ public static class DependencyInjectionExtensions
                 AUTHENTICATION_SECTION_NAME);
             builder.Services.AddFrameworkCors(configuration);
             builder.Services.AddOpenApiSpec(Constants.SERVICE_NAME, Constants.VERSION);
-            builder.Services.AddHealthChecks()
-                .AddRabbitMqCheck(configuration)
-                .AddCheck<RedisHealthCheck>("redis");
+            builder.Services.AddPlatformHealthChecks()
+                .AddRabbitMqCheck(configuration, tags: [HealthCheckExtensions.READY_TAG])
+                .AddCheck<RedisHealthCheck>("redis", tags: [HealthCheckExtensions.READY_TAG]);
             builder.Services.AddEndpoints(typeof(DependencyInjectionExtensions).Assembly);
 
             builder.Services.Configure<RealtimeOptions>(

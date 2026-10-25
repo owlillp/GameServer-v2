@@ -1,4 +1,4 @@
-using InventoryService.Contracts.Requests;
+﻿using InventoryService.Contracts.Requests;
 using InventoryService.Core.Features.Inventories.Commands.GrantItems;
 using InventoryService.Core.Messaging;
 using InventoryService.Core.Messaging.Publishers;
@@ -38,6 +38,11 @@ public sealed class GrantPurchaseItemsCommandHandler(
             new GrantItemsCommand(command.AccountId, request),
             cancellationToken);
 
+        if (result.IsFailure && !result.Error.IsBusinessRejection())
+        {
+            throw result.Error.ToHandlerException();
+        }
+
         if (result.IsFailure)
         {
             string reason = Describe(result.Error);
@@ -62,7 +67,14 @@ public sealed class GrantPurchaseItemsCommandHandler(
                 cancellationToken);
         }
 
-        await transactionManager.SaveChangesAsync(cancellationToken);
+        var saveResult = await transactionManager.SaveChangesAsync(cancellationToken);
+        if (saveResult.IsFailure && saveResult.Error.IsUniqueViolation())
+        {
+            // A concurrent delivery of the same command already wrote the receipt and the result event.
+            return;
+        }
+
+        saveResult.ThrowIfFailed();
     }
 
     private static string Describe(Error error) =>

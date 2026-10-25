@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Shared.Core.Database;
 using Shared.IntegrationEvents.Stores.Events;
 using StoreService.Core.Abstractions;
@@ -42,7 +42,7 @@ public sealed class PurchaseItemsGrantedEventHandler(
         if (order.HoldId is null)
         {
             order.Fail("Wallet hold is missing");
-            await transactionManager.SaveChangesAsync(cancellationToken);
+            (await transactionManager.SaveChangesAsync(cancellationToken)).ThrowIfFailed();
             return;
         }
 
@@ -54,7 +54,7 @@ public sealed class PurchaseItemsGrantedEventHandler(
                 order.Id,
                 commitResult.Error.ToString());
 
-            throw new InvalidOperationException($"Wallet commit failed for order {order.Id}");
+            throw commitResult.Error.AsTransient().ToException();
         }
 
         if (order.Status == OrderStatus.RESERVED)
@@ -78,6 +78,6 @@ public sealed class PurchaseItemsGrantedEventHandler(
             [.. order.Items.Select(item => item.CatalogItemId)],
             cancellationToken);
 
-        await transactionManager.SaveChangesAsync(cancellationToken);
+        (await transactionManager.SaveChangesAsync(cancellationToken)).ThrowIfFailed();
     }
 }

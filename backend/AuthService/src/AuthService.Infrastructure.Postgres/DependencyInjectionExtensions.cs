@@ -50,7 +50,7 @@ public static class DependencyInjectionExtensions
         });
 
         services.AddScoped<ITransactionManager, TransactionManager>();
-        services.AddScoped<IReadDbContext, AuthServiceDbContext>();
+        services.AddScoped<IReadDbContext>(serviceProvider => serviceProvider.GetRequiredService<AuthServiceDbContext>());
         services.AddScoped<IOutboxService, OutboxService>();
 
         services.AddSingleton<IWolverineExtension, AuthWolverineExtension>();
