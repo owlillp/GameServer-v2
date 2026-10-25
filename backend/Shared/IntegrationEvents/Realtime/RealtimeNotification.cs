@@ -23,6 +23,8 @@ public static class RealtimeNotificationTypes
     public const string CLAN_MEMBER_LEFT = "clan.member.left";
     public const string CLAN_MEMBER_ROLE_CHANGED = "clan.member.role_changed";
     public const string CLAN_DISBANDED = "clan.disbanded";
+    public const string CLANWARS_SEASON_STARTED = "clanwars.season.started";
+    public const string CLANWARS_SEASON_ENDED = "clanwars.season.ended";
 }
 
 public static class RealtimeAudiences

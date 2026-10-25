@@ -7,5 +7,7 @@ public static class ClanWarsEventRouting
     public static class RoutingKeys
     {
         public const string CLAN_POINTS_GRANTED = "clan-points-granted.clanwars";
+        public const string SEASON_STARTED = "season-started.clanwars";
+        public const string SEASON_ENDED = "season-ended.clanwars";
     }
 }

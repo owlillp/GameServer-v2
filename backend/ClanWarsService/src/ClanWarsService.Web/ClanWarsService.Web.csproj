@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" />
+        <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
+        <PackageReference Include="Quartz.Extensions.Hosting" />
+        <PackageReference Include="Quartz.Serialization.Json" />
+        <PackageReference Include="Scalar.AspNetCore" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="owlip.shared.framework" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\ClanWarsService.Contracts\ClanWarsService.Contracts.csproj" />
+      <ProjectReference Include="..\ClanWarsService.Core\ClanWarsService.Core.csproj" />
+      <ProjectReference Include="..\ClanWarsService.Domain\ClanWarsService.Domain.csproj" />
+      <ProjectReference Include="..\ClanWarsService.Infrastructure.Postgres\ClanWarsService.Infrastructure.Postgres.csproj" />
+      <ProjectReference Include="..\ClanWarsService.Infrastructure.Redis\ClanWarsService.Infrastructure.Redis.csproj" />
+    </ItemGroup>
+
+</Project>
+
