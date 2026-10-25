@@ -1,4 +1,4 @@
-using MatchmakingService.Core.Abstractions;
+﻿using MatchmakingService.Core.Abstractions;
 using MatchmakingService.Domain.Matches;
 using Microsoft.EntityFrameworkCore;
 
@@ -35,15 +35,35 @@ public sealed class MatchRepository(MatchmakingServiceDbContext dbContext) : IMa
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Match>> ListExpiredActiveAsync(
-        DateTime now,
-        int limit,
-        CancellationToken cancellationToken) =>
-        await FullMatchQuery()
-            .Where(match => match.Status == MatchStatus.Active && match.EndsAt <= now)
-            .OrderBy(match => match.EndsAt)
-            .Take(limit)
+    public async Task<Guid?> ClaimExpiredActiveAsync(DateTime now, CancellationToken cancellationToken)
+    {
+        string status = nameof(MatchStatus.Active);
+
+        List<Guid> ids = await dbContext.Database
+            .SqlQuery<Guid>($"""
+                SELECT id AS "Value" FROM matchmaking.matches
+                WHERE status = {status} AND ends_at <= {now}
+                ORDER BY ends_at
+                LIMIT 1
+                FOR UPDATE SKIP LOCKED
+                """)
             .ToListAsync(cancellationToken);
+
+        return ids.Count == 0 ? null : ids[0];
+    }
+
+    public async Task<Match?> GetForUpdateAsync(Guid matchId, CancellationToken cancellationToken)
+    {
+        List<Guid> locked = await dbContext.Database
+            .SqlQuery<Guid>($"""
+                SELECT id AS "Value" FROM matchmaking.matches
+                WHERE id = {matchId}
+                FOR UPDATE
+                """)
+            .ToListAsync(cancellationToken);
+
+        return locked.Count == 0 ? null : await GetAsync(matchId, cancellationToken);
+    }
 
     public Task AddAsync(Match match, CancellationToken cancellationToken) =>
         dbContext.Matches.AddAsync(match, cancellationToken).AsTask();

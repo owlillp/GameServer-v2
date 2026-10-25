@@ -1,4 +1,4 @@
-using MatchmakingService.Domain;
+﻿using MatchmakingService.Domain;
 using MatchmakingService.Domain.Matches;
 using MatchmakingService.Domain.Rewards;
 using Microsoft.EntityFrameworkCore;
@@ -23,6 +23,9 @@ internal sealed class MatchConfiguration : IEntityTypeConfiguration<Match>
         builder.Property(match => match.UpdatedAt).HasColumnName("updated_at");
 
         builder.HasKey(match => match.Id);
+
+        // PostgreSQL row version: concurrent updates of the same row fail instead of overwriting each other.
+        builder.Property<uint>(Constants.ROW_VERSION).IsRowVersion();
 
         builder.HasMany(match => match.Parties)
             .WithOne()

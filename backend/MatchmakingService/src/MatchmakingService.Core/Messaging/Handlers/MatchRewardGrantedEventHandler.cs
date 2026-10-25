@@ -1,4 +1,4 @@
-using MatchmakingService.Core.Abstractions;
+﻿using MatchmakingService.Core.Abstractions;
 using Shared.Core.Database;
 using Shared.IntegrationEvents.Matchmaking.Events;
 
@@ -17,6 +17,6 @@ public sealed class MatchRewardGrantedEventHandler(
         }
 
         grant.MarkItemsGranted(DateTime.UtcNow);
-        await transactionManager.SaveChangesAsync(cancellationToken);
+        (await transactionManager.SaveChangesAsync(cancellationToken)).ThrowIfFailed();
     }
 }

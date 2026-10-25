@@ -97,6 +97,12 @@ namespace MatchmakingService.Infrastructure.Postgres.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("winner_party_id");
 
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.HasKey("Id");
 
                     b.HasIndex("WinnerPartyId")
@@ -241,6 +247,12 @@ namespace MatchmakingService.Infrastructure.Postgres.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("version");
 
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Code")
@@ -317,6 +329,12 @@ namespace MatchmakingService.Infrastructure.Postgres.Migrations
                         .HasMaxLength(16)
                         .HasColumnType("character varying(16)")
                         .HasColumnName("status");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.HasKey("Id");
 
@@ -466,6 +484,12 @@ namespace MatchmakingService.Infrastructure.Postgres.Migrations
                     b.Property<Guid>("WalletOperationId")
                         .HasColumnType("uuid")
                         .HasColumnName("wallet_operation_id");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.HasKey("Id");
 

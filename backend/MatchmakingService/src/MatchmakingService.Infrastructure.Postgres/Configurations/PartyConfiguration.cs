@@ -1,4 +1,4 @@
-using MatchmakingService.Domain;
+﻿using MatchmakingService.Domain;
 using MatchmakingService.Domain.Parties;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -20,6 +20,9 @@ internal sealed class PartyConfiguration : IEntityTypeConfiguration<Party>
         builder.Property(party => party.Version).HasColumnName("version");
 
         builder.HasKey(party => party.Id);
+
+        // PostgreSQL row version: concurrent updates of the same row fail instead of overwriting each other.
+        builder.Property<uint>(Constants.ROW_VERSION).IsRowVersion();
         builder.HasIndex(party => party.Code).IsUnique().HasDatabaseName("uq_parties_code");
 
         builder.HasMany(party => party.Members)

@@ -1,5 +1,10 @@
 namespace MatchmakingService.Domain.Leaderboard;
 
+/// <summary>
+/// Read model of a player's standing. Written only by an atomic SQL upsert
+/// (<c>points = points + delta</c>), never by EF change tracking, so concurrent match
+/// finalizations cannot lose points. <see cref="UpdatedAt"/> is when the current points were reached.
+/// </summary>
 public sealed class LeaderboardEntry
 {
     public Guid AccountId { get; private set; }
@@ -15,26 +20,12 @@ public sealed class LeaderboardEntry
     // EF Core
     private LeaderboardEntry() { }
 
-    public static LeaderboardEntry Create(Guid accountId, long points, bool isWin, DateTime now) =>
-        new()
-        {
-            AccountId = accountId,
-            Points = Math.Max(0, points),
-            Wins = isWin ? 1 : 0,
-            MatchesPlayed = 1,
-            UpdatedAt = now,
-        };
-
-    public void Apply(long points, bool isWin, DateTime now)
+    public LeaderboardEntry(Guid accountId, long points, int wins, int matchesPlayed, DateTime updatedAt)
     {
-        Points += Math.Max(0, points);
-        MatchesPlayed += 1;
-
-        if (isWin)
-        {
-            Wins += 1;
-        }
-
-        UpdatedAt = now;
+        AccountId = accountId;
+        Points = points;
+        Wins = wins;
+        MatchesPlayed = matchesPlayed;
+        UpdatedAt = updatedAt;
     }
 }

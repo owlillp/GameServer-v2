@@ -2,38 +2,26 @@ using MatchmakingService.Domain.Leaderboard;
 
 namespace MatchmakingService.Core.Abstractions;
 
-public interface ILeaderboardRepository
-{
-    Task<LeaderboardEntry?> GetAsync(Guid accountId, CancellationToken cancellationToken);
-
-    Task<IReadOnlyList<LeaderboardEntry>> GetTopAsync(int limit, CancellationToken cancellationToken);
-
-    Task<IReadOnlyList<LeaderboardEntry>> ListByAccountsAsync(
-        IReadOnlyCollection<Guid> accountIds,
-        CancellationToken cancellationToken);
-
-    Task<IReadOnlyList<LeaderboardEntry>> ListAsync(int limit, CancellationToken cancellationToken);
-
-    Task<int> CountWithMorePointsAsync(long points, CancellationToken cancellationToken);
-
-    Task AddAsync(LeaderboardEntry entry, CancellationToken cancellationToken);
-
-    Task AddRangeAsync(IReadOnlyCollection<LeaderboardEntry> entries, CancellationToken cancellationToken);
-}
-
-public sealed record LeaderboardRow(Guid AccountId, long Points);
+public sealed record LeaderboardRow(Guid AccountId, long Points, double Score);
 
 public interface ILeaderboardStore
 {
-    Task RebuildAsync(IReadOnlyList<LeaderboardEntry> entries, CancellationToken cancellationToken);
+    /// <summary>
+    /// Writes absolute values (ZADD) taken from PostgreSQL, so a repeated write never double counts.
+    /// </summary>
+    Task SetAsync(IReadOnlyCollection<LeaderboardEntry> entries, CancellationToken cancellationToken);
 
-    Task AddPointsAsync(Guid accountId, long points, CancellationToken cancellationToken);
+    /// <summary>
+    /// Builds a temporary key batch by batch and atomically swaps it in with RENAME.
+    /// </summary>
+    /// <param name="loadBatch">Receives the last account id of the previous batch (null for the first one).</param>
+    Task ReplaceAsync(
+        Func<Guid?, CancellationToken, Task<IReadOnlyList<LeaderboardEntry>>> loadBatch,
+        CancellationToken cancellationToken);
 
     Task<IReadOnlyList<LeaderboardRow>> GetTopAsync(int limit, CancellationToken cancellationToken);
 
-    Task<long?> GetPointsAsync(Guid accountId, CancellationToken cancellationToken);
-
     Task<long?> GetRankAsync(Guid accountId, CancellationToken cancellationToken);
 
-    Task ClearAsync(CancellationToken cancellationToken);
+    Task<long> CountAsync(CancellationToken cancellationToken);
 }

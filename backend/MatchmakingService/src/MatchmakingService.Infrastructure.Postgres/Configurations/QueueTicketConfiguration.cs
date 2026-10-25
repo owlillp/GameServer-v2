@@ -1,4 +1,4 @@
-using MatchmakingService.Domain;
+﻿using MatchmakingService.Domain;
 using MatchmakingService.Domain.Queues;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -22,6 +22,9 @@ internal sealed class QueueTicketConfiguration : IEntityTypeConfiguration<QueueT
         builder.Property(ticket => ticket.MatchedAt).HasColumnName("matched_at");
 
         builder.HasKey(ticket => ticket.Id);
+
+        // PostgreSQL row version: concurrent updates of the same row fail instead of overwriting each other.
+        builder.Property<uint>(Constants.ROW_VERSION).IsRowVersion();
         builder.HasIndex(ticket => ticket.PartyId).HasDatabaseName("ix_queue_tickets_party_id");
         builder.HasIndex(ticket => new { ticket.Status, ticket.EnqueuedAt })
             .HasDatabaseName("ix_queue_tickets_status_enqueued_at");

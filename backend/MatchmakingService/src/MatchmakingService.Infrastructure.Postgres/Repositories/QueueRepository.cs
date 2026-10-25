@@ -1,4 +1,4 @@
-using MatchmakingService.Core.Abstractions;
+﻿using MatchmakingService.Core.Abstractions;
 using MatchmakingService.Domain.Queues;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,10 +19,28 @@ public sealed class QueueRepository(MatchmakingServiceDbContext dbContext) : IQu
         int limit,
         CancellationToken cancellationToken) =>
         await dbContext.QueueTickets
+            .AsNoTracking()
             .Where(ticket => ticket.Status == QueueTicketStatus.Queued)
             .OrderBy(ticket => ticket.EnqueuedAt)
             .Take(limit)
             .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<QueueTicket>> ClaimQueuedAsync(
+        int limit,
+        CancellationToken cancellationToken)
+    {
+        string status = nameof(QueueTicketStatus.Queued);
+
+        return await dbContext.QueueTickets
+            .FromSql($"""
+                SELECT * FROM matchmaking.queue_tickets
+                WHERE status = {status}
+                ORDER BY enqueued_at
+                LIMIT {limit}
+                FOR UPDATE SKIP LOCKED
+                """)
+            .ToListAsync(cancellationToken);
+    }
 
     public Task AddAsync(QueueTicket ticket, CancellationToken cancellationToken) =>
         dbContext.QueueTickets.AddAsync(ticket, cancellationToken).AsTask();

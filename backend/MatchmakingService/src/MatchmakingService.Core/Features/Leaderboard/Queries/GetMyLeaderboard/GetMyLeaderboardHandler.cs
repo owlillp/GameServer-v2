@@ -33,12 +33,12 @@ public sealed class GetMyLeaderboardHandler(
                 rank = (int)zeroBasedRank.Value + 1;
             }
         }
-        catch (Exception exception)
+        catch (Exception exception) when (exception is not OperationCanceledException)
         {
             logger.LogWarning(exception, "Leaderboard cache is unavailable, computing rank from PostgreSQL");
         }
 
-        rank ??= await repository.CountWithMorePointsAsync(entry.Points, cancellationToken) + 1;
+        rank ??= await repository.CountAheadOfAsync(entry, cancellationToken) + 1;
 
         return new MyLeaderboardDto(rank, entry.Points, entry.Wins, entry.MatchesPlayed);
     }

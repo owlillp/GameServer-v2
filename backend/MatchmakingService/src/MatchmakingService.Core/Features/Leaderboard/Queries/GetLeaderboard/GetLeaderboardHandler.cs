@@ -2,6 +2,7 @@ using CSharpFunctionalExtensions;
 using MatchmakingService.Contracts.Dtos;
 using MatchmakingService.Core.Abstractions;
 using MatchmakingService.Core.Features.Matchmaking.Models;
+using MatchmakingService.Core.Services;
 using MatchmakingService.Domain;
 using MatchmakingService.Domain.Leaderboard;
 using Microsoft.Extensions.Logging;
@@ -13,6 +14,7 @@ namespace MatchmakingService.Core.Features.Leaderboard.Queries.GetLeaderboard;
 public sealed class GetLeaderboardHandler(
     ILeaderboardRepository repository,
     ILeaderboardStore store,
+    LeaderboardSyncSignal syncSignal,
     ILogger<GetLeaderboardHandler> logger) : IQueryHandler<IReadOnlyList<LeaderboardEntryDto>, GetLeaderboardQuery>
 {
     public async Task<Result<IReadOnlyList<LeaderboardEntryDto>, Error>> Handle(
@@ -41,12 +43,13 @@ public sealed class GetLeaderboardHandler(
                     .ToList();
             }
         }
-        catch (Exception exception)
+        catch (Exception exception) when (exception is not OperationCanceledException)
         {
             logger.LogWarning(exception, "Leaderboard cache is unavailable, falling back to PostgreSQL");
+            syncSignal.Request();
         }
 
-        IReadOnlyList<LeaderboardEntry> fallback = await repository.GetTopAsync(limit, cancellationToken);
+        IReadOnlyList<LeaderboardEntry> fallback = await repository.GetTopAsync(0, limit, cancellationToken);
 
         return fallback
             .Select((entry, index) => entry.ToDto(index + 1))

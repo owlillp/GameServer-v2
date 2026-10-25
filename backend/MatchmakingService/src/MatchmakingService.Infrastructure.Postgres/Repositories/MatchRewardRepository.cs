@@ -1,4 +1,4 @@
-using MatchmakingService.Core.Abstractions;
+﻿using MatchmakingService.Core.Abstractions;
 using MatchmakingService.Domain.Rewards;
 using Microsoft.EntityFrameworkCore;
 
@@ -21,15 +21,42 @@ public sealed class MatchRewardRepository(MatchmakingServiceDbContext dbContext)
             .OrderBy(grant => grant.CreatedAt)
             .ToListAsync(cancellationToken);
 
-    public async Task<IReadOnlyList<MatchRewardGrant>> ListPendingAsync(
+    public async Task<IReadOnlyList<MatchRewardGrant>> ClaimPendingAsync(
+        IReadOnlyCollection<Guid>? grantIds,
         int limit,
-        CancellationToken cancellationToken) =>
-        await dbContext.MatchRewardGrants
+        CancellationToken cancellationToken)
+    {
+        string status = nameof(MatchRewardStatus.Pending);
+
+        IQueryable<Guid> query = grantIds is null
+            ? dbContext.Database.SqlQuery<Guid>($"""
+                SELECT id AS "Value" FROM matchmaking.match_reward_grants
+                WHERE status = {status}
+                ORDER BY created_at
+                LIMIT {limit}
+                FOR UPDATE SKIP LOCKED
+                """)
+            : dbContext.Database.SqlQuery<Guid>($"""
+                SELECT id AS "Value" FROM matchmaking.match_reward_grants
+                WHERE status = {status} AND id = ANY({grantIds.ToArray()})
+                ORDER BY created_at
+                LIMIT {limit}
+                FOR UPDATE SKIP LOCKED
+                """);
+
+        List<Guid> claimed = await query.ToListAsync(cancellationToken);
+
+        if (claimed.Count == 0)
+        {
+            return [];
+        }
+
+        return await dbContext.MatchRewardGrants
             .Include(grant => grant.Items)
-            .Where(grant => grant.Status == MatchRewardStatus.Pending)
+            .Where(grant => claimed.Contains(grant.Id))
             .OrderBy(grant => grant.CreatedAt)
-            .Take(limit)
             .ToListAsync(cancellationToken);
+    }
 
     public Task AddRangeAsync(
         IReadOnlyCollection<MatchRewardGrant> grants,

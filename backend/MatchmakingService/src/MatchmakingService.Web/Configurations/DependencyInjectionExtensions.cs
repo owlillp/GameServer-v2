@@ -1,5 +1,4 @@
-﻿using MatchmakingService.Contracts.Communication;
-using MatchmakingService.Core;
+﻿using MatchmakingService.Core;
 using MatchmakingService.Core.Messaging;
 using MatchmakingService.Domain.Authorization;
 using MatchmakingService.Infrastructure.Postgres;
@@ -13,6 +12,7 @@ using Shared.Framework.HealthChecks;
 using Shared.Framework.Logging;
 using Shared.Framework.OpenApi;
 using Shared.Messaging;
+using WalletService.Contracts.Communication;
 
 namespace MatchmakingService.Web.Configurations;
 
@@ -37,8 +37,8 @@ public static class DependencyInjectionExtensions
                 .AddCheck<RedisHealthCheck>("redis", failureStatus: HealthStatus.Degraded);
             builder.Services.AddEndpoints(typeof(DependencyInjectionExtensions).Assembly);
 
-            builder.Services.AddWalletCreditHttpCommunication(configuration);
-            builder.Services.AddCore(configuration);
+            builder.Services.AddWalletServiceGrpcCommunication(configuration);
+            builder.Services.AddCore();
             builder.Services.AddInfrastructurePostgres(configuration);
             builder.Services.AddInfrastructureRedis(configuration);
 

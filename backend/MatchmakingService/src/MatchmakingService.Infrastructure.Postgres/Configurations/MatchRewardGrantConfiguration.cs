@@ -1,4 +1,4 @@
-using MatchmakingService.Domain;
+﻿using MatchmakingService.Domain;
 using MatchmakingService.Domain.Rewards;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -30,6 +30,9 @@ internal sealed class MatchRewardGrantConfiguration : IEntityTypeConfiguration<M
         builder.Property(grant => grant.UpdatedAt).HasColumnName("updated_at");
 
         builder.HasKey(grant => grant.Id);
+
+        // PostgreSQL row version: concurrent updates of the same row fail instead of overwriting each other.
+        builder.Property<uint>(Constants.ROW_VERSION).IsRowVersion();
         builder.HasIndex(grant => new { grant.MatchId, grant.AccountId })
             .IsUnique()
             .HasDatabaseName("uq_match_reward_grants_match_account");
