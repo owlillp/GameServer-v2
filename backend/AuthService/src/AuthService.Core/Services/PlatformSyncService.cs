@@ -44,6 +44,7 @@ public sealed class PlatformSyncService(
             [OidcScopes.MATCHMAKING, OidcScopes.WALLET, OidcScopes.SESSION],
             cancellationToken);
         await UpsertServiceClientAsync(options.Clients.GameServer, [OidcScopes.SESSION_WRITE], cancellationToken);
+        await UpsertServiceClientAsync(options.Clients.ClanWarsService, [OidcScopes.WALLET], cancellationToken);
     }
 
     private async Task SeedRolesAsync()

@@ -1,6 +1,8 @@
 using ClanWarsService.Core.Abstractions;
+using ClanWarsService.Core.Configuration;
 using ClanWarsService.Domain.Seasons;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Quartz;
 using Quartz.Impl.Matchers;
 
@@ -15,11 +17,16 @@ namespace ClanWarsService.Core.Scheduling;
 public sealed class SeasonScheduler(
     ISchedulerFactory schedulerFactory,
     ISeasonRepository seasonRepository,
+    IOptionsMonitor<ClanWarsOptions> options,
     TimeProvider timeProvider,
     ILogger<SeasonScheduler> logger) : ISeasonScheduler
 {
     private const string JOB_GROUP = "seasons";
     private const string JOB_PREFIX = "season-";
+    private const string SYSTEM_GROUP = "system";
+
+    private static readonly JobKey RECONCILIATION_JOB = new("reward-reconciliation", SYSTEM_GROUP);
+    private static readonly TriggerKey RECONCILIATION_TRIGGER = new("reward-reconciliation-daily", SYSTEM_GROUP);
 
     public async Task ReconcileAsync(CancellationToken cancellationToken)
     {
@@ -39,6 +46,8 @@ public sealed class SeasonScheduler(
         {
             await ScheduleAsync(season, cancellationToken);
         }
+
+        await EnsureReconciliationAsync(scheduler, cancellationToken);
 
         logger.LogInformation("Season scheduler reconciled {Count} open seasons", open.Count);
     }
@@ -89,6 +98,33 @@ public sealed class SeasonScheduler(
         }
 
         logger.LogInformation("Scheduled phase triggers for season {Number}", season.Number);
+    }
+
+    private async Task EnsureReconciliationAsync(IScheduler scheduler, CancellationToken cancellationToken)
+    {
+        IJobDetail job = JobBuilder.Create<RewardReconciliationJob>()
+            .WithIdentity(RECONCILIATION_JOB)
+            .StoreDurably()
+            .Build();
+
+        await scheduler.AddJob(job, replace: true, cancellationToken);
+
+        ITrigger trigger = TriggerBuilder.Create()
+            .WithIdentity(RECONCILIATION_TRIGGER)
+            .ForJob(RECONCILIATION_JOB)
+            .WithCronSchedule(
+                options.CurrentValue.ReconciliationCron,
+                schedule => schedule.InTimeZone(TimeZoneInfo.Utc).WithMisfireHandlingInstructionFireAndProceed())
+            .Build();
+
+        if (await scheduler.CheckExists(RECONCILIATION_TRIGGER, cancellationToken))
+        {
+            await scheduler.RescheduleJob(RECONCILIATION_TRIGGER, trigger, cancellationToken);
+        }
+        else
+        {
+            await scheduler.ScheduleJob(trigger, cancellationToken);
+        }
     }
 
     private static bool TryGetSeasonId(string jobName, out Guid seasonId)

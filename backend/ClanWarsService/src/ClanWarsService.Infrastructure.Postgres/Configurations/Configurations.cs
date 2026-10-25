@@ -1,5 +1,6 @@
 using System.Text.Json;
 using ClanWarsService.Domain.Battles;
+using ClanWarsService.Domain.Rewards;
 using ClanWarsService.Domain.Roster;
 using ClanWarsService.Domain.Scores;
 using ClanWarsService.Domain.Seasons;
@@ -243,5 +244,104 @@ internal sealed class BattleConfiguration : IEntityTypeConfiguration<Battle>
 
         builder.Ignore(battle => battle.ExternalRef);
         builder.Ignore(battle => battle.IsOpen);
+    }
+}
+
+internal static class ItemsJson
+{
+    private static readonly JsonSerializerOptions JSON = new(JsonSerializerDefaults.Web);
+
+    public static PropertyBuilder<IReadOnlyList<RewardItem>> AsItemsJson(this PropertyBuilder<IReadOnlyList<RewardItem>> property) =>
+        property
+            .HasColumnType("jsonb")
+            .HasConversion(
+                items => JsonSerializer.Serialize(items, JSON),
+                json => JsonSerializer.Deserialize<List<RewardItem>>(json, JSON) ?? new List<RewardItem>(),
+                new Microsoft.EntityFrameworkCore.ChangeTracking.ValueComparer<IReadOnlyList<RewardItem>>(
+                    (left, right) => left!.SequenceEqual(right!),
+                    items => items.Aggregate(0, (hash, item) => HashCode.Combine(hash, item.GetHashCode())),
+                    items => items.ToList()));
+}
+
+internal sealed class RewardTableConfiguration : IEntityTypeConfiguration<RewardTable>
+{
+    public void Configure(EntityTypeBuilder<RewardTable> builder)
+    {
+        builder.ToTable("reward_tables");
+
+        builder.Property(table => table.Id).HasColumnName("id").ValueGeneratedNever();
+        builder.Property(table => table.Name).HasColumnName("name").HasMaxLength(RewardTable.NAME_MAX_LENGTH);
+        builder.Property(table => table.CreatedAt).HasColumnName("created_at");
+
+        builder.HasKey(table => table.Id);
+        builder.HasMany(table => table.Tiers).WithOne().HasForeignKey(tier => tier.TableId).OnDelete(DeleteBehavior.Cascade);
+        builder.Navigation(table => table.Tiers).AutoInclude();
+    }
+}
+
+internal sealed class RewardTierConfiguration : IEntityTypeConfiguration<RewardTier>
+{
+    public void Configure(EntityTypeBuilder<RewardTier> builder)
+    {
+        builder.ToTable("reward_tiers");
+
+        builder.Property(tier => tier.Id).HasColumnName("id").ValueGeneratedNever();
+        builder.Property(tier => tier.TableId).HasColumnName("table_id");
+        builder.Property(tier => tier.FromRank).HasColumnName("from_rank");
+        builder.Property(tier => tier.ToRank).HasColumnName("to_rank");
+        builder.Property(tier => tier.ClanPoints).HasColumnName("clan_points");
+        builder.Property(tier => tier.CurrencyCode).HasColumnName("currency_code").HasMaxLength(16);
+        builder.Property(tier => tier.CurrencyAmount).HasColumnName("currency_amount");
+        builder.Property(tier => tier.Items).HasColumnName("items").AsItemsJson();
+        builder.Property(tier => tier.MinBattles).HasColumnName("min_battles");
+
+        builder.HasKey(tier => tier.Id);
+        builder.Ignore(tier => tier.HasMemberReward);
+    }
+}
+
+internal sealed class SeasonRewardGrantConfiguration : IEntityTypeConfiguration<SeasonRewardGrant>
+{
+    public void Configure(EntityTypeBuilder<SeasonRewardGrant> builder)
+    {
+        builder.ToTable("season_reward_grants");
+
+        builder.Property(grant => grant.Id).HasColumnName("id").ValueGeneratedNever();
+        builder.Property(grant => grant.SeasonId).HasColumnName("season_id");
+        builder.Property(grant => grant.ClanId).HasColumnName("clan_id");
+        builder.Property(grant => grant.AccountId).HasColumnName("account_id");
+        builder.Property(grant => grant.Rank).HasColumnName("rank");
+        builder.Property(grant => grant.ClanPoints).HasColumnName("clan_points");
+        builder.Property(grant => grant.CurrencyCode).HasColumnName("currency_code").HasMaxLength(16);
+        builder.Property(grant => grant.CurrencyAmount).HasColumnName("currency_amount");
+        builder.Property(grant => grant.Items).HasColumnName("items").AsItemsJson();
+        builder.Property(grant => grant.Status).HasColumnName("status").HasConversion<string>().HasMaxLength(16);
+        builder.Property(grant => grant.Attempts).HasColumnName("attempts");
+        builder.Property(grant => grant.NextAttemptAt).HasColumnName("next_attempt_at");
+        builder.Property(grant => grant.LastError).HasColumnName("last_error").HasMaxLength(512);
+        builder.Property(grant => grant.PointsPublishedAt).HasColumnName("points_published_at");
+        builder.Property(grant => grant.WalletCreditedAt).HasColumnName("wallet_credited_at");
+        builder.Property(grant => grant.ItemsPublishedAt).HasColumnName("items_published_at");
+        builder.Property(grant => grant.ItemsGrantedAt).HasColumnName("items_granted_at");
+        builder.Property(grant => grant.CreatedAt).HasColumnName("created_at");
+        builder.Property(grant => grant.CompletedAt).HasColumnName("completed_at");
+
+        builder.HasKey(grant => grant.Id);
+        builder.Property<uint>(Constants.ROW_VERSION).IsRowVersion();
+
+        // One clan grant (account null) and one grant per member per season: closing twice cannot double.
+        builder.HasIndex(grant => new { grant.SeasonId, grant.ClanId, grant.AccountId })
+            .IsUnique()
+            .AreNullsDistinct(false)
+            .HasDatabaseName("uq_season_reward_grants_recipient");
+        builder.HasIndex(grant => new { grant.Status, grant.NextAttemptAt })
+            .HasFilter("status = 'Pending'")
+            .HasDatabaseName("ix_season_reward_grants_due");
+        builder.HasIndex(grant => new { grant.SeasonId, grant.Status }).HasDatabaseName("ix_season_reward_grants_season_status");
+        builder.HasIndex(grant => new { grant.SeasonId, grant.AccountId }).HasDatabaseName("ix_season_reward_grants_account");
+
+        builder.Ignore(grant => grant.NeedsPoints);
+        builder.Ignore(grant => grant.NeedsWallet);
+        builder.Ignore(grant => grant.NeedsItemsPublish);
     }
 }

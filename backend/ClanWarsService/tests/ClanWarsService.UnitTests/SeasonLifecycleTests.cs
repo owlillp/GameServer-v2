@@ -54,14 +54,20 @@ public sealed class SeasonLifecycleTests
         Assert.Equal(0, publisher.Started);
     }
 
-    private static SeasonLifecycle Create(Season season, FakeScores scores, RecordingPublisher publisher, TimeProvider clock) =>
-        new(
+    internal static SeasonLifecycle Create(Season season, FakeScores scores, RecordingPublisher publisher, TimeProvider clock, FakeRewards? rewards = null)
+    {
+        rewards ??= new FakeRewards();
+
+        return new(
             new FakeSeasons(season),
             scores,
             new FakeBattles(),
+            new RewardPlanner(rewards, scores),
+            rewards,
             publisher,
             new NoTransaction(),
             new StaticOptions(),
             clock,
             NullLogger<SeasonLifecycle>.Instance);
+    }
 }

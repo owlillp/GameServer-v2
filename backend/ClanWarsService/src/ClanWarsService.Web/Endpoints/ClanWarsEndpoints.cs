@@ -26,6 +26,7 @@ public sealed class ClanWarsEndpoints : IEndpointGroup
         group.MapGet("/seasons/{seasonId:guid}/windows", GetWindows).WithName("ClanWars.Windows").WithSummary("Battle windows of a season");
         group.MapPost("/battles/queue", QueueSquad).WithName("ClanWars.Battles.Queue").WithSummary("Put a squad up for a battle (leader or officer)");
         group.MapDelete("/battles/queue", LeaveQueue).WithName("ClanWars.Battles.Queue.Leave").WithSummary("Take the clan's squad out of the queue");
+        group.MapGet("/seasons/{seasonId:guid}/rewards/me", GetMyRewards).WithName("ClanWars.Rewards.Me").WithSummary("The player's season rewards");
         group.MapGet("/battles/me", GetMyBattles).WithName("ClanWars.Battles.Me").WithSummary("The clan's queued squad and recent battles");
 
         return group;
@@ -85,6 +86,13 @@ public sealed class ClanWarsEndpoints : IEndpointGroup
         CancellationToken ct) =>
         await handler.Handle(new LeaveBattleQueueCommand(userScope.Id ?? Guid.Empty), ct);
 
+    private static async Task<EndpointResult<IReadOnlyList<RewardGrantDto>>> GetMyRewards(
+        [FromRoute] Guid seasonId,
+        [FromServices] IQueryHandler<IReadOnlyList<RewardGrantDto>, GetMyRewardsQuery> handler,
+        [FromServices] UserScopedData userScope,
+        CancellationToken ct) =>
+        await handler.Handle(new GetMyRewardsQuery(seasonId, userScope.Id ?? Guid.Empty), ct);
+
     private static async Task<EndpointResult<MyBattlesDto>> GetMyBattles(
         [FromServices] IQueryHandler<MyBattlesDto, GetMyBattlesQuery> handler,
         [FromServices] UserScopedData userScope,
@@ -106,6 +114,10 @@ public sealed class AdminClanWarsEndpoints : IEndpointGroup
         group.MapPost("/seasons/{seasonId:guid}/publish", Publish).WithName("Admin.ClanWars.Seasons.Publish").WithSummary("Publish: phases follow the schedule from now on").RequirePermissions(ClanWarsPermissions.ClanWars.MANAGE);
         group.MapGet("/seasons/{seasonId:guid}/scores", Receipts).WithName("Admin.ClanWars.Scores.List").WithSummary("Score receipts (audit)").RequirePermissions(ClanWarsPermissions.ClanWars.VIEW);
         group.MapPost("/seasons/{seasonId:guid}/scores", Adjust).WithName("Admin.ClanWars.Scores.Adjust").WithSummary("Correct a clan's season points").RequirePermissions(ClanWarsPermissions.ClanWars.MANAGE);
+        group.MapGet("/reward-tables", ListTables).WithName("Admin.ClanWars.RewardTables.List").WithSummary("Reward tables").RequirePermissions(ClanWarsPermissions.ClanWars.VIEW);
+        group.MapPost("/reward-tables", CreateTable).WithName("Admin.ClanWars.RewardTables.Create").WithSummary("Create a reward table (rank ranges)").RequirePermissions(ClanWarsPermissions.ClanWars.MANAGE);
+        group.MapGet("/seasons/{seasonId:guid}/rewards", SeasonRewards).WithName("Admin.ClanWars.Rewards.List").WithSummary("Reward grants and delivery summary").RequirePermissions(ClanWarsPermissions.ClanWars.VIEW);
+        group.MapPost("/seasons/{seasonId:guid}/rewards/retry-failed", RetryFailed).WithName("Admin.ClanWars.Rewards.Retry").WithSummary("Put failed grants back in the queue").RequirePermissions(ClanWarsPermissions.ClanWars.MANAGE);
         group.MapPost("/seasons/{seasonId:guid}/leaderboard/rebuild", Rebuild).WithName("Admin.ClanWars.Leaderboard.Rebuild").WithSummary("Rebuild the Redis leaderboard from PostgreSQL").RequirePermissions(ClanWarsPermissions.ClanWars.MANAGE);
 
         return group;
@@ -150,6 +162,31 @@ public sealed class AdminClanWarsEndpoints : IEndpointGroup
         [FromServices] UserScopedData userScope,
         CancellationToken ct) =>
         await handler.Handle(new AdjustScoreCommand(userScope.Id ?? Guid.Empty, seasonId, request), ct);
+
+    private static async Task<EndpointResult<IReadOnlyList<RewardTableDto>>> ListTables(
+        [FromServices] IQueryHandler<IReadOnlyList<RewardTableDto>, ListRewardTablesQuery> handler,
+        CancellationToken ct) =>
+        await handler.Handle(new ListRewardTablesQuery(), ct);
+
+    private static async Task<EndpointResult<RewardTableDto>> CreateTable(
+        [FromBody] CreateRewardTableRequest request,
+        [FromServices] ICommandHandler<RewardTableDto, CreateRewardTableCommand> handler,
+        CancellationToken ct) =>
+        await handler.Handle(new CreateRewardTableCommand(request), ct);
+
+    private static async Task<EndpointResult<SeasonRewardsDto>> SeasonRewards(
+        [FromRoute] Guid seasonId,
+        [FromQuery] string? status,
+        [FromQuery] int? limit,
+        [FromServices] IQueryHandler<SeasonRewardsDto, GetSeasonRewardsQuery> handler,
+        CancellationToken ct) =>
+        await handler.Handle(new GetSeasonRewardsQuery(seasonId, status, limit ?? 100), ct);
+
+    private static async Task<EndpointResult<int>> RetryFailed(
+        [FromRoute] Guid seasonId,
+        [FromServices] ICommandHandler<int, RetryFailedRewardsCommand> handler,
+        CancellationToken ct) =>
+        await handler.Handle(new RetryFailedRewardsCommand(seasonId), ct);
 
     private static async Task<EndpointResult<bool>> Rebuild(
         [FromRoute] Guid seasonId,

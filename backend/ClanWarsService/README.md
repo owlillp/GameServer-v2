@@ -61,6 +61,40 @@
 | `DELETE` | `/clanwars/battles/queue` | Снять отряд |
 | `GET` | `/clanwars/battles/me` | Отряд в очереди и последние битвы клана |
 
+## Награды сезона
+
+1. Таблица наград (`POST /admin/clanwars/reward-tables`): диапазоны мест → поинты клану,
+   валюта и предметы участникам с `minBattles` битвами за клан. Сезон ссылается на таблицу
+   (`rewardTableId`), публикация проверяет, что она существует.
+2. Закрытие сезона в одной транзакции под блокировкой: снимок `season_results`, переход
+   `Finalizing → Rewarding`, создание `season_reward_grants` (клану — поинты, участникам —
+   валюта/предметы). Участники берутся из вклада в битвах (`member_season_stats`), а не из
+   текущего состава. Уникальный индекс (сезон, клан, игрок) `NULLS NOT DISTINCT` — повторное
+   закрытие ничего не задваивает. Без таблицы наград сезон сразу `Closed`.
+3. `SeasonRewardDispatcher`: пачки через `SKIP LOCKED`; поинты — `clan-points-granted.clanwars`
+   (ledger ClanService, operation id = grant id), предметы — команда `grant-items.clanwars`
+   в Inventory (receipt по grant id, ответ `reward-items-granted/failed.clanwars`), валюта —
+   gRPC `Credit` в Wallet (operation id = grant id), параллельно до `RewardParallelism`.
+4. Статусы `Pending → Granted / Failed`; ошибки Wallet — повтор с экспоненциальной задержкой
+   (`RewardBackoffSeconds`, до часа), после `RewardMaxAttempts` — `Failed` и лог `ALERT`.
+   Отказ Inventory — сразу `Failed`. `POST /admin/clanwars/seasons/{id}/rewards/retry-failed`
+   возвращает их в очередь, выполненные шаги не повторяются.
+5. `Rewarding → Closed`, когда все гранты `Granted`; пока есть `Failed` — сезон ждёт и пишет `ALERT`.
+6. Сверка раз в сутки (Quartz, `ReconciliationCron`, одна реплика): каждый зачисленный за
+   `ReconciliationDays` грант проверяется в ledger Wallet (`WalletCredit.GetOperation`), пропавший
+   открывается и зачисляется заново (идемпотентно); предметы без подтверждения дольше
+   `StuckItemsMinutes` отправляются повторно (Inventory дедуплицирует). Поинты идут через outbox
+   в идемпотентный ledger ClanService и отдельной сверки не имеют.
+
+| Метод | Путь | Что делает |
+| --- | --- | --- |
+| `GET` | `/clanwars/seasons/{id}/rewards/me` | Мои награды сезона |
+| `GET` / `POST` | `/admin/clanwars/reward-tables` | Таблицы наград |
+| `GET` | `/admin/clanwars/seasons/{id}/rewards?status=` | Сводка Pending/Granted/Failed и гранты |
+| `POST` | `/admin/clanwars/seasons/{id}/rewards/retry-failed` | Повторить неудачные |
+
+Для выдачи валюты сервис ходит в Wallet как `clanwars-service-client` (scope `wallet`).
+
 ## Состав кланов
 
 Проекция `clans` / `clan_roster` из `clan-events` (создание, роспуск, вступление, выход, смена роли).

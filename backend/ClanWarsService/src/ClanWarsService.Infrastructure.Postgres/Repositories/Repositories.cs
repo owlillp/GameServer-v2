@@ -44,6 +44,9 @@ public sealed class SeasonRepository(ClanWarsServiceDbContext dbContext) : ISeas
                 .OrderBy(season => season.StartsAt)
                 .FirstOrDefaultAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<Season>> ListByStatusAsync(SeasonStatus status, CancellationToken cancellationToken) =>
+        await dbContext.Seasons.AsNoTracking().Where(season => season.Status == status).ToListAsync(cancellationToken);
+
     public async Task<int> NextNumberAsync(CancellationToken cancellationToken) =>
         (await dbContext.Seasons.MaxAsync(season => (int?)season.Number, cancellationToken) ?? 0) + 1;
 
@@ -177,6 +180,12 @@ public sealed class ScoreRepository(ClanWarsServiceDbContext dbContext, NpgsqlDa
                 wins = member_season_stats.wins + EXCLUDED.wins
             """,
             cancellationToken);
+
+    public async Task<IReadOnlyList<MemberSeasonStats>> ListMemberStatsBySeasonAsync(Guid seasonId, int minBattles, CancellationToken cancellationToken) =>
+        await dbContext.MemberStats
+            .AsNoTracking()
+            .Where(stats => stats.SeasonId == seasonId && stats.Battles >= minBattles)
+            .ToListAsync(cancellationToken);
 
     public async Task<IReadOnlyList<MemberSeasonStats>> ListMemberStatsAsync(Guid seasonId, Guid clanId, CancellationToken cancellationToken) =>
         await dbContext.MemberStats

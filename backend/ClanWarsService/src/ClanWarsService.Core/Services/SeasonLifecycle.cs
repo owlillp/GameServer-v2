@@ -18,6 +18,8 @@ public sealed class SeasonLifecycle(
     ISeasonRepository seasonRepository,
     IScoreRepository scoreRepository,
     IBattleRepository battleRepository,
+    RewardPlanner rewardPlanner,
+    IRewardRepository rewardRepository,
     IClanWarsEventPublisher eventPublisher,
     ITransactionManager transactionManager,
     IOptionsMonitor<ClanWarsOptions> options,
@@ -64,7 +66,25 @@ public sealed class SeasonLifecycle(
             }
 
             IReadOnlyList<SeasonResult> results = await SnapshotResultsAsync(season.Id, cancellationToken);
-            season.Close(now);
+
+            // Grants are created in the same transaction as the snapshot and the status change:
+            // with the season row locked, closing twice cannot create them twice.
+            if (season.Close(now) == SeasonStatus.Rewarding)
+            {
+                int grants = await rewardPlanner.PlanAsync(
+                    season,
+                    results,
+                    now,
+                    token => SaveAsync(token),
+                    cancellationToken);
+
+                if (grants == 0)
+                {
+                    season.CompleteRewards(now);
+                }
+
+                logger.LogInformation("Season {Number}: {Count} reward grants created", season.Number, grants);
+            }
 
             await eventPublisher.PublishSeasonEndedAsync(season, [.. results.Take(options.CurrentValue.EndedEventTopSize)]);
 
@@ -82,6 +102,44 @@ public sealed class SeasonLifecycle(
             logger.LogInformation("Season {Number} moved to {Status}", season.Number, status);
         }
     }
+
+    /// <summary>
+    /// Rewarding → Closed once every grant is delivered. Failed grants keep the season open until
+    /// an admin retries them.
+    /// </summary>
+    public async Task<bool> CompleteRewardsAsync(Guid seasonId, CancellationToken cancellationToken)
+    {
+        (await transactionManager.BeginTransactionAsync(cancellationToken)).ThrowIfFailed();
+
+        Season? season = await seasonRepository.GetForUpdateAsync(seasonId, cancellationToken);
+        if (season is null || season.Status != SeasonStatus.Rewarding)
+        {
+            return false;
+        }
+
+        RewardSummary summary = await rewardRepository.SummarizeAsync(seasonId, cancellationToken);
+        if (summary.Pending > 0 || summary.Failed > 0)
+        {
+            if (summary.Pending == 0)
+            {
+                logger.LogError(
+                    "ALERT: season {Number} has {Failed} failed reward grants and cannot close",
+                    season.Number,
+                    summary.Failed);
+            }
+
+            return false;
+        }
+
+        season.CompleteRewards(timeProvider.GetUtcNow().UtcDateTime);
+        (await transactionManager.CommitTransactionAsync(cancellationToken)).ThrowIfFailed();
+
+        logger.LogInformation("Season {Number}: all {Count} rewards delivered, season closed", season.Number, summary.Granted);
+        return true;
+    }
+
+    private async Task SaveAsync(CancellationToken cancellationToken) =>
+        (await transactionManager.SaveChangesAsync(cancellationToken)).ThrowIfFailed();
 
     /// <summary>
     /// Freezes the final standings from PostgreSQL (the source of truth), not from Redis.

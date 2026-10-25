@@ -9,6 +9,24 @@ public sealed class WalletCreditGrpcClient(
     WalletCredit.WalletCreditClient client,
     WalletGrpcInvoker invoker) : IWalletCreditClient
 {
+    public async Task<Result<bool, Error>> OperationExistsAsync(Guid accountId, Guid operationId, CancellationToken cancellationToken)
+    {
+        var request = new GetOperationRequest { WalletId = accountId.ToString(), OperationId = operationId.ToString() };
+
+        try
+        {
+            GetOperationReply reply = await invoker.InvokeAsync(
+                callOptions => client.GetOperationAsync(request, callOptions).ResponseAsync,
+                cancellationToken);
+
+            return reply.Found;
+        }
+        catch (RpcException exception)
+        {
+            return GeneralErrors.Failure($"Wallet is unavailable: {exception.Status.Detail}").AsTransient();
+        }
+    }
+
     public async Task<Result<bool, Error>> CreditAsync(
         Guid accountId,
         string currency,

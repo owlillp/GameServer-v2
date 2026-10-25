@@ -17,4 +17,9 @@ public interface IWalletCreditClient
         string reason,
         string? referenceId,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// True if a credit with this operation id exists in the wallet ledger (reconciliation).
+    /// </summary>
+    Task<Result<bool, Error>> OperationExistsAsync(Guid accountId, Guid operationId, CancellationToken cancellationToken);
 }

@@ -1,13 +1,15 @@
 using Grpc.Core;
 using Shared.Grpc.Wallet;
 using Shared.SharedKernel.Errors;
+using Microsoft.EntityFrameworkCore;
+using WalletService.Core.Abstractions;
 using WalletService.Core.Services;
 using WalletService.Domain.Wallets;
 using WalletService.Domain.Wallets.Ledgers;
 
 namespace WalletService.Web.Grpc;
 
-public sealed class WalletCreditGrpcService(IWalletService walletService)
+public sealed class WalletCreditGrpcService(IWalletService walletService, IReadDbContext readDbContext)
     : WalletCredit.WalletCreditBase
 {
     private const string INVALID_REQUEST = "wallet.invalid_request";
@@ -61,6 +63,22 @@ public sealed class WalletCreditGrpcService(IWalletService walletService)
         }
 
         return Failed("wallet.credit.failed", Describe(result.Error));
+    }
+
+    public override async Task<GetOperationReply> GetOperation(GetOperationRequest request, ServerCallContext context)
+    {
+        if (!Guid.TryParse(request.WalletId, out Guid walletId) || !Guid.TryParse(request.OperationId, out Guid operationId))
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, "WalletId and OperationId must be valid GUIDs"));
+        }
+
+        LedgerEntry? entry = await readDbContext.LedgerRead.FirstOrDefaultAsync(
+            ledger => ledger.WalletId == walletId && ledger.OperationId == operationId && ledger.Direction == LedgerDirection.Credit,
+            context.CancellationToken);
+
+        return entry is null
+            ? new GetOperationReply { Found = false }
+            : new GetOperationReply { Found = true, Amount = entry.Amount, Currency = entry.Currency.Code };
     }
 
     private static bool IsAlreadyProcessed(Error error) =>

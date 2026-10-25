@@ -1,7 +1,7 @@
 # План реализации: SessionService, MatchmakingService, кланы
 
-> Статус: этапы 0–6 реализованы на ветке `feature/sessions-and-matchmaking-reliability`
-> (интеграционные тесты на Testcontainers не написаны), этапы 7–8 не начаты. Дата: 2026-10-25.
+> Статус: этапы 0–7 реализованы на ветке `feature/sessions-and-matchmaking-reliability`
+> (интеграционные тесты на Testcontainers не написаны), этап 8 не начат. Дата: 2026-10-25.
 > Связанные документы: `docs/architecture.md`, схема кланов —
 > https://claude.ai/artifact/6CeKfSXPU2dT2qLShGztou
 >
@@ -351,20 +351,27 @@ join-тикету, сервер отчитывается о матчах.
 
 ## Этап 7. ClanWarsService: награды
 
-- [ ] `reward_tables` / `reward_tiers`: диапазоны мест → поинты клану, валюта и
+- [x] `reward_tables` / `reward_tiers`: диапазоны мест → поинты клану, валюта и
   предметы участникам, `min_battles`
-- [ ] Закрытие сезона: условный переход `Active → Finalizing`, снимок
+- [x] Закрытие сезона: условный переход `Active → Finalizing`, снимок
   `season_results`, создание `season_reward_grants` (клану и участникам с
   battles ≥ min) в одной транзакции
-- [ ] Sweeper выдачи по образцу `MatchRewardDispatcher`: пачки, ограничение
+- [x] Sweeper выдачи по образцу `MatchRewardDispatcher`: пачки, ограничение
   параллелизма; поинты — событие в ClanService, валюта — gRPC Credit в Wallet
   (`operationId = grant_id`), предметы — команда в Inventory
-- [ ] Статусы грантов Pending → Granted / Failed, ретраи с backoff, алерт на Failed
-- [ ] Переход `Rewarding → Closed`, когда все гранты выданы
-- [ ] Ежедневная сверка: гранты ↔ ledger Wallet ↔ ledger поинтов ↔ inbox Inventory
+- [x] Статусы грантов Pending → Granted / Failed, ретраи с backoff, алерт на Failed
+- [x] Переход `Rewarding → Closed`, когда все гранты выданы
+- [~] Ежедневная сверка: гранты ↔ ledger Wallet ↔ ledger поинтов ↔ inbox Inventory
+  (сделано: Wallet через новый `WalletCredit.GetOperation` и повторная отправка
+  неподтверждённых предметов; запроса к ledger ClanService и inbox Inventory нет — поинты
+  защищены outbox и идемпотентным ledger)
 
 Готово, когда: сезон на 1 000 тестовых кланов закрывается, все 30 000 грантов
 выданы, повторный запуск закрытия ничего не задваивает.
+
+> Проверено unit-тестом на фейках: 1 000 кланов × (поинты + 29 участников) = 30 000 грантов,
+> повторное закрытие ничего не добавляет. Выдача на живых Wallet/Inventory/ClanService и время
+> закрытия на PostgreSQL не измерялись.
 
 ---
 

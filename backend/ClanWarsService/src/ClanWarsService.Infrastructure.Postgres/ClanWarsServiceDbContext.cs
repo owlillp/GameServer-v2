@@ -1,4 +1,5 @@
 using ClanWarsService.Domain.Battles;
+using ClanWarsService.Domain.Rewards;
 using ClanWarsService.Domain.Roster;
 using ClanWarsService.Domain.Scores;
 using ClanWarsService.Domain.Seasons;
@@ -28,6 +29,10 @@ public class ClanWarsServiceDbContext(DbContextOptions<ClanWarsServiceDbContext>
     public DbSet<BattleQueueEntry> BattleQueue => Set<BattleQueueEntry>();
 
     public DbSet<Battle> Battles => Set<Battle>();
+
+    public DbSet<RewardTable> RewardTables => Set<RewardTable>();
+
+    public DbSet<SeasonRewardGrant> RewardGrants => Set<SeasonRewardGrant>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

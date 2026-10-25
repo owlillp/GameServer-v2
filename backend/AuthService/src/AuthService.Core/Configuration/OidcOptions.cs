@@ -1,4 +1,4 @@
-﻿namespace AuthService.Core.Configuration;
+namespace AuthService.Core.Configuration;
 
 public sealed class OidcOptions
 {
@@ -34,6 +34,8 @@ public sealed class OidcClientsOptions
     public OidcClientOptions MatchmakingService { get; init; } = new();
 
     public OidcClientOptions GameServer { get; init; } = new();
+
+    public OidcClientOptions ClanWarsService { get; init; } = new();
 }
 
 public sealed class OidcClientOptions

@@ -32,6 +32,7 @@ public static class DependencyInjectionExtensions
             services.AddScoped<ScoreService>();
             services.AddScoped<BattleQueueService>();
             services.AddScoped<BattleResultService>();
+            services.AddScoped<RewardPlanner>();
             services.AddScoped<LeaderboardSync>();
             services.AddScoped<LeaderboardReader>();
             services.AddSingleton<LeaderboardSyncSignal>();
@@ -39,6 +40,7 @@ public static class DependencyInjectionExtensions
             services.AddHostedService<SeasonSchedulingInitializer>();
             services.AddHostedService<LeaderboardSynchronizer>();
             services.AddHostedService<BattleMatcher>();
+            services.AddHostedService<SeasonRewardDispatcher>();
 
             return services;
         }

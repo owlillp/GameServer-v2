@@ -1,7 +1,9 @@
 using ClanWarsService.Core.Abstractions;
 using ClanWarsService.Domain.Battles;
+using ClanWarsService.Domain.Rewards;
 using ClanWarsService.Domain.Scores;
 using ClanWarsService.Domain.Seasons;
+using Shared.IntegrationEvents.ClanWars.Commands;
 using Shared.IntegrationEvents.ClanWars.Events;
 using Shared.IntegrationEvents.Matchmaking.Commands;
 
@@ -59,4 +61,23 @@ public sealed class ClanWarsEventPublisher(IOutboxService outbox) : IClanWarsEve
             outcome?.PointsA ?? 0,
             outcome?.PointsB ?? 0,
             finishedAt));
+
+    /// <summary>
+    /// ClanService applies it to its points ledger once per operation id (= grant id).
+    /// </summary>
+    public Task PublishClanPointsGrantedAsync(SeasonRewardGrant grant, int seasonNumber, DateTime now) =>
+        outbox.PublishAsync(new ClanPointsGrantedEvent(
+            grant.Id,
+            grant.ClanId,
+            grant.ClanPoints,
+            $"clanwars:season:{seasonNumber}:rank:{grant.Rank}",
+            now));
+
+    public Task PublishGrantItemsAsync(SeasonRewardGrant grant, DateTime now) =>
+        outbox.PublishAsync(new GrantSeasonRewardItemsCommand(
+            grant.Id,
+            grant.SeasonId,
+            grant.AccountId!.Value,
+            [.. grant.Items.Select(item => new GrantSeasonRewardItem(item.ItemId, item.Code, item.Kind, item.Slot, item.Quantity))],
+            now));
 }

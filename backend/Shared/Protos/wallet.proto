@@ -13,6 +13,20 @@ service WalletReservation {
 // Idempotent credit for service-to-service rewards (matchmaking, clan wars).
 service WalletCredit {
   rpc Credit (CreditRequest) returns (CreditReply);
+
+  // Reconciliation: was an operation applied to the wallet?
+  rpc GetOperation (GetOperationRequest) returns (GetOperationReply);
+}
+
+message GetOperationRequest {
+  string wallet_id = 1;
+  string operation_id = 2;
+}
+
+message GetOperationReply {
+  bool found = 1;
+  int64 amount = 2;
+  string currency = 3;
 }
 
 message CreditRequest {

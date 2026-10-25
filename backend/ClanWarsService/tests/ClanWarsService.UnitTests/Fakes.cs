@@ -2,6 +2,7 @@ using System.Data.Common;
 using ClanWarsService.Core.Abstractions;
 using ClanWarsService.Core.Configuration;
 using ClanWarsService.Domain.Battles;
+using ClanWarsService.Domain.Rewards;
 using ClanWarsService.Domain.Roster;
 using ClanWarsService.Domain.Scores;
 using ClanWarsService.Domain.Seasons;
@@ -48,6 +49,10 @@ internal sealed class RecordingPublisher : IClanWarsEventPublisher
 
     public Task PublishBattleCreatedAsync(Battle battle, string mode, string region) => Task.CompletedTask;
 
+    public Task PublishClanPointsGrantedAsync(SeasonRewardGrant grant, int seasonNumber, DateTime now) => Task.CompletedTask;
+
+    public Task PublishGrantItemsAsync(SeasonRewardGrant grant, DateTime now) => Task.CompletedTask;
+
     public Task PublishBattleFinishedAsync(Battle battle, string status, BattleOutcome? outcome, DateTime finishedAt)
     {
         BattlesFinished.Add((battle.Id, status));
@@ -69,6 +74,9 @@ internal sealed class FakeSeasons(Season stored) : ISeasonRepository
 
     public Task<int> NextNumberAsync(CancellationToken cancellationToken) => Task.FromResult(2);
 
+    public Task<IReadOnlyList<Season>> ListByStatusAsync(SeasonStatus status, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<Season>>(stored.Status == status ? [stored] : []);
+
     public Task<bool> OverlapsAsync(Guid seasonId, DateTime startsAt, DateTime finalizesAt, CancellationToken cancellationToken) => Task.FromResult(false);
 
     public Task AddAsync(Season season, CancellationToken cancellationToken) => Task.CompletedTask;
@@ -77,8 +85,11 @@ internal sealed class FakeSeasons(Season stored) : ISeasonRepository
 /// <summary>
 /// In-memory scores: receipts, points and member stats, enough to observe double counting.
 /// </summary>
-internal sealed class FakeScores(IReadOnlyList<SeasonScore> initial) : IScoreRepository
+internal sealed class FakeScores(IReadOnlyList<SeasonScore> initial, IReadOnlyList<MemberSeasonStats>? members = null) : IScoreRepository
 {
+    public Task<IReadOnlyList<MemberSeasonStats>> ListMemberStatsBySeasonAsync(Guid seasonId, int minBattles, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<MemberSeasonStats>>([.. (members ?? []).Where(member => member.Battles >= minBattles)]);
+
     public List<SeasonResult> Results { get; } = [];
 
     public List<ScoreReceipt> Receipts { get; } = [];
@@ -251,4 +262,50 @@ internal sealed class NoTransaction : ITransactionManager
     public DbConnection GetDbConnection() => throw new NotSupportedException();
 
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+}
+
+internal sealed class FakeRewards : IRewardRepository
+{
+    public Dictionary<Guid, RewardTable> Tables { get; } = [];
+
+    public List<SeasonRewardGrant> Grants { get; } = [];
+
+    public Task AddTableAsync(RewardTable table, CancellationToken cancellationToken)
+    {
+        Tables[table.Id] = table;
+        return Task.CompletedTask;
+    }
+
+    public Task<RewardTable?> GetTableAsync(Guid tableId, CancellationToken cancellationToken) => Task.FromResult(Tables.GetValueOrDefault(tableId));
+
+    public Task<IReadOnlyList<RewardTable>> ListTablesAsync(CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<RewardTable>>([.. Tables.Values]);
+
+    public Task AddGrantsAsync(IReadOnlyCollection<SeasonRewardGrant> grants, CancellationToken cancellationToken)
+    {
+        Grants.AddRange(grants);
+        return Task.CompletedTask;
+    }
+
+    public Task<IReadOnlyList<SeasonRewardGrant>> ClaimDueAsync(DateTime now, int limit, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<SeasonRewardGrant>>([.. Grants.Where(grant => grant.Status == RewardGrantStatus.Pending && grant.NextAttemptAt <= now).Take(limit)]);
+
+    public Task<SeasonRewardGrant?> GetGrantAsync(Guid grantId, CancellationToken cancellationToken) => Task.FromResult(Grants.Find(grant => grant.Id == grantId));
+
+    public Task<IReadOnlyList<SeasonRewardGrant>> ListAsync(Guid seasonId, RewardGrantStatus? status, Guid? accountId, int limit, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<SeasonRewardGrant>>(Grants);
+
+    public Task<RewardSummary> SummarizeAsync(Guid seasonId, CancellationToken cancellationToken) =>
+        Task.FromResult(new RewardSummary(
+            Grants.Count(grant => grant.Status == RewardGrantStatus.Pending),
+            Grants.Count(grant => grant.Status == RewardGrantStatus.Granted),
+            Grants.Count(grant => grant.Status == RewardGrantStatus.Failed)));
+
+    public Task<IReadOnlyList<SeasonRewardGrant>> ListFailedAsync(Guid seasonId, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<SeasonRewardGrant>>([.. Grants.Where(grant => grant.Status == RewardGrantStatus.Failed)]);
+
+    public Task<IReadOnlyList<SeasonRewardGrant>> ListCreditedSinceAsync(DateTime since, Guid? afterId, int limit, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<SeasonRewardGrant>>([]);
+
+    public Task<IReadOnlyList<SeasonRewardGrant>> ListStuckItemsAsync(DateTime publishedBefore, int limit, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<SeasonRewardGrant>>([]);
 }

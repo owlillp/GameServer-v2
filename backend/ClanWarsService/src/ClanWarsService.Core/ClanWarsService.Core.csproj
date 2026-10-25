@@ -14,6 +14,7 @@
       <ProjectReference Include="..\ClanWarsService.Contracts\ClanWarsService.Contracts.csproj" />
       <ProjectReference Include="..\ClanWarsService.Domain\ClanWarsService.Domain.csproj" />
       <ProjectReference Include="..\..\..\Shared\IntegrationEvents\Shared.IntegrationEvents.csproj" />
+      <ProjectReference Include="..\..\..\WalletService\src\WalletService.Contracts\WalletService.Contracts.csproj" />
     </ItemGroup>
 
     <ItemGroup>

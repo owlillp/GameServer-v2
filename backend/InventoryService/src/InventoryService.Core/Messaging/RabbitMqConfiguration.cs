@@ -4,6 +4,9 @@ using Shared.IntegrationEvents.Events.Events;
 using Shared.IntegrationEvents.Identity;
 using Shared.IntegrationEvents.Inventories;
 using Shared.IntegrationEvents.Inventories.Events;
+using Shared.IntegrationEvents.ClanWars;
+using Shared.IntegrationEvents.ClanWars.Commands;
+using Shared.IntegrationEvents.ClanWars.Events;
 using Shared.IntegrationEvents.Matchmaking;
 using Shared.IntegrationEvents.Matchmaking.Commands;
 using Shared.IntegrationEvents.Matchmaking.Events;
@@ -21,6 +24,7 @@ public static class RabbitMqConfiguration
     private const string STORE_COMMANDS_QUEUE = "inventory.store-commands";
     private const string EVENT_COMMANDS_QUEUE = "inventory.event-commands";
     private const string MATCHMAKING_COMMANDS_QUEUE = "inventory.matchmaking-commands";
+    private const string CLANWARS_COMMANDS_QUEUE = "inventory.clanwars-commands";
 
     extension(WolverineOptions options)
     {
@@ -66,6 +70,16 @@ public static class RabbitMqConfiguration
                     exchange.ExchangeType = ExchangeType.Topic;
                     exchange.IsDurable = true;
                 })
+                .DeclareExchange(ClanWarsEventRouting.COMMANDS_EXCHANGE, exchange =>
+                {
+                    exchange.ExchangeType = ExchangeType.Topic;
+                    exchange.IsDurable = true;
+                })
+                .DeclareExchange(ClanWarsEventRouting.EVENTS_EXCHANGE, exchange =>
+                {
+                    exchange.ExchangeType = ExchangeType.Topic;
+                    exchange.IsDurable = true;
+                })
                 .DeclareExchange(MatchmakingEventRouting.EVENTS_EXCHANGE, exchange =>
                 {
                     exchange.ExchangeType = ExchangeType.Topic;
@@ -76,6 +90,19 @@ public static class RabbitMqConfiguration
             options.ConfigureStoreEventPublishing();
             options.ConfigureEventRewardPublishing();
             options.ConfigureMatchRewardPublishing();
+
+            options.PublishMessagesToRabbitMqExchange<SeasonRewardItemsGrantedEvent>(
+                    ClanWarsEventRouting.EVENTS_EXCHANGE,
+                    _ => ClanWarsEventRouting.RoutingKeys.REWARD_ITEMS_GRANTED)
+                .UseDurableOutbox();
+
+            options.PublishMessagesToRabbitMqExchange<SeasonRewardItemsFailedEvent>(
+                    ClanWarsEventRouting.EVENTS_EXCHANGE,
+                    _ => ClanWarsEventRouting.RoutingKeys.REWARD_ITEMS_FAILED)
+                .UseDurableOutbox();
+
+            options.ListenToRabbitQueue(CLANWARS_COMMANDS_QUEUE, queue =>
+                queue.BindExchange(ClanWarsEventRouting.COMMANDS_EXCHANGE, ClanWarsEventRouting.RoutingKeys.GRANT_ITEMS));
             options.ConfigureAccountEventsListeners();
             options.ConfigureStoreCommandListeners();
             options.ConfigureEventCommandListeners();

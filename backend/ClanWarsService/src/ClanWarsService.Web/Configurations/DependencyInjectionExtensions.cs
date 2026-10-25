@@ -11,6 +11,7 @@ using Shared.Framework.HealthChecks;
 using Shared.Framework.Logging;
 using Shared.Framework.OpenApi;
 using Shared.Messaging;
+using WalletService.Contracts.Communication;
 
 namespace ClanWarsService.Web.Configurations;
 
@@ -37,6 +38,7 @@ public static class DependencyInjectionExtensions
                 .AddCheck<RedisHealthCheck>("redis", failureStatus: HealthStatus.Degraded);
             builder.Services.AddEndpoints(typeof(DependencyInjectionExtensions).Assembly);
 
+            builder.Services.AddWalletServiceGrpcCommunication(configuration);
             builder.Services.AddCore();
             builder.Services.AddInfrastructurePostgres(configuration);
             builder.Services.AddInfrastructureRedis(configuration);

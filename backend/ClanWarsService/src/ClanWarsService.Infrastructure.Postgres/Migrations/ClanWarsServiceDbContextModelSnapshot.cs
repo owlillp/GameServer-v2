@@ -172,6 +172,184 @@ namespace ClanWarsService.Infrastructure.Postgres.Migrations
                     b.ToTable("battle_queue", "clanwars");
                 });
 
+            modelBuilder.Entity("ClanWarsService.Domain.Rewards.RewardTable", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("reward_tables", "clanwars");
+                });
+
+            modelBuilder.Entity("ClanWarsService.Domain.Rewards.RewardTier", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<long>("ClanPoints")
+                        .HasColumnType("bigint")
+                        .HasColumnName("clan_points");
+
+                    b.Property<long>("CurrencyAmount")
+                        .HasColumnType("bigint")
+                        .HasColumnName("currency_amount");
+
+                    b.Property<string>("CurrencyCode")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("currency_code");
+
+                    b.Property<int>("FromRank")
+                        .HasColumnType("integer")
+                        .HasColumnName("from_rank");
+
+                    b.Property<string>("Items")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("items");
+
+                    b.Property<int>("MinBattles")
+                        .HasColumnType("integer")
+                        .HasColumnName("min_battles");
+
+                    b.Property<Guid>("TableId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("table_id");
+
+                    b.Property<int>("ToRank")
+                        .HasColumnType("integer")
+                        .HasColumnName("to_rank");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TableId");
+
+                    b.ToTable("reward_tiers", "clanwars");
+                });
+
+            modelBuilder.Entity("ClanWarsService.Domain.Rewards.SeasonRewardGrant", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("integer")
+                        .HasColumnName("attempts");
+
+                    b.Property<Guid>("ClanId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("clan_id");
+
+                    b.Property<long>("ClanPoints")
+                        .HasColumnType("bigint")
+                        .HasColumnName("clan_points");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("CurrencyAmount")
+                        .HasColumnType("bigint")
+                        .HasColumnName("currency_amount");
+
+                    b.Property<string>("CurrencyCode")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("currency_code");
+
+                    b.Property<string>("Items")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("items");
+
+                    b.Property<DateTime?>("ItemsGrantedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("items_granted_at");
+
+                    b.Property<DateTime?>("ItemsPublishedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("items_published_at");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("last_error");
+
+                    b.Property<DateTime>("NextAttemptAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("next_attempt_at");
+
+                    b.Property<DateTime?>("PointsPublishedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("points_published_at");
+
+                    b.Property<int>("Rank")
+                        .HasColumnType("integer")
+                        .HasColumnName("rank");
+
+                    b.Property<Guid>("SeasonId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("season_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime?>("WalletCreditedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("wallet_credited_at");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SeasonId", "AccountId")
+                        .HasDatabaseName("ix_season_reward_grants_account");
+
+                    b.HasIndex("SeasonId", "Status")
+                        .HasDatabaseName("ix_season_reward_grants_season_status");
+
+                    b.HasIndex("Status", "NextAttemptAt")
+                        .HasDatabaseName("ix_season_reward_grants_due")
+                        .HasFilter("status = 'Pending'");
+
+                    b.HasIndex("SeasonId", "ClanId", "AccountId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_season_reward_grants_recipient");
+
+                    NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("SeasonId", "ClanId", "AccountId"), false);
+
+                    b.ToTable("season_reward_grants", "clanwars");
+                });
+
             modelBuilder.Entity("ClanWarsService.Domain.Roster.ClanProjection", b =>
                 {
                     b.Property<Guid>("ClanId")
@@ -589,6 +767,20 @@ namespace ClanWarsService.Infrastructure.Postgres.Migrations
                         {
                             t.ExcludeFromMigrations();
                         });
+                });
+
+            modelBuilder.Entity("ClanWarsService.Domain.Rewards.RewardTier", b =>
+                {
+                    b.HasOne("ClanWarsService.Domain.Rewards.RewardTable", null)
+                        .WithMany("Tiers")
+                        .HasForeignKey("TableId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ClanWarsService.Domain.Rewards.RewardTable", b =>
+                {
+                    b.Navigation("Tiers");
                 });
 #pragma warning restore 612, 618
         }

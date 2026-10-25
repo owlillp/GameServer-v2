@@ -104,6 +104,7 @@ public sealed class UpdateSeasonHandler(
 public sealed class PublishSeasonHandler(
     ISeasonRepository seasonRepository,
     IBattleRepository battleRepository,
+    IRewardRepository rewardRepository,
     ISeasonScheduler scheduler,
     ITransactionManager transactionManager,
     TimeProvider timeProvider) : ICommandHandler<SeasonDto, PublishSeasonCommand>
@@ -114,6 +115,12 @@ public sealed class PublishSeasonHandler(
         if (season is null)
         {
             return ClanWarsErrors.SeasonNotFound;
+        }
+
+        var tableCheck = await RewardTableCheck.EnsureExistsAsync(rewardRepository, season.RewardTableId, cancellationToken);
+        if (tableCheck.IsFailure)
+        {
+            return tableCheck.Error;
         }
 
         if (await seasonRepository.OverlapsAsync(season.Id, season.StartsAt, season.FinalizesAt, cancellationToken))

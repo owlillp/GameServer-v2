@@ -89,3 +89,36 @@ public sealed record BattleDto(
 public sealed record MyBattlesDto(BattleQueueEntryDto? Queued, IReadOnlyList<BattleDto> Battles);
 
 public sealed record AdjustScoreRequest(Guid ClanId, long Amount, string Reason, Guid? OperationId);
+
+public sealed record RewardItemDto(Guid ItemId, string Code, string Kind, string? Slot, int Quantity);
+
+public sealed record RewardTierDto(
+    int FromRank,
+    int ToRank,
+    long ClanPoints,
+    string? CurrencyCode,
+    long CurrencyAmount,
+    IReadOnlyList<RewardItemDto> Items,
+    int MinBattles);
+
+public sealed record CreateRewardTableRequest(string Name, IReadOnlyList<RewardTierDto> Tiers);
+
+public sealed record RewardTableDto(Guid Id, string Name, DateTime CreatedAt, IReadOnlyList<RewardTierDto> Tiers);
+
+public sealed record RewardGrantDto(
+    Guid Id,
+    Guid SeasonId,
+    Guid ClanId,
+    Guid? AccountId,
+    int Rank,
+    long ClanPoints,
+    string? CurrencyCode,
+    long CurrencyAmount,
+    IReadOnlyList<RewardItemDto> Items,
+    string Status,
+    int Attempts,
+    string? LastError,
+    DateTime CreatedAt,
+    DateTime? CompletedAt);
+
+public sealed record SeasonRewardsDto(int Pending, int Granted, int Failed, IReadOnlyList<RewardGrantDto> Grants);

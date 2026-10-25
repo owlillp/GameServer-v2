@@ -67,6 +67,12 @@ public static class ClanWarsErrors
     public static Error NotQueued { get; } =
         Error.NotFound("clanwars.battle.not_queued", "The clan has no squad in the queue", "clanId");
 
+    public static Error RewardTableInvalid { get; } =
+        Error.Validation("clanwars.rewards.table.invalid", "Reward tiers must have valid, non-overlapping rank ranges and non-negative rewards", "tiers");
+
+    public static Error RewardTableNotFound { get; } =
+        Error.NotFound("clanwars.rewards.table.not_found", "Reward table was not found", "rewardTableId");
+
     public static Error ClanNotRanked { get; } =
         Error.NotFound("clanwars.clan.not_ranked", "Clan has no score in this season", "clanId");
 }

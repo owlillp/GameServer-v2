@@ -27,6 +27,8 @@ public interface ISeasonRepository
 
     Task<int> NextNumberAsync(CancellationToken cancellationToken);
 
+    Task<IReadOnlyList<Season>> ListByStatusAsync(SeasonStatus status, CancellationToken cancellationToken);
+
     /// <summary>
     /// True if another published season overlaps [startsAt, finalizesAt].
     /// </summary>
@@ -87,6 +89,8 @@ public interface IScoreRepository
     /// Atomic upsert of a player's contribution in the current transaction.
     /// </summary>
     Task ApplyMemberAsync(Guid seasonId, Guid accountId, Guid clanId, long points, int battles, int wins, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<MemberSeasonStats>> ListMemberStatsBySeasonAsync(Guid seasonId, int minBattles, CancellationToken cancellationToken);
 
     Task<IReadOnlyList<MemberSeasonStats>> ListMemberStatsAsync(Guid seasonId, Guid clanId, CancellationToken cancellationToken);
 

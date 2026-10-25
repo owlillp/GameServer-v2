@@ -80,4 +80,40 @@ public sealed class ClanWarsOptions
     /// </summary>
     [Range(1, 24 * 60)]
     public int BattleTimeoutMinutes { get; init; } = 90;
+
+    [Range(1, 3600)]
+    public int RewardIntervalSeconds { get; init; } = 5;
+
+    [Range(1, 10000)]
+    public int RewardBatchSize { get; init; } = 500;
+
+    /// <summary>
+    /// Concurrent Wallet credits per batch.
+    /// </summary>
+    [Range(1, 64)]
+    public int RewardParallelism { get; init; } = 8;
+
+    [Range(1, 100)]
+    public int RewardMaxAttempts { get; init; } = 8;
+
+    [Range(1, 3600)]
+    public int RewardBackoffSeconds { get; init; } = 30;
+
+    [Required]
+    public string RewardWalletReason { get; init; } = "ClanSeasonReward";
+
+    /// <summary>
+    /// Daily reconciliation of delivered grants with Wallet (Quartz cron, UTC).
+    /// </summary>
+    [Required]
+    public string ReconciliationCron { get; init; } = "0 0 3 * * ?";
+
+    [Range(1, 365)]
+    public int ReconciliationDays { get; init; } = 7;
+
+    /// <summary>
+    /// Items sent to Inventory and not confirmed for this long are sent again.
+    /// </summary>
+    [Range(1, 24 * 60)]
+    public int StuckItemsMinutes { get; init; } = 60;
 }

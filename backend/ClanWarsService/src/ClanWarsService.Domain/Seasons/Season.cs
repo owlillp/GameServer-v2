@@ -233,6 +233,21 @@ public sealed class Season
     /// After the results snapshot. With a reward table the season waits in Rewarding for the
     /// grants (stage 7); without one it closes at once.
     /// </summary>
+    /// <summary>
+    /// All reward grants are delivered: Rewarding → Closed.
+    /// </summary>
+    public bool CompleteRewards(DateTime now)
+    {
+        if (Status != SeasonStatus.Rewarding)
+        {
+            return false;
+        }
+
+        Status = SeasonStatus.Closed;
+        ClosedAt = now;
+        return true;
+    }
+
     public SeasonStatus Close(DateTime now)
     {
         if (Status != SeasonStatus.Finalizing)
