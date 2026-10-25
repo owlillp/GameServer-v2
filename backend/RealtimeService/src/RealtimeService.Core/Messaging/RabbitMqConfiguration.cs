@@ -1,3 +1,4 @@
+using Shared.IntegrationEvents.ClanWars;
 using Shared.IntegrationEvents.Clans;
 using Shared.IntegrationEvents.Events;
 using Shared.IntegrationEvents.Inventories;
@@ -16,6 +17,7 @@ public static class RabbitMqConfiguration
     private const string INVENTORY_EVENTS_QUEUE = "realtime.inventory-events";
     private const string MATCHMAKING_EVENTS_QUEUE = "realtime.matchmaking-events";
     private const string CLAN_EVENTS_QUEUE = "realtime.clan-events";
+    private const string CLANWARS_EVENTS_QUEUE = "realtime.clanwars-events";
 
     extension(WolverineOptions options)
     {
@@ -47,6 +49,11 @@ public static class RabbitMqConfiguration
                     exchange.IsDurable = true;
                 })
                 .DeclareExchange(ClanEventRouting.EVENTS_EXCHANGE, exchange =>
+                {
+                    exchange.ExchangeType = ExchangeType.Topic;
+                    exchange.IsDurable = true;
+                })
+                .DeclareExchange(ClanWarsEventRouting.EVENTS_EXCHANGE, exchange =>
                 {
                     exchange.ExchangeType = ExchangeType.Topic;
                     exchange.IsDurable = true;
@@ -82,6 +89,12 @@ public static class RabbitMqConfiguration
 
             options.ListenToRabbitQueue(CLAN_EVENTS_QUEUE, queue =>
                 queue.BindExchange(ClanEventRouting.EVENTS_EXCHANGE, ClanEventRouting.RoutingKeys.ALL_CLAN_EVENTS));
+
+            options.ListenToRabbitQueue(CLANWARS_EVENTS_QUEUE, queue =>
+            {
+                queue.BindExchange(ClanWarsEventRouting.EVENTS_EXCHANGE, ClanWarsEventRouting.RoutingKeys.SEASON_STARTED);
+                queue.BindExchange(ClanWarsEventRouting.EVENTS_EXCHANGE, ClanWarsEventRouting.RoutingKeys.SEASON_ENDED);
+            });
         }
     }
 }

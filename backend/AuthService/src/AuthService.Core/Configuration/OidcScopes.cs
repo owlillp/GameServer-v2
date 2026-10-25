@@ -1,4 +1,4 @@
-﻿namespace AuthService.Core.Configuration;
+namespace AuthService.Core.Configuration;
 
 public static class OidcScopes
 {
@@ -18,6 +18,7 @@ public static class OidcScopes
     public const string REALTIME = "realtime";
     public const string MATCHMAKING = "matchmaking";
     public const string SESSION = "session";
+    public const string CLANWARS = "clanwars";
 
     /// <summary>
     /// Game servers only: register, heartbeat, report matches.
@@ -42,6 +43,7 @@ public static class OidcScopes
         MATCHMAKING,
         SESSION,
         SESSION_WRITE,
+        CLANWARS,
     ];
 
     public static class Resources
@@ -57,5 +59,6 @@ public static class OidcScopes
         public const string REALTIME_RESOURCE = "realtime-service";
         public const string MATCHMAKING_RESOURCE = "matchmaking-service";
         public const string SESSION_RESOURCE = "session-service";
+        public const string CLANWARS_RESOURCE = "clanwars-service";
     }
 }

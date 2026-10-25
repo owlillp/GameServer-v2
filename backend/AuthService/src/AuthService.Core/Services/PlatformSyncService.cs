@@ -25,6 +25,7 @@ public sealed class PlatformSyncService(
         await UpsertScopeAsync(OidcScopes.REALTIME, "RealtimeService API Access", OidcScopes.Resources.REALTIME_RESOURCE, cancellationToken);
         await UpsertScopeAsync(OidcScopes.MATCHMAKING, "MatchmakingService API Access", OidcScopes.Resources.MATCHMAKING_RESOURCE, cancellationToken);
         await UpsertScopeAsync(OidcScopes.SESSION, "SessionService API Access", OidcScopes.Resources.SESSION_RESOURCE, cancellationToken);
+        await UpsertScopeAsync(OidcScopes.CLANWARS, "ClanWarsService API Access", OidcScopes.Resources.CLANWARS_RESOURCE, cancellationToken);
         await UpsertScopeAsync(OidcScopes.SESSION_WRITE, "Game server access to SessionService", OidcScopes.Resources.SESSION_RESOURCE, cancellationToken);
 
         await UpsertPublicClientAsync(options.Clients.Web, allowPasswordGrant: false, cancellationToken);
@@ -121,6 +122,7 @@ public sealed class PlatformSyncService(
                 OpenIddictConstants.Permissions.Prefixes.Scope + OidcScopes.REALTIME,
                 OpenIddictConstants.Permissions.Prefixes.Scope + OidcScopes.MATCHMAKING,
                 OpenIddictConstants.Permissions.Prefixes.Scope + OidcScopes.SESSION,
+                OpenIddictConstants.Permissions.Prefixes.Scope + OidcScopes.CLANWARS,
             },
         };
 

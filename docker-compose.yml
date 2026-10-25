@@ -464,6 +464,54 @@ services:
         condition: service_completed_successfully
     restart: always
 
+  clanwars-migrator:
+    container_name: gameserver-v2-clanwars-migrator
+    build:
+      context: ./backend
+      dockerfile: ClanWarsService/Dockerfile
+      target: migrations
+      args:
+        NUGET_USERNAME: ${NUGET_USERNAME}
+      secrets:
+        - nuget_password
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ConnectionStrings__ClanWarsDb=${ConnectionStrings__ClanWarsDb}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["--connection", "${ConnectionStrings__ClanWarsDb}"]
+    restart: "no"
+
+  clanwars-service:
+    container_name: gameserver-v2-clanwars-service
+    build:
+      context: ./backend
+      dockerfile: ClanWarsService/Dockerfile
+      args:
+        NUGET_USERNAME: ${NUGET_USERNAME}
+      secrets:
+        - nuget_password
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_URLS=http://+:8080
+      - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
+      - ConnectionStrings__ClanWarsDb=${ConnectionStrings__ClanWarsDb}
+      - ConnectionStrings__RabbitMQ=${ConnectionStrings__RabbitMQ}
+      - ConnectionStrings__Redis=${ConnectionStrings__Redis}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+      clanwars-migrator:
+        condition: service_completed_successfully
+    restart: always
+
   # Dev stand-in for the Unity game server (backend/tools/FakeGameServer).
   fake-game-server:
     container_name: gameserver-v2-fake-game-server
@@ -599,6 +647,7 @@ services:
       - matchmaking-service
       - session-service
       - clan-service
+      - clanwars-service
       - realtime-service
       - frontend
     restart: always

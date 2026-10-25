@@ -1,7 +1,7 @@
 # План реализации: SessionService, MatchmakingService, кланы
 
-> Статус: этапы 0–4 реализованы на ветке `feature/sessions-and-matchmaking-reliability`
-> (интеграционные тесты на Testcontainers не написаны), этапы 5–8 не начаты. Дата: 2026-10-25.
+> Статус: этапы 0–5 реализованы на ветке `feature/sessions-and-matchmaking-reliability`
+> (интеграционные тесты на Testcontainers не написаны), этапы 6–8 не начаты. Дата: 2026-10-25.
 > Связанные документы: `docs/architecture.md`, схема кланов —
 > https://claude.ai/artifact/6CeKfSXPU2dT2qLShGztou
 >
@@ -292,23 +292,28 @@ join-тикету, сервер отчитывается о матчах.
 
 Цель: сезоны по расписанию и лидерборд кланов, пока с ручным начислением очков.
 
-- [ ] Проект по шаблону, схема `clanwars`
-- [ ] `seasons`: number, starts_at, ends_at, status, scoring_rules (jsonb),
+- [x] Проект по шаблону, схема `clanwars`
+- [x] `seasons`: number, starts_at, ends_at, status, scoring_rules (jsonb),
   reward_table_id; админ создаёт и публикует черновики
-- [ ] Фазы `Scheduled → Active → Finalizing → Rewarding → Closed` вычисляются
+- [x] Фазы `Scheduled → Active → Finalizing → Rewarding → Closed` вычисляются
   из расписания; Quartz (JobStore в PostgreSQL, clustered, `misfire = FireNow`)
   по образцу `EventScheduler` / `EventPhaseJob`
-- [ ] Проекция состава `clan_roster` из событий ClanService (inbox, идемпотентно)
-- [ ] `season_scores`: начисление атомарным UPDATE; `score_receipts` для
+- [x] Проекция состава `clan_roster` из событий ClanService (inbox, идемпотентно)
+- [x] `season_scores`: начисление атомарным UPDATE; `score_receipts` для
   идемпотентности по источнику очков
-- [ ] Redis ZSET `clanwars:season:{id}`: составной score, `ZADD` абсолютного
+- [x] Redis ZSET `clanwars:season:{id}`: составной score, `ZADD` абсолютного
   значения, пересборка через `RENAME` (сразу в исправленном виде из этапа 1)
-- [ ] API: текущий сезон, топ-100, место своего клана с соседями, вклад участников
-- [ ] Админ: ручная корректировка очков с аудитом (для тестов до этапа 6)
-- [ ] События: `season-started.clanwars`, `season-ended.clanwars` → Realtime
+- [x] API: текущий сезон, топ-100, место своего клана с соседями, вклад участников
+- [x] Админ: ручная корректировка очков с аудитом (для тестов до этапа 6)
+- [x] События: `season-started.clanwars`, `season-ended.clanwars` → Realtime
 
 Готово, когда: тестовый сезон длиной в час стартует и закрывается сам, в том
 числе если сервис был выключен в момент границы фазы.
+
+> Сделано: `backend/ClanWarsService` (см. README). Фаза `Finalizing` длится `grace` после конца
+> сезона (для битв этапа 6), затем итоги замораживаются в `season_results` и сезон закрывается
+> (с таблицей наград — ждёт в `Rewarding`, этап 7). Догон после простоя проверен unit-тестом
+> `SeasonLifecycleTests`; на живом Quartz в Docker не прогонялся.
 
 ---
 
