@@ -252,6 +252,22 @@ public sealed class Party
         return UnitResult.Success<Error>();
     }
 
+    /// <summary>
+    /// The match was cancelled before it started: the party goes back to the queue as it was.
+    /// </summary>
+    public UnitResult<Error> ReturnToQueue(DateTime now)
+    {
+        if (Status != PartyStatus.InMatch)
+        {
+            return MatchmakingErrors.PartyNotInMatch;
+        }
+
+        Status = PartyStatus.Queued;
+        UpdatedAt = now;
+
+        return UnitResult.Success<Error>();
+    }
+
     public UnitResult<Error> Close(DateTime now)
     {
         Status = PartyStatus.Closed;

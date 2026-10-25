@@ -125,7 +125,7 @@ public sealed class MatchmakingEndpoints : IEndpointGroup
         [FromServices] ICommandHandler<QueueTicketDto, EnqueuePartyCommand> handler,
         [FromServices] UserScopedData userScope,
         CancellationToken ct) =>
-        await handler.Handle(new EnqueuePartyCommand(userScope.Id ?? Guid.Empty, request?.Mode), ct);
+        await handler.Handle(new EnqueuePartyCommand(userScope.Id ?? Guid.Empty, request?.Mode, request?.Region), ct);
 
     private static async Task<EndpointResult<bool>> LeaveQueue(
         [FromServices] ICommandHandler<bool, LeaveQueueCommand> handler,

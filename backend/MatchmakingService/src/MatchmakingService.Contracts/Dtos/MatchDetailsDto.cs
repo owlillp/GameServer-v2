@@ -12,4 +12,6 @@ public sealed record MatchDetailsDto(
     IReadOnlyList<MatchPartyDto> Parties,
     IReadOnlyList<MatchParticipantDto> Participants,
     IReadOnlyList<MatchResultDto> Results,
-    MatchRewardDto? Reward);
+    MatchRewardDto? Reward,
+    string? Region = null,
+    MatchConnectionDto? Connection = null);

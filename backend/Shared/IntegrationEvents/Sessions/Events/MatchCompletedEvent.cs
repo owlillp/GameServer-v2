@@ -6,6 +6,8 @@ namespace Shared.IntegrationEvents.Sessions.Events;
 /// </summary>
 /// <param name="SessionId">Session the activity happened in; null for matches finished by an admin.</param>
 /// <param name="ExternalRef">Reference of an outside owner of the match (e.g. a clan battle id).</param>
+/// <param name="ReportPlayerCount">How many per-player events the same report produced: lets a consumer
+/// know when it has the whole result.</param>
 public sealed record MatchCompletedEvent(
     Guid MatchId,
     Guid AccountId,
@@ -15,4 +17,5 @@ public sealed record MatchCompletedEvent(
     int Score,
     DateTime CompletedAt,
     Guid? SessionId = null,
-    string? ExternalRef = null);
+    string? ExternalRef = null,
+    int? ReportPlayerCount = null);

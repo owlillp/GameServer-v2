@@ -6,11 +6,16 @@ using Microsoft.Extensions.Options;
 namespace SessionService.Web.Grpc;
 
 /// <summary>
-/// Only game server clients (client_credentials) with the session.write scope may call the gRPC API.
+/// gRPC is for machines only. <c>GameServerSessions</c> accepts game server clients with the
+/// session.write scope, <c>MatchSessions</c> accepts backend service clients with the session scope.
 /// Player tokens are rejected even though they are valid for the REST API of the same service.
 /// </summary>
-public sealed class GameServerAuthInterceptor(IOptionsMonitor<GameServerAuthOptions> options) : Interceptor
+public sealed class GameServerAuthInterceptor(
+    IOptionsMonitor<GameServerAuthOptions> gameServerOptions,
+    IOptionsMonitor<ServiceClientAuthOptions> serviceClientOptions) : Interceptor
 {
+    private const string MATCH_SESSIONS_PREFIX = "/session.v1.MatchSessions/";
+
     private const string SCOPE_CLAIM = "scope";
     private const string CLIENT_ID_CLAIM = "client_id";
     private const string SUBJECT_CLAIM = "sub";
@@ -20,7 +25,7 @@ public sealed class GameServerAuthInterceptor(IOptionsMonitor<GameServerAuthOpti
         ServerCallContext context,
         UnaryServerMethod<TRequest, TResponse> continuation)
     {
-        EnsureGameServer(context);
+        EnsureAllowed(context);
         return continuation(request, context);
     }
 
@@ -29,13 +34,17 @@ public sealed class GameServerAuthInterceptor(IOptionsMonitor<GameServerAuthOpti
         ServerCallContext context,
         ClientStreamingServerMethod<TRequest, TResponse> continuation)
     {
-        EnsureGameServer(context);
+        EnsureAllowed(context);
         return continuation(requestStream, context);
     }
 
-    private void EnsureGameServer(ServerCallContext context)
+    private void EnsureAllowed(ServerCallContext context)
     {
-        GameServerAuthOptions current = options.CurrentValue;
+        (IReadOnlyList<string> allowedClientIds, string requiredScope) =
+            context.Method.StartsWith(MATCH_SESSIONS_PREFIX, StringComparison.Ordinal)
+                ? (serviceClientOptions.CurrentValue.AllowedClientIds, serviceClientOptions.CurrentValue.RequiredScope)
+                : (gameServerOptions.CurrentValue.AllowedClientIds, gameServerOptions.CurrentValue.RequiredScope);
+
         ClaimsPrincipal user = context.GetHttpContext().User;
 
         string? clientId = user.FindFirst(CLIENT_ID_CLAIM)?.Value;
@@ -43,17 +52,17 @@ public sealed class GameServerAuthInterceptor(IOptionsMonitor<GameServerAuthOpti
 
         bool hasScope = user.FindAll(SCOPE_CLAIM)
             .SelectMany(claim => claim.Value.Split(' ', StringSplitOptions.RemoveEmptyEntries))
-            .Contains(current.RequiredScope, StringComparer.Ordinal);
+            .Contains(requiredScope, StringComparer.Ordinal);
 
         if (user.Identity?.IsAuthenticated != true
             || clientId is null
-            || !current.AllowedClientIds.Contains(clientId, StringComparer.Ordinal)
+            || !allowedClientIds.Contains(clientId, StringComparer.Ordinal)
             || !string.Equals(subject, clientId, StringComparison.Ordinal)
             || !hasScope)
         {
             throw new RpcException(new Status(
                 StatusCode.PermissionDenied,
-                "A game server token with the session.write scope is required"));
+                $"A service token with the {requiredScope} scope is required"));
         }
     }
 }

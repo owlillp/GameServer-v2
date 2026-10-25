@@ -9,6 +9,9 @@ public sealed class SessionRepository(SessionServiceDbContext dbContext) : ISess
     public Task<Session?> GetAsync(Guid sessionId, CancellationToken cancellationToken) =>
         dbContext.Sessions.FirstOrDefaultAsync(session => session.Id == sessionId, cancellationToken);
 
+    public Task<Session?> GetByMatchAsync(Guid matchId, CancellationToken cancellationToken) =>
+        dbContext.Sessions.FirstOrDefaultAsync(session => session.MatchId == matchId, cancellationToken);
+
     public Task<Session?> GetCurrentByPlayerAsync(Guid accountId, CancellationToken cancellationToken) =>
         OpenSessions()
             .Where(session => session.Players.Any(player => player.AccountId == accountId && player.LeftAt == null))

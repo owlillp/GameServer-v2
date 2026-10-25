@@ -7,6 +7,9 @@ public static class MatchmakingConstants
     public const int PARTY_CODE_LENGTH = 8;
 
     public const int MODE_MAX_LENGTH = 32;
+    public const int REGION_MAX_LENGTH = 32;
+    public const int ADDRESS_MAX_LENGTH = 256;
+    public const string DEFAULT_REGION = "eu-west";
     public const int CURRENCY_MAX_LENGTH = 16;
     public const int ITEM_CODE_MAX_LENGTH = 64;
     public const int ITEM_KIND_MAX_LENGTH = 32;

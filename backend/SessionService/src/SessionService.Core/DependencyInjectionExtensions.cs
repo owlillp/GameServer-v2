@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using SessionService.Core.Abstractions;
 using SessionService.Core.Configuration;
 using SessionService.Core.GameServers;
+using SessionService.Core.Matches;
 using SessionService.Core.Messaging.Publishers;
 using SessionService.Core.Services;
 using Shared.Core.Abstractions;
@@ -30,6 +31,7 @@ public static class DependencyInjectionExtensions
             services.AddScoped<IGameServerAllocator, StaticPoolAllocator>();
             services.AddScoped<SessionPlacement>();
             services.AddScoped<GameServerOperations>();
+            services.AddScoped<MatchTicketIssuer>();
 
             services.AddHostedService<SessionLivenessSweeper>();
 

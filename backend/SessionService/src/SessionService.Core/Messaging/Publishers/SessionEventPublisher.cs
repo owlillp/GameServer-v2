@@ -1,5 +1,6 @@
 using SessionService.Core.Abstractions;
 using SessionService.Domain.Reports;
+using SessionService.Domain.Servers;
 using SessionService.Domain.Sessions;
 using Shared.IntegrationEvents.Sessions.Events;
 
@@ -45,7 +46,19 @@ public sealed class SessionEventPublisher(IOutboxService outbox) : ISessionEvent
                 player.Score,
                 data.EndedAt,
                 session.Id,
-                ExternalRef: null));
+                ExternalRef: null,
+                ReportPlayerCount: data.Players.Count));
         }
     }
+
+    public Task PublishMatchAllocatedAsync(Session session, GameServer server, DateTime allocatedAt) =>
+        outbox.PublishAsync(new MatchAllocatedEvent(
+            session.MatchId ?? throw new InvalidOperationException("Only match sessions are allocated for matches"),
+            session.Id,
+            server.Id,
+            server.Address,
+            allocatedAt));
+
+    public Task PublishMatchAllocationFailedAsync(Guid matchId, string reason, DateTime failedAt) =>
+        outbox.PublishAsync(new MatchAllocationFailedEvent(matchId, reason, failedAt));
 }

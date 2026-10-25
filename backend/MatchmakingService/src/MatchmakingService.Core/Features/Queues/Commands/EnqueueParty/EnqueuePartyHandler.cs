@@ -40,7 +40,11 @@ public sealed class EnqueuePartyHandler(
             ? options.Value.DefaultMode
             : command.Mode;
 
-        var ticketResult = QueueTicket.Create(party, mode, now);
+        string region = string.IsNullOrWhiteSpace(command.Region)
+            ? options.Value.DefaultRegion
+            : command.Region;
+
+        var ticketResult = QueueTicket.Create(party, mode, region, now);
         if (ticketResult.IsFailure)
         {
             return ticketResult.Error;

@@ -35,6 +35,10 @@
 | `PlayerJoined` / `PlayerLeft` | Состав сессии; жёсткий лимит мест проверяется здесь |
 | `ReportMatch` | Итог матча; идемпотентен по `activity_id` |
 
+Сервисный gRPC `MatchSessions.IssueMatchTicket` (клиенты из `ServiceClientAuth:AllowedClientIds`
+со scope `session`): тикет участнику матча из очереди — им пользуется Matchmaking в
+`GET /matchmaking/matches/me`.
+
 Join-тикет — JWT RS256 на 60 с: `sub` (игрок), `session_id`, `server_id`, `jti`.
 Повторное использование `jti` отклоняется через Redis.
 
@@ -57,14 +61,34 @@ Join-тикет — JWT RS256 на 60 с: `sub` (игрок), `session_id`, `ser
 открытых сессий через `FOR UPDATE SKIP LOCKED` и закрывает те, у которых истёк
 ключ `session:{id}` в Redis: `Active → Closed`, оставшиеся игроки отмечаются вышедшими.
 
+## Матчи из очереди (Matchmaking ↔ Session)
+
+1. Matchmaking создаёт матч и в той же транзакции (outbox) шлёт `allocate-match.matchmaking`.
+2. Session выделяет сервер, создаёт `Session(kind = match)` и отвечает `match-allocated.session`
+   (адрес сервера) или `match-allocation-failed.session`. Повтор команды не создаёт вторую сессию
+   (уникальный индекс по `match_id`) и повторяет ответ.
+3. Matchmaking сохраняет сервер в матч и публикует `match-ready.matchmaking` → Realtime пушит игрокам.
+4. Игрок берёт тикет через `GET /matchmaking/matches/me` (Matchmaking → gRPC `IssueMatchTicket`).
+5. Сервер присылает `ReportMatch` → `match-completed.session` с `ReportPlayerCount` → Matchmaking
+   собирает результаты и, получив весь отчёт, запускает `MatchFinalizer`.
+6. Отказы: нет сервера, таймаут выделения (`Matchmaking:AllocationTimeoutSeconds`) или сессия
+   закрылась без результатов → матч `Cancelled`, пати возвращаются в очередь первыми, с прежним
+   временем постановки; после `MaxAllocationAttempts` — распускаются из очереди.
+
+Переключатель на время перехода — `Matchmaking:ResultsSource` (`Admin` | `Session`); в Docker — `Session`.
+
 ## События (exchange `session-events`)
 
 | Routing key | Контракт |
 | --- | --- |
-| `match-completed.session` | `MatchCompletedEvent` (существующий; добавлены необязательные `SessionId`, `ExternalRef`) |
+| `match-completed.session` | `MatchCompletedEvent` (существующий; добавлены необязательные `SessionId`, `ExternalRef`, `ReportPlayerCount`) |
 | `player-joined.session` | `PlayerJoinedSessionEvent` |
 | `player-left.session` | `PlayerLeftSessionEvent` |
 | `session-closed.session` | `SessionClosedEvent` |
+| `match-allocated.session` | `MatchAllocatedEvent` |
+| `match-allocation-failed.session` | `MatchAllocationFailedEvent` |
+
+Слушает `allocate-match.matchmaking` (`AllocateMatchCommand`) из exchange `matchmaking-commands`.
 
 ## Конфигурация
 

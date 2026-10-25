@@ -29,6 +29,7 @@ public static class DependencyInjectionExtensions
             services.AddScoped<IMatchmakingEventPublisher, MatchmakingEventPublisher>();
             services.AddScoped<MatchRewardDispatcher>();
             services.AddScoped<MatchFinalizer>();
+            services.AddScoped<MatchRecovery>();
             services.AddScoped<LeaderboardSync>();
             services.AddSingleton<LeaderboardSyncSignal>();
 

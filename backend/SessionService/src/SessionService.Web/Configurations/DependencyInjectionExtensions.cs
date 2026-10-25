@@ -33,6 +33,10 @@ public static class DependencyInjectionExtensions
                 .BindConfiguration(GameServerAuthOptions.SECTION_NAME)
                 .ValidateDataAnnotations()
                 .ValidateOnStart();
+            builder.Services.AddOptions<ServiceClientAuthOptions>()
+                .BindConfiguration(ServiceClientAuthOptions.SECTION_NAME)
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
             builder.Services.AddSingleton<GameServerAuthInterceptor>();
             builder.Services.AddGrpc(options => options.Interceptors.Add<GameServerAuthInterceptor>());
             builder.Services.AddOpenApiSpec(Constants.SERVICE_NAME, Constants.VERSION);

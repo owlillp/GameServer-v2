@@ -12,6 +12,7 @@ namespace MatchmakingService.Core.Messaging;
 public static class RabbitMqConfiguration
 {
     private const string REWARD_EVENTS_QUEUE = "matchmaking.reward-events";
+    private const string SESSION_EVENTS_QUEUE = "matchmaking.session-events";
 
     extension(WolverineOptions options)
     {
@@ -49,6 +50,11 @@ public static class RabbitMqConfiguration
                     MatchmakingEventRouting.COMMANDS_EXCHANGE,
                     _ => MatchmakingEventRouting.RoutingKeys.GRANT_REWARD)
                 .UseDurableOutbox();
+
+            options.PublishMessagesToRabbitMqExchange<AllocateMatchCommand>(
+                    MatchmakingEventRouting.COMMANDS_EXCHANGE,
+                    _ => MatchmakingEventRouting.RoutingKeys.ALLOCATE_MATCH)
+                .UseDurableOutbox();
         }
 
         private void ConfigureEventPublishing()
@@ -56,6 +62,11 @@ public static class RabbitMqConfiguration
             options.PublishMessagesToRabbitMqExchange<MatchCompletedEvent>(
                     SessionEventRouting.EVENTS_EXCHANGE,
                     _ => SessionEventRouting.RoutingKeys.MATCH_COMPLETED)
+                .UseDurableOutbox();
+
+            options.PublishMessagesToRabbitMqExchange<MatchReadyEvent>(
+                    MatchmakingEventRouting.EVENTS_EXCHANGE,
+                    _ => MatchmakingEventRouting.RoutingKeys.MATCH_READY)
                 .UseDurableOutbox();
         }
 
@@ -65,6 +76,14 @@ public static class RabbitMqConfiguration
             {
                 queue.BindExchange(MatchmakingEventRouting.EVENTS_EXCHANGE, MatchmakingEventRouting.RoutingKeys.REWARD_GRANTED);
                 queue.BindExchange(MatchmakingEventRouting.EVENTS_EXCHANGE, MatchmakingEventRouting.RoutingKeys.REWARD_FAILED);
+            });
+
+            options.ListenToRabbitQueue(SESSION_EVENTS_QUEUE, queue =>
+            {
+                queue.BindExchange(SessionEventRouting.EVENTS_EXCHANGE, SessionEventRouting.RoutingKeys.MATCH_COMPLETED);
+                queue.BindExchange(SessionEventRouting.EVENTS_EXCHANGE, SessionEventRouting.RoutingKeys.MATCH_ALLOCATED);
+                queue.BindExchange(SessionEventRouting.EVENTS_EXCHANGE, SessionEventRouting.RoutingKeys.MATCH_ALLOCATION_FAILED);
+                queue.BindExchange(SessionEventRouting.EVENTS_EXCHANGE, SessionEventRouting.RoutingKeys.SESSION_CLOSED);
             });
         }
     }

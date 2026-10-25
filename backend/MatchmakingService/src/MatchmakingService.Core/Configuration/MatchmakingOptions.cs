@@ -37,6 +37,24 @@ public sealed class MatchmakingOptions
 
     public bool RequireSamePartySize { get; init; } = true;
 
+    public ResultsSource ResultsSource { get; init; } = ResultsSource.Admin;
+
+    [Required]
+    [MaxLength(32)]
+    public string DefaultRegion { get; init; } = "eu-west";
+
+    /// <summary>
+    /// A match without a game server after this long is cancelled and its parties re-queued.
+    /// </summary>
+    [Range(5, 3600)]
+    public int AllocationTimeoutSeconds { get; init; } = 60;
+
+    /// <summary>
+    /// After this many failed allocations the parties are released instead of re-queued.
+    /// </summary>
+    [Range(0, 100)]
+    public int MaxAllocationAttempts { get; init; } = 3;
+
     public bool AutoFinishMatches { get; init; } = true;
 
     [Range(1, 1000)]

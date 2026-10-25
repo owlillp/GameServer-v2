@@ -10,6 +10,8 @@ public static class SessionEventRouting
         public const string PLAYER_JOINED = "player-joined.session";
         public const string PLAYER_LEFT = "player-left.session";
         public const string SESSION_CLOSED = "session-closed.session";
+        public const string MATCH_ALLOCATED = "match-allocated.session";
+        public const string MATCH_ALLOCATION_FAILED = "match-allocation-failed.session";
 
         public const string ALL_SESSION_EVENTS = "*.session";
     }

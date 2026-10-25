@@ -2,6 +2,7 @@ using MatchmakingService.Core.Abstractions;
 using MatchmakingService.Domain.Matches;
 using MatchmakingService.Domain.Rewards;
 using Shared.IntegrationEvents.Matchmaking.Commands;
+using Shared.IntegrationEvents.Matchmaking.Events;
 using Shared.IntegrationEvents.Sessions.Events;
 
 namespace MatchmakingService.Core.Messaging.Publishers;
@@ -33,4 +34,23 @@ public sealed class MatchmakingEventPublisher(IOutboxService outbox) : IMatchmak
             result.Kills,
             (int)Math.Clamp(result.Score, 0, int.MaxValue),
             DateTime.UtcNow));
+
+    public Task PublishAllocateMatchAsync(Match match, CancellationToken cancellationToken) =>
+        outbox.PublishAsync(new AllocateMatchCommand(
+            match.Id,
+            match.Mode,
+            match.Region,
+            [.. match.Participants.Select(participant => new AllocateMatchParticipant(
+                participant.AccountId,
+                participant.PartyId,
+                match.Parties.First(party => party.PartyId == participant.PartyId).Side))],
+            match.AllocationRequestedAt ?? DateTime.UtcNow));
+
+    public Task PublishMatchReadyAsync(Match match, CancellationToken cancellationToken) =>
+        outbox.PublishAsync(new MatchReadyEvent(
+            match.Id,
+            match.Mode,
+            match.ServerAddress ?? string.Empty,
+            [.. match.Participants.Select(participant => participant.AccountId)],
+            match.AllocatedAt ?? DateTime.UtcNow));
 }

@@ -1,5 +1,6 @@
 using Shared.IntegrationEvents.Events;
 using Shared.IntegrationEvents.Inventories;
+using Shared.IntegrationEvents.Matchmaking;
 using Shared.IntegrationEvents.Wallets;
 using Shared.Messaging;
 using Wolverine;
@@ -12,6 +13,7 @@ public static class RabbitMqConfiguration
     private const string EVENT_EVENTS_QUEUE = "realtime.event-events";
     private const string WALLET_EVENTS_QUEUE = "realtime.wallet-events";
     private const string INVENTORY_EVENTS_QUEUE = "realtime.inventory-events";
+    private const string MATCHMAKING_EVENTS_QUEUE = "realtime.matchmaking-events";
 
     extension(WolverineOptions options)
     {
@@ -33,6 +35,11 @@ public static class RabbitMqConfiguration
                     exchange.IsDurable = true;
                 })
                 .DeclareExchange(InventoryEventRouting.EXCHANGE, exchange =>
+                {
+                    exchange.ExchangeType = ExchangeType.Topic;
+                    exchange.IsDurable = true;
+                })
+                .DeclareExchange(MatchmakingEventRouting.EVENTS_EXCHANGE, exchange =>
                 {
                     exchange.ExchangeType = ExchangeType.Topic;
                     exchange.IsDurable = true;
@@ -60,6 +67,11 @@ public static class RabbitMqConfiguration
                 queue.BindExchange(
                     InventoryEventRouting.EXCHANGE,
                     InventoryEventRouting.RoutingKeys.ITEMS_GRANTED));
+
+            options.ListenToRabbitQueue(MATCHMAKING_EVENTS_QUEUE, queue =>
+                queue.BindExchange(
+                    MatchmakingEventRouting.EVENTS_EXCHANGE,
+                    MatchmakingEventRouting.RoutingKeys.MATCH_READY));
         }
     }
 }

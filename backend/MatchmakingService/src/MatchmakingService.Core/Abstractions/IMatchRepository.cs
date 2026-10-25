@@ -1,4 +1,4 @@
-﻿using MatchmakingService.Domain.Matches;
+using MatchmakingService.Domain.Matches;
 
 namespace MatchmakingService.Core.Abstractions;
 
@@ -14,6 +14,12 @@ public interface IMatchRepository
     /// Locks one expired active match with <c>FOR UPDATE SKIP LOCKED</c>; must run inside a transaction.
     /// </summary>
     Task<Guid?> ClaimExpiredActiveAsync(DateTime now, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Locks one active match still waiting for a game server since before <paramref name="requestedBefore"/>
+    /// with <c>FOR UPDATE SKIP LOCKED</c>; must run inside a transaction.
+    /// </summary>
+    Task<Guid?> ClaimAllocationTimedOutAsync(DateTime requestedBefore, CancellationToken cancellationToken);
 
     /// <summary>
     /// Waits for the row lock (<c>FOR UPDATE</c>) and loads the match; must run inside a transaction.

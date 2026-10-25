@@ -28,6 +28,7 @@ public static class AppConfigurationExtensions
 
         app.MapPlatformHealthChecks();
         app.MapGrpcService<GameServerSessionsGrpcService>().RequireAuthorization();
+        app.MapGrpcService<MatchSessionsGrpcService>().RequireAuthorization();
         app.MapEndpoints();
         app.MapEndpointGroups(typeof(AppConfigurationExtensions).Assembly);
 

@@ -6,4 +6,17 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\..\..\Shared\Communication\Shared.Communication.csproj" />
+      <ProjectReference Include="..\..\..\Shared\Grpc\Shared.Grpc.Contracts.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="CSharpFunctionalExtensions" />
+      <PackageReference Include="Grpc.Net.Client" />
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+      <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+      <PackageReference Include="Owlip.Shared.SharedKernel" />
+    </ItemGroup>
+
 </Project>

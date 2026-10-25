@@ -16,6 +16,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\src\MatchmakingService.Domain\MatchmakingService.Domain.csproj" />
+      <ProjectReference Include="..\..\..\Shared\IntegrationEvents\Shared.IntegrationEvents.csproj" />
     </ItemGroup>
 
 </Project>

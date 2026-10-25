@@ -7,4 +7,5 @@ public sealed record QueueTicketDto(
     string Status,
     int PartySize,
     DateTime EnqueuedAt,
-    Guid? MatchId);
+    Guid? MatchId,
+    string? Region = null);

@@ -1,3 +1,5 @@
+using Shared.IntegrationEvents.Matchmaking;
+using Shared.IntegrationEvents.Matchmaking.Commands;
 using Shared.IntegrationEvents.Sessions;
 using Shared.IntegrationEvents.Sessions.Events;
 using Shared.Messaging;
@@ -8,6 +10,8 @@ namespace SessionService.Core.Messaging;
 
 public static class RabbitMqConfiguration
 {
+    private const string MATCHMAKING_COMMANDS_QUEUE = "session.matchmaking-commands";
+
     extension(WolverineOptions options)
     {
         public void ConfigureRabbitMq(string connectionString)
@@ -21,9 +25,15 @@ public static class RabbitMqConfiguration
                 {
                     exchange.ExchangeType = ExchangeType.Topic;
                     exchange.IsDurable = true;
+                })
+                .DeclareExchange(MatchmakingEventRouting.COMMANDS_EXCHANGE, exchange =>
+                {
+                    exchange.ExchangeType = ExchangeType.Topic;
+                    exchange.IsDurable = true;
                 });
 
             options.ConfigureEventPublishing();
+            options.ConfigureCommandListeners();
         }
 
         private void ConfigureEventPublishing()
@@ -47,6 +57,24 @@ public static class RabbitMqConfiguration
                     SessionEventRouting.EVENTS_EXCHANGE,
                     _ => SessionEventRouting.RoutingKeys.SESSION_CLOSED)
                 .UseDurableOutbox();
+
+            options.PublishMessagesToRabbitMqExchange<MatchAllocatedEvent>(
+                    SessionEventRouting.EVENTS_EXCHANGE,
+                    _ => SessionEventRouting.RoutingKeys.MATCH_ALLOCATED)
+                .UseDurableOutbox();
+
+            options.PublishMessagesToRabbitMqExchange<MatchAllocationFailedEvent>(
+                    SessionEventRouting.EVENTS_EXCHANGE,
+                    _ => SessionEventRouting.RoutingKeys.MATCH_ALLOCATION_FAILED)
+                .UseDurableOutbox();
+        }
+
+        private void ConfigureCommandListeners()
+        {
+            options.ListenToRabbitQueue(MATCHMAKING_COMMANDS_QUEUE, queue =>
+                queue.BindExchange(
+                    MatchmakingEventRouting.COMMANDS_EXCHANGE,
+                    MatchmakingEventRouting.RoutingKeys.ALLOCATE_MATCH));
         }
     }
 }

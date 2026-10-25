@@ -18,6 +18,7 @@ public static class RealtimeNotificationTypes
     public const string WALLET_CREDITED = "wallet.credited";
     public const string WALLET_DEBITED = "wallet.debited";
     public const string INVENTORY_ITEMS_GRANTED = "inventory.items.granted";
+    public const string MATCH_READY = "matchmaking.match.ready";
 }
 
 public static class RealtimeAudiences

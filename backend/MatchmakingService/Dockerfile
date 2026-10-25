@@ -1,4 +1,4 @@
-﻿# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 USER root
@@ -18,6 +18,7 @@ COPY ["Directory.Build.props", "."]
 COPY ["Directory.Packages.props", "."]
 COPY ["Shared/", "Shared/"]
 COPY ["WalletService/src/WalletService.Contracts/", "WalletService/src/WalletService.Contracts/"]
+COPY ["SessionService/src/SessionService.Contracts/", "SessionService/src/SessionService.Contracts/"]
 COPY ["MatchmakingService/", "MatchmakingService/"]
 
 RUN dotnet tool install --global dotnet-ef --version 10.0.12

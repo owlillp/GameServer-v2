@@ -46,6 +46,9 @@ public static class SessionErrors
     public static Error TicketAlreadyUsed { get; } =
         Error.Conflict("session.ticket.used", "Join ticket has already been used", "ticket");
 
+    public static Error MatchSessionNotReady { get; } =
+        Error.NotFound("session.match.not_ready", "No open session is allocated for this match", "matchId");
+
     public static Error ReportInvalid { get; } =
         Error.Validation("session.report.invalid", "Match report is invalid", "report");
 

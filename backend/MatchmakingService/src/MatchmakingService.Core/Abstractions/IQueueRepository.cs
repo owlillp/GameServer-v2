@@ -1,4 +1,4 @@
-﻿using MatchmakingService.Domain.Queues;
+using MatchmakingService.Domain.Queues;
 
 namespace MatchmakingService.Core.Abstractions;
 
@@ -15,6 +15,8 @@ public interface IQueueRepository
     /// Tickets locked by another replica are skipped instead of being paired twice.
     /// </summary>
     Task<IReadOnlyList<QueueTicket>> ClaimQueuedAsync(int limit, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<QueueTicket>> ListByMatchAsync(Guid matchId, CancellationToken cancellationToken);
 
     Task AddAsync(QueueTicket ticket, CancellationToken cancellationToken);
 }

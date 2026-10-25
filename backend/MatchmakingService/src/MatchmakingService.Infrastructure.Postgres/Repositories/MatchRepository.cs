@@ -1,4 +1,4 @@
-﻿using MatchmakingService.Core.Abstractions;
+using MatchmakingService.Core.Abstractions;
 using MatchmakingService.Domain.Matches;
 using Microsoft.EntityFrameworkCore;
 
@@ -44,6 +44,27 @@ public sealed class MatchRepository(MatchmakingServiceDbContext dbContext) : IMa
                 SELECT id AS "Value" FROM matchmaking.matches
                 WHERE status = {status} AND ends_at <= {now}
                 ORDER BY ends_at
+                LIMIT 1
+                FOR UPDATE SKIP LOCKED
+                """)
+            .ToListAsync(cancellationToken);
+
+        return ids.Count == 0 ? null : ids[0];
+    }
+
+    public async Task<Guid?> ClaimAllocationTimedOutAsync(
+        DateTime requestedBefore,
+        CancellationToken cancellationToken)
+    {
+        string status = nameof(MatchStatus.Active);
+
+        List<Guid> ids = await dbContext.Database
+            .SqlQuery<Guid>($"""
+                SELECT id AS "Value" FROM matchmaking.matches
+                WHERE status = {status}
+                  AND allocated_at IS NULL
+                  AND allocation_requested_at < {requestedBefore}
+                ORDER BY allocation_requested_at
                 LIMIT 1
                 FOR UPDATE SKIP LOCKED
                 """)

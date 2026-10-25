@@ -94,6 +94,12 @@ public static class MatchmakingErrors
     public static Error RewardItemsInvalid { get; } =
         Error.Validation("matchmaking.reward.items.invalid", "Reward items are invalid", "items");
 
+    public static Error QueueRegionInvalid { get; } =
+        Error.Validation("matchmaking.queue.region.invalid", "Region is invalid", "region");
+
+    public static Error MatchAllocationInvalid { get; } =
+        Error.Conflict("matchmaking.match.allocation.invalid", "Match is not waiting for a game server", "matchId");
+
     public static Error GrantNotFound { get; } =
         Error.Validation("matchmaking.reward.grant.not_found", "Match reward grant was not found", "grantId");
 }

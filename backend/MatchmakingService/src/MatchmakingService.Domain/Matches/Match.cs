@@ -15,6 +15,19 @@ public sealed class Match
 
     public string Mode { get; private set; } = null!;
 
+    public string Region { get; private set; } = MatchmakingConstants.DEFAULT_REGION;
+
+    /// <summary>
+    /// Set when a game server was requested from SessionService (results come from the server).
+    /// </summary>
+    public DateTime? AllocationRequestedAt { get; private set; }
+
+    public DateTime? AllocatedAt { get; private set; }
+
+    public Guid? SessionId { get; private set; }
+
+    public string? ServerAddress { get; private set; }
+
     public MatchStatus Status { get; private set; }
 
     public DateTime StartsAt { get; private set; }
@@ -48,7 +61,8 @@ public sealed class Match
         string mode,
         DateTime startsAt,
         DateTime endsAt,
-        MatchRewardData reward)
+        MatchRewardData reward,
+        string region = MatchmakingConstants.DEFAULT_REGION)
     {
         if (partyA.Id == partyB.Id || partyA.Status == PartyStatus.Closed || partyB.Status == PartyStatus.Closed)
         {
@@ -76,6 +90,7 @@ public sealed class Match
         {
             Id = Guid.CreateVersion7(),
             Mode = normalizedMode,
+            Region = region,
             Status = MatchStatus.Active,
             StartsAt = startsAt,
             EndsAt = endsAt,
@@ -105,6 +120,43 @@ public sealed class Match
         match.Reward = definitionResult.Value;
 
         return match;
+    }
+
+    public bool IsWaitingForServer => Status == MatchStatus.Active && AllocationRequestedAt is not null && AllocatedAt is null;
+
+    public bool IsAllocated => AllocatedAt is not null;
+
+    public void RequestAllocation(DateTime now)
+    {
+        AllocationRequestedAt ??= now;
+        UpdatedAt = now;
+    }
+
+    /// <summary>
+    /// Idempotent: a repeated answer for the same session is accepted, a different session is not.
+    /// </summary>
+    public UnitResult<Error> MarkAllocated(Guid sessionId, string serverAddress, DateTime now)
+    {
+        if (Status != MatchStatus.Active || AllocationRequestedAt is null)
+        {
+            return MatchmakingErrors.MatchAllocationInvalid;
+        }
+
+        if (AllocatedAt is not null)
+        {
+            return SessionId == sessionId
+                ? UnitResult.Success<Error>()
+                : MatchmakingErrors.MatchAllocationInvalid;
+        }
+
+        SessionId = sessionId;
+        ServerAddress = serverAddress.Length > MatchmakingConstants.ADDRESS_MAX_LENGTH
+            ? serverAddress[..MatchmakingConstants.ADDRESS_MAX_LENGTH]
+            : serverAddress;
+        AllocatedAt = now;
+        UpdatedAt = now;
+
+        return UnitResult.Success<Error>();
     }
 
     public bool IsParticipant(Guid accountId) =>

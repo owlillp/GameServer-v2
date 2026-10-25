@@ -25,6 +25,27 @@ service GameServerSessions {
   rpc ReportMatch (ReportMatchRequest) returns (ReportMatchReply);
 }
 
+// Service-to-service API (matchmaking). Callers need the session scope.
+service MatchSessions {
+  // Join ticket for a participant of a queued match whose session is allocated.
+  rpc IssueMatchTicket (IssueMatchTicketRequest) returns (IssueMatchTicketReply);
+}
+
+message IssueMatchTicketRequest {
+  string match_id = 1;
+  string account_id = 2;
+}
+
+message IssueMatchTicketReply {
+  bool success = 1;
+  string session_id = 2;
+  string server_address = 3;
+  string ticket = 4;
+  google.protobuf.Timestamp expires_at = 5;
+  string error_code = 6;
+  string error_message = 7;
+}
+
 message RegisterRequest {
   string server_id = 1;
   string address = 2;

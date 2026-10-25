@@ -1,4 +1,4 @@
-﻿using AuthService.Core.Configuration;
+using AuthService.Core.Configuration;
 using AuthService.Domain.Authorization;
 using Microsoft.AspNetCore.Identity;
 using OpenIddict.Abstractions;
@@ -40,7 +40,7 @@ public sealed class PlatformSyncService(
         await UpsertServiceClientAsync(options.Clients.EventsService, [OidcScopes.EVENTS], cancellationToken);
         await UpsertServiceClientAsync(
             options.Clients.MatchmakingService,
-            [OidcScopes.MATCHMAKING, OidcScopes.WALLET],
+            [OidcScopes.MATCHMAKING, OidcScopes.WALLET, OidcScopes.SESSION],
             cancellationToken);
         await UpsertServiceClientAsync(options.Clients.GameServer, [OidcScopes.SESSION_WRITE], cancellationToken);
     }

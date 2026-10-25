@@ -32,7 +32,8 @@ internal static class MatchmakingMapper
             ticket.Status.ToString().ToUpperInvariant(),
             ticket.PartySize,
             ticket.EnqueuedAt,
-            ticket.MatchId);
+            ticket.MatchId,
+            ticket.Region);
 
     public static MatchRewardDto ToDto(this MatchRewardDefinition reward) =>
         new(
@@ -96,7 +97,8 @@ internal static class MatchmakingMapper
                     result.Kills,
                     result.IsWin,
                     result.UpdatedAt))],
-            match.Reward is null ? null : match.Reward.ToDto());
+            match.Reward is null ? null : match.Reward.ToDto(),
+            match.Region);
 
     public static AdminMatchDto ToAdminDto(this Match match, IReadOnlyList<MatchRewardGrant> grants) =>
         new(match.ToDetailsDto(), [.. grants.Select(grant => grant.ToDto())]);

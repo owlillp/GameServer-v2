@@ -6,6 +6,8 @@ public interface ISessionRepository
 {
     Task<Session?> GetAsync(Guid sessionId, CancellationToken cancellationToken);
 
+    Task<Session?> GetByMatchAsync(Guid matchId, CancellationToken cancellationToken);
+
     /// <summary>
     /// The open session the player is currently in, if any.
     /// </summary>

@@ -1,11 +1,13 @@
 using CSharpFunctionalExtensions;
 using MatchmakingService.Core.Abstractions;
+using MatchmakingService.Core.Configuration;
 using MatchmakingService.Domain;
 using MatchmakingService.Domain.Leaderboard;
 using MatchmakingService.Domain.Matches;
 using MatchmakingService.Domain.Parties;
 using MatchmakingService.Domain.Rewards;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Shared.Core.Database;
 using Shared.SharedKernel.Errors;
 
@@ -31,6 +33,7 @@ public sealed class MatchFinalizer(
     IMatchmakingEventPublisher eventPublisher,
     MatchRewardDispatcher rewardDispatcher,
     ITransactionManager transactionManager,
+    IOptionsMonitor<MatchmakingOptions> options,
     TimeProvider timeProvider,
     ILogger<MatchFinalizer> logger)
 {
@@ -98,9 +101,14 @@ public sealed class MatchFinalizer(
                 cancellationToken);
         }
 
-        foreach (MatchResult result in match.Results)
+        // With game servers SessionService publishes match-completed.session; publishing it here
+        // too would count the match twice in EventService.
+        if (options.CurrentValue.ResultsSource == ResultsSource.Admin)
         {
-            await eventPublisher.PublishMatchCompletedAsync(match, result, cancellationToken);
+            foreach (MatchResult result in match.Results)
+            {
+                await eventPublisher.PublishMatchCompletedAsync(match, result, cancellationToken);
+            }
         }
 
         List<MatchRewardGrant> grants = CreateGrants(match, accountIds, now);

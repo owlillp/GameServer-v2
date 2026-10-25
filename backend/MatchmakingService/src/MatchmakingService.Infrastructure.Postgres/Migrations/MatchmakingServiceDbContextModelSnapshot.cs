@@ -61,6 +61,14 @@ namespace MatchmakingService.Infrastructure.Postgres.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<DateTime?>("AllocatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("allocated_at");
+
+                    b.Property<DateTime?>("AllocationRequestedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("allocation_requested_at");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -78,6 +86,23 @@ namespace MatchmakingService.Infrastructure.Postgres.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)")
                         .HasColumnName("mode");
+
+                    b.Property<string>("Region")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasDefaultValue("eu-west")
+                        .HasColumnName("region");
+
+                    b.Property<string>("ServerAddress")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("server_address");
+
+                    b.Property<Guid?>("SessionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("session_id");
 
                     b.Property<DateTime>("StartsAt")
                         .HasColumnType("timestamp with time zone")
@@ -107,6 +132,10 @@ namespace MatchmakingService.Infrastructure.Postgres.Migrations
 
                     b.HasIndex("WinnerPartyId")
                         .HasDatabaseName("ix_matches_winner_party_id");
+
+                    b.HasIndex("Status", "AllocationRequestedAt")
+                        .HasDatabaseName("ix_matches_waiting_for_server")
+                        .HasFilter("allocated_at IS NULL AND allocation_requested_at IS NOT NULL");
 
                     b.HasIndex("Status", "EndsAt")
                         .HasDatabaseName("ix_matches_status_ends_at");
@@ -294,9 +323,17 @@ namespace MatchmakingService.Infrastructure.Postgres.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<int>("Attempt")
+                        .HasColumnType("integer")
+                        .HasColumnName("attempt");
+
                     b.Property<DateTime>("EnqueuedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("enqueued_at");
+
+                    b.Property<bool>("IsPriority")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_priority");
 
                     b.Property<Guid>("LeaderAccountId")
                         .HasColumnType("uuid")
@@ -324,6 +361,14 @@ namespace MatchmakingService.Infrastructure.Postgres.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("party_size");
 
+                    b.Property<string>("Region")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasDefaultValue("eu-west")
+                        .HasColumnName("region");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(16)
@@ -337,6 +382,9 @@ namespace MatchmakingService.Infrastructure.Postgres.Migrations
                         .HasColumnName("xmin");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("MatchId")
+                        .HasDatabaseName("ix_queue_tickets_match_id");
 
                     b.HasIndex("PartyId")
                         .HasDatabaseName("ix_queue_tickets_party_id");

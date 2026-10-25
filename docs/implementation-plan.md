@@ -1,7 +1,7 @@
 # План реализации: SessionService, MatchmakingService, кланы
 
-> Статус: этапы 0–2 реализованы на ветке `feature/sessions-and-matchmaking-reliability`
-> (интеграционные тесты на Testcontainers не написаны), этапы 3–8 не начаты. Дата: 2026-10-25.
+> Статус: этапы 0–3 реализованы на ветке `feature/sessions-and-matchmaking-reliability`
+> (интеграционные тесты на Testcontainers не написаны), этапы 4–8 не начаты. Дата: 2026-10-25.
 > Связанные документы: `docs/architecture.md`, схема кланов —
 > https://claude.ai/artifact/6CeKfSXPU2dT2qLShGztou
 >
@@ -204,26 +204,33 @@ join-тикету, сервер отчитывается о матчах.
 Цель: матч из очереди проводится на игровом сервере, результат приходит от
 сервера, награды и лидерборд работают как раньше.
 
-- [ ] Matchmaking после создания матча отправляет команду
+- [x] Matchmaking после создания матча отправляет команду
   `allocate-match.matchmaking` (match_id, режим, регион, участники) в Session
-- [ ] Session выделяет сервер, создаёт `Session(kind = match)` и отвечает
+- [x] Session выделяет сервер, создаёт `Session(kind = match)` и отвечает
   событием `match-allocated.session` (адрес сервера); Matchmaking сохраняет его
   в матч и пушит игрокам через Realtime
-- [ ] Игроки получают join-тикет через `GET /matchmaking/matches/me`
+- [x] Игроки получают join-тикет через `GET /matchmaking/matches/me`
   (Matchmaking запрашивает тикет у Session по gRPC)
-- [ ] Matchmaking слушает `match-completed.session`: записывает результаты и
+- [x] Matchmaking слушает `match-completed.session`: записывает результаты и
   запускает `MatchFinalizer` вместо ручного `SubmitResults` админом
-- [ ] `MatchFinalizer` больше **не публикует** `match-completed.session`
+- [x] `MatchFinalizer` больше **не публикует** `match-completed.session`
   (теперь это делает Session); EventService продолжает получать то же событие
-- [ ] Флаг `Matchmaking:ResultsSource = Admin | Session` на время перехода;
+- [x] Флаг `Matchmaking:ResultsSource = Admin | Session` на время перехода;
   админские эндпоинты остаются для спорных случаев
-- [ ] Обработка отказа: сервер не выделен за N секунд или упал → матч
+- [x] Обработка отказа: сервер не выделен за N секунд или упал → матч
   `Cancelled`, пати возвращаются в очередь с приоритетом
-- [ ] Контрактный тест: формат `MatchCompletedEvent` совместим со старым
+- [x] Контрактный тест: формат `MatchCompletedEvent` совместим со старым
   потребителем EventService
 
 Готово, когда: матч от очереди до наград проходит без участия админа на
 заглушке игрового сервера, EventService засчитывает прогресс заданий.
+
+> Сделано: регион в очереди и матче; `allocate-match` / `match-allocated` / `match-allocation-failed`;
+> тикет через gRPC `MatchSessions.IssueMatchTicket`; `match-ready.matchmaking` → Realtime;
+> результаты из `match-completed.session` (с `ReportPlayerCount`, чтобы понять, что отчёт пришёл
+> целиком); отмена и приоритетная переочередь при отказе, таймауте и падении сервера;
+> `Matchmaking:ResultsSource` (по умолчанию `Admin`, в Docker — `Session`). Контрактный тест —
+> `MatchCompletedContractTests`. End-to-end сценарий в Docker не прогонялся.
 
 ---
 

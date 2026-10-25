@@ -49,6 +49,7 @@ public sealed class MatchmakingCoordinator(
     {
         await RunStepAsync("pairing", PairQueuedPartiesAsync, cancellationToken);
         await RunStepAsync("expired matches", FinishExpiredMatchesAsync, cancellationToken);
+        await RunStepAsync("allocation timeouts", CancelUnallocatedMatchesAsync, cancellationToken);
         await RunStepAsync("reward retry", RetryPendingRewardsAsync, cancellationToken);
     }
 
@@ -106,15 +107,18 @@ public sealed class MatchmakingCoordinator(
     {
         var partyRepository = services.GetRequiredService<IPartyRepository>();
         var matchRepository = services.GetRequiredService<IMatchRepository>();
+        var eventPublisher = services.GetRequiredService<IMatchmakingEventPublisher>();
         var created = new List<Match>();
 
         IEnumerable<IGrouping<string, QueueTicket>> groups = current.RequireSamePartySize
-            ? tickets.GroupBy(ticket => $"{ticket.Mode}:{ticket.PartySize}", StringComparer.Ordinal)
-            : tickets.GroupBy(ticket => ticket.Mode, StringComparer.Ordinal);
+            ? tickets.GroupBy(ticket => $"{ticket.Mode}:{ticket.Region}:{ticket.PartySize}", StringComparer.Ordinal)
+            : tickets.GroupBy(ticket => $"{ticket.Mode}:{ticket.Region}", StringComparer.Ordinal);
 
         foreach (IGrouping<string, QueueTicket> group in groups)
         {
-            List<QueueTicket> ordered = [.. group.OrderBy(ticket => ticket.EnqueuedAt)];
+            List<QueueTicket> ordered = [.. group
+                .OrderByDescending(ticket => ticket.IsPriority)
+                .ThenBy(ticket => ticket.EnqueuedAt)];
 
             for (int index = 0; index + 1 < ordered.Count; index += 2)
             {
@@ -137,6 +141,14 @@ public sealed class MatchmakingCoordinator(
                 }
 
                 await matchRepository.AddAsync(match, cancellationToken);
+
+                if (current.ResultsSource == ResultsSource.Session)
+                {
+                    // Sent through the outbox together with the commit of the new match.
+                    match.RequestAllocation(timeProvider.GetUtcNow().UtcDateTime);
+                    await eventPublisher.PublishAllocateMatchAsync(match, cancellationToken);
+                }
+
                 created.Add(match);
             }
         }
@@ -164,7 +176,8 @@ public sealed class MatchmakingCoordinator(
             first.Mode,
             now,
             now.AddHours(current.DefaultMatchDurationHours),
-            reward);
+            reward,
+            first.Region);
 
         if (matchResult.IsFailure)
         {
@@ -280,6 +293,42 @@ public sealed class MatchmakingCoordinator(
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// Matches that got no game server in time are cancelled and their parties re-queued.
+    /// </summary>
+    private async Task CancelUnallocatedMatchesAsync(CancellationToken cancellationToken)
+    {
+        MatchmakingOptions current = options.CurrentValue;
+
+        for (int processed = 0; processed < current.ExpiredMatchBatchSize; processed++)
+        {
+            await using AsyncServiceScope scope = scopeFactory.CreateAsyncScope();
+            var matchRepository = scope.ServiceProvider.GetRequiredService<IMatchRepository>();
+            var transactionManager = scope.ServiceProvider.GetRequiredService<ITransactionManager>();
+            var recovery = scope.ServiceProvider.GetRequiredService<MatchRecovery>();
+
+            DateTime now = timeProvider.GetUtcNow().UtcDateTime;
+
+            (await transactionManager.BeginTransactionAsync(cancellationToken)).ThrowIfFailed();
+
+            Guid? matchId = await matchRepository.ClaimAllocationTimedOutAsync(
+                now.AddSeconds(-current.AllocationTimeoutSeconds),
+                cancellationToken);
+
+            if (matchId is null)
+            {
+                return;
+            }
+
+            Match match = await matchRepository.GetAsync(matchId.Value, cancellationToken)
+                ?? throw new InvalidOperationException($"Claimed match {matchId} was not found");
+
+            await recovery.CancelAndRequeueAsync(match, "allocation-timeout", now, cancellationToken);
+
+            (await transactionManager.CommitTransactionAsync(cancellationToken)).ThrowIfFailed();
+        }
     }
 
     private async Task RetryPendingRewardsAsync(CancellationToken cancellationToken)
