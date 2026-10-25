@@ -1,0 +1,17 @@
+<Solution>
+  <Folder Name="/SolutionFolder/">
+    <File Path="../.editorconfig" />
+    <File Path="../.gitignore" />
+    <File Path="../Directory.Build.props" />
+    <File Path="../Directory.Packages.props" />
+    <File Path="../nuget.config" />
+  </Folder>
+  <Project Path="src/SessionService.Contracts/SessionService.Contracts.csproj" />
+  <Project Path="src/SessionService.Core/SessionService.Core.csproj" />
+  <Project Path="src/SessionService.Domain/SessionService.Domain.csproj" />
+  <Project Path="src/SessionService.Infrastructure.Postgres/SessionService.Infrastructure.Postgres.csproj" />
+  <Project Path="src/SessionService.Infrastructure.Redis/SessionService.Infrastructure.Redis.csproj" />
+  <Project Path="src/SessionService.Web/SessionService.Web.csproj" />
+  <Project Path="tests/SessionService.UnitTests/SessionService.UnitTests.csproj" />
+  <Project Path="../Shared/IntegrationEvents/Shared.IntegrationEvents.csproj" />
+</Solution>

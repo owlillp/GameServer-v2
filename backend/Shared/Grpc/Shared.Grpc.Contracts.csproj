@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>
@@ -8,6 +8,7 @@
 
     <ItemGroup>
       <Protobuf Include="..\Protos\wallet.proto" GrpcServices="Both" />
+      <Protobuf Include="..\Protos\session.proto" GrpcServices="Both" />
     </ItemGroup>
 
     <ItemGroup>

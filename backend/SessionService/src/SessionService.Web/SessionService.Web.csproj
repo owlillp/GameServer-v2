@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Grpc.AspNetCore" />
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" />
+        <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
+        <PackageReference Include="Scalar.AspNetCore" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="owlip.shared.framework" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\SessionService.Contracts\SessionService.Contracts.csproj" />
+      <ProjectReference Include="..\SessionService.Core\SessionService.Core.csproj" />
+      <ProjectReference Include="..\SessionService.Domain\SessionService.Domain.csproj" />
+      <ProjectReference Include="..\SessionService.Infrastructure.Postgres\SessionService.Infrastructure.Postgres.csproj" />
+      <ProjectReference Include="..\SessionService.Infrastructure.Redis\SessionService.Infrastructure.Redis.csproj" />
+      <ProjectReference Include="..\..\..\Shared\Grpc\Shared.Grpc.Contracts.csproj" />
+    </ItemGroup>
+
+</Project>

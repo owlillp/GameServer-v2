@@ -7,6 +7,9 @@ public static class SessionEventRouting
     public static class RoutingKeys
     {
         public const string MATCH_COMPLETED = "match-completed.session";
+        public const string PLAYER_JOINED = "player-joined.session";
+        public const string PLAYER_LEFT = "player-left.session";
+        public const string SESSION_CLOSED = "session-closed.session";
 
         public const string ALL_SESSION_EVENTS = "*.session";
     }
