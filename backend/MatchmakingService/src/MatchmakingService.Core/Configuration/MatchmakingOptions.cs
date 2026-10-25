@@ -37,6 +37,23 @@ public sealed class MatchmakingOptions
 
     public bool RequireSamePartySize { get; init; } = true;
 
+    /// <summary>
+    /// Pair parties of similar Elo rating and update ratings after queue matches.
+    /// </summary>
+    public bool RatingEnabled { get; init; } = true;
+
+    [Range(1, 200)]
+    public int RatingKFactor { get; init; } = 32;
+
+    /// <summary>
+    /// Allowed rating gap at once; grows by <see cref="RatingTolerancePerMinute"/> per waited minute.
+    /// </summary>
+    [Range(0, 10000)]
+    public int RatingBaseTolerance { get; init; } = 100;
+
+    [Range(0, 10000)]
+    public int RatingTolerancePerMinute { get; init; } = 50;
+
     public ResultsSource ResultsSource { get; init; } = ResultsSource.Admin;
 
     [Required]

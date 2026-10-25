@@ -32,6 +32,7 @@ public sealed class MatchFinalizer(
     IMatchRewardRepository rewardRepository,
     IMatchmakingEventPublisher eventPublisher,
     MatchRewardDispatcher rewardDispatcher,
+    RatingService ratingService,
     ITransactionManager transactionManager,
     IOptionsMonitor<MatchmakingOptions> options,
     TimeProvider timeProvider,
@@ -116,6 +117,8 @@ public sealed class MatchFinalizer(
         {
             await eventPublisher.PublishExternalCompletedAsync(match, cancellationToken);
         }
+
+        await ratingService.ApplyAsync(match, now, cancellationToken);
 
         List<MatchRewardGrant> grants = CreateGrants(match, accountIds, now);
         if (grants.Count > 0)

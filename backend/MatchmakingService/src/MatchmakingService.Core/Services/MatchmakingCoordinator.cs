@@ -3,6 +3,7 @@ using MatchmakingService.Core.Configuration;
 using MatchmakingService.Domain.Matches;
 using MatchmakingService.Domain.Parties;
 using MatchmakingService.Domain.Queues;
+using MatchmakingService.Domain.Ratings;
 using MatchmakingService.Domain.Rewards;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -116,14 +117,22 @@ public sealed class MatchmakingCoordinator(
 
         foreach (IGrouping<string, QueueTicket> group in groups)
         {
-            List<QueueTicket> ordered = [.. group
+            List<QueueTicket> waiting = [.. group
                 .OrderByDescending(ticket => ticket.IsPriority)
                 .ThenBy(ticket => ticket.EnqueuedAt)];
 
-            for (int index = 0; index + 1 < ordered.Count; index += 2)
+            while (waiting.Count > 1)
             {
-                QueueTicket first = ordered[index];
-                QueueTicket second = ordered[index + 1];
+                QueueTicket first = waiting[0];
+                waiting.RemoveAt(0);
+
+                QueueTicket? second = FindOpponent(first, waiting, current);
+                if (second is null)
+                {
+                    continue;
+                }
+
+                waiting.Remove(second);
 
                 IReadOnlyList<Party> parties = await partyRepository.ListAsync(
                     [first.PartyId, second.PartyId],
@@ -154,6 +163,32 @@ public sealed class MatchmakingCoordinator(
         }
 
         return created;
+    }
+
+    /// <summary>
+    /// Without ratings: the next ticket in line. With ratings: the closest rating within a tolerance
+    /// that widens the longer the earlier ticket has waited.
+    /// </summary>
+    private QueueTicket? FindOpponent(QueueTicket ticket, IReadOnlyList<QueueTicket> candidates, MatchmakingOptions current)
+    {
+        if (!current.RatingEnabled)
+        {
+            return candidates.Count > 0 ? candidates[0] : null;
+        }
+
+        DateTime now = timeProvider.GetUtcNow().UtcDateTime;
+
+        return candidates
+            .Where(candidate =>
+            {
+                DateTime earliest = candidate.EnqueuedAt < ticket.EnqueuedAt ? candidate.EnqueuedAt : ticket.EnqueuedAt;
+                int tolerance = Elo.Tolerance(current.RatingBaseTolerance, current.RatingTolerancePerMinute, now - earliest);
+                return Math.Abs(candidate.Rating - ticket.Rating) <= tolerance;
+            })
+            .OrderBy(candidate => Math.Abs(candidate.Rating - ticket.Rating))
+            .ThenByDescending(candidate => candidate.IsPriority)
+            .ThenBy(candidate => candidate.EnqueuedAt)
+            .FirstOrDefault();
     }
 
     private Match? TryCreateMatch(

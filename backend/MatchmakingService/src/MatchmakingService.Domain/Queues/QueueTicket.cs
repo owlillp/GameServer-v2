@@ -28,6 +28,11 @@ public sealed class QueueTicket
     /// </summary>
     public int Attempt { get; private set; }
 
+    /// <summary>
+    /// Average Elo rating of the party when it was queued.
+    /// </summary>
+    public int Rating { get; private set; } = Ratings.PlayerRating.DEFAULT_RATING;
+
     public QueueTicketStatus Status { get; private set; }
 
     public Guid? MatchId { get; private set; }
@@ -53,6 +58,17 @@ public sealed class QueueTicket
 
     public static Result<QueueTicket, Error> Create(Party party, string mode, DateTime now) =>
         Create(party, mode, MatchmakingConstants.DEFAULT_REGION, now);
+
+    public static Result<QueueTicket, Error> Create(Party party, string mode, string region, DateTime now, int rating)
+    {
+        var result = Create(party, mode, region, now);
+        if (result.IsSuccess)
+        {
+            result.Value.Rating = rating;
+        }
+
+        return result;
+    }
 
     public static Result<QueueTicket, Error> Create(Party party, string mode, string region, DateTime now)
     {
@@ -91,6 +107,7 @@ public sealed class QueueTicket
         ticket.EnqueuedAt = EnqueuedAt;
         ticket.IsPriority = true;
         ticket.Attempt = Attempt + 1;
+        ticket.Rating = Rating;
 
         return ticket;
     }

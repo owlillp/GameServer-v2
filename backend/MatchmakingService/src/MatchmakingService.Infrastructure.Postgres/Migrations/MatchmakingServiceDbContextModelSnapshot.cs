@@ -371,6 +371,12 @@ namespace MatchmakingService.Infrastructure.Postgres.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("party_size");
 
+                    b.Property<int>("Rating")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1000)
+                        .HasColumnName("rating");
+
                     b.Property<string>("Region")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -403,6 +409,35 @@ namespace MatchmakingService.Infrastructure.Postgres.Migrations
                         .HasDatabaseName("ix_queue_tickets_status_enqueued_at");
 
                     b.ToTable("queue_tickets", "matchmaking");
+                });
+
+            modelBuilder.Entity("MatchmakingService.Domain.Ratings.PlayerRating", b =>
+                {
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<int>("Games")
+                        .HasColumnType("integer")
+                        .HasColumnName("games");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("integer")
+                        .HasColumnName("rating");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("AccountId");
+
+                    b.ToTable("player_ratings", "matchmaking");
                 });
 
             modelBuilder.Entity("MatchmakingService.Domain.Rewards.MatchRewardDefinition", b =>

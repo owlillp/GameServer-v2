@@ -3,6 +3,7 @@ using MatchmakingService.Domain.Leaderboard;
 using MatchmakingService.Domain.Matches;
 using MatchmakingService.Domain.Parties;
 using MatchmakingService.Domain.Queues;
+using MatchmakingService.Domain.Ratings;
 using MatchmakingService.Domain.Rewards;
 using Microsoft.EntityFrameworkCore;
 using Wolverine.EntityFrameworkCore;
@@ -35,6 +36,8 @@ public class MatchmakingServiceDbContext(DbContextOptions<MatchmakingServiceDbCo
     public DbSet<MatchRewardGrantItem> MatchRewardGrantItems => Set<MatchRewardGrantItem>();
 
     public DbSet<LeaderboardEntry> LeaderboardEntries => Set<LeaderboardEntry>();
+
+    public DbSet<PlayerRating> PlayerRatings => Set<PlayerRating>();
 
     public IQueryable<Party> PartiesRead => Parties.AsQueryable().AsNoTracking();
 

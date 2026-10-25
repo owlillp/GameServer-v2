@@ -30,6 +30,7 @@ public static class DependencyInjectionExtensions
             services.AddScoped<MatchRewardDispatcher>();
             services.AddScoped<MatchFinalizer>();
             services.AddScoped<MatchRecovery>();
+            services.AddScoped<RatingService>();
             services.AddScoped<LeaderboardSync>();
             services.AddSingleton<LeaderboardSyncSignal>();
 

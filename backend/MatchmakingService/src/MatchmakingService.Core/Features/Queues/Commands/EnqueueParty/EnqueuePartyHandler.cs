@@ -3,6 +3,7 @@ using MatchmakingService.Contracts.Dtos;
 using MatchmakingService.Core.Abstractions;
 using MatchmakingService.Core.Configuration;
 using MatchmakingService.Core.Features.Matchmaking.Models;
+using MatchmakingService.Core.Services;
 using MatchmakingService.Domain;
 using MatchmakingService.Domain.Parties;
 using MatchmakingService.Domain.Queues;
@@ -17,6 +18,7 @@ public sealed class EnqueuePartyHandler(
     IPartyRepository partyRepository,
     IQueueRepository queueRepository,
     IOptions<MatchmakingOptions> options,
+    RatingService ratingService,
     ITransactionManager transactionManager) : ICommandHandler<QueueTicketDto, EnqueuePartyCommand>
 {
     public async Task<Result<QueueTicketDto, Error>> Handle(
@@ -44,7 +46,8 @@ public sealed class EnqueuePartyHandler(
             ? options.Value.DefaultRegion
             : command.Region;
 
-        var ticketResult = QueueTicket.Create(party, mode, region, now);
+        int rating = await ratingService.GetAverageAsync(party.MemberAccountIds, cancellationToken);
+        var ticketResult = QueueTicket.Create(party, mode, region, now, rating);
         if (ticketResult.IsFailure)
         {
             return ticketResult.Error;

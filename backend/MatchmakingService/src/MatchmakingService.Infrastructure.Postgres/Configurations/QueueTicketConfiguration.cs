@@ -19,6 +19,7 @@ internal sealed class QueueTicketConfiguration : IEntityTypeConfiguration<QueueT
         builder.Property(ticket => ticket.Region).HasColumnName("region").HasMaxLength(MatchmakingConstants.REGION_MAX_LENGTH).HasDefaultValue(MatchmakingConstants.DEFAULT_REGION);
         builder.Property(ticket => ticket.IsPriority).HasColumnName("is_priority");
         builder.Property(ticket => ticket.Attempt).HasColumnName("attempt");
+        builder.Property(ticket => ticket.Rating).HasColumnName("rating").HasDefaultValue(1000);
         builder.Property(ticket => ticket.Status).HasColumnName("status").HasConversion<string>().HasMaxLength(16);
         builder.Property(ticket => ticket.MatchId).HasColumnName("match_id");
         builder.Property(ticket => ticket.EnqueuedAt).HasColumnName("enqueued_at");

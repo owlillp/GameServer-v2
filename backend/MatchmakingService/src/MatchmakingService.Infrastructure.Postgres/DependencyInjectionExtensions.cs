@@ -53,6 +53,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IMatchRepository, MatchRepository>();
         services.AddScoped<IMatchRewardRepository, MatchRewardRepository>();
         services.AddScoped<ILeaderboardRepository, LeaderboardRepository>();
+        services.AddScoped<IRatingRepository, RatingRepository>();
 
         return services;
     }
