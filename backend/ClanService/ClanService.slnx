@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/SolutionFolder/">
+    <File Path="../.editorconfig" />
+    <File Path="../.gitignore" />
+    <File Path="../Directory.Build.props" />
+    <File Path="../Directory.Packages.props" />
+    <File Path="../nuget.config" />
+  </Folder>
+  <Project Path="src/ClanService.Contracts/ClanService.Contracts.csproj" />
+  <Project Path="src/ClanService.Core/ClanService.Core.csproj" />
+  <Project Path="src/ClanService.Domain/ClanService.Domain.csproj" />
+  <Project Path="src/ClanService.Infrastructure.Postgres/ClanService.Infrastructure.Postgres.csproj" />
+  <Project Path="src/ClanService.Web/ClanService.Web.csproj" />
+  <Project Path="tests/ClanService.UnitTests/ClanService.UnitTests.csproj" />
+  <Project Path="../Shared/IntegrationEvents/Shared.IntegrationEvents.csproj" />
+</Solution>
