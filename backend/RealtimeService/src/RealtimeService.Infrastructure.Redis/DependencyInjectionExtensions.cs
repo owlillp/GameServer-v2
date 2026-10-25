@@ -24,6 +24,7 @@ public static class DependencyInjectionExtensions
         });
 
         services.AddScoped<ITicketStore, RedisTicketStore>();
+        services.AddSingleton<IClanRosterStore, RedisClanRosterStore>();
 
         return services;
     }

@@ -417,6 +417,53 @@ services:
         condition: service_completed_successfully
     restart: always
 
+  clan-migrator:
+    container_name: gameserver-v2-clan-migrator
+    build:
+      context: ./backend
+      dockerfile: ClanService/Dockerfile
+      target: migrations
+      args:
+        NUGET_USERNAME: ${NUGET_USERNAME}
+      secrets:
+        - nuget_password
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ConnectionStrings__ClanDb=${ConnectionStrings__ClanDb}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["--connection", "${ConnectionStrings__ClanDb}"]
+    restart: "no"
+
+  clan-service:
+    container_name: gameserver-v2-clan-service
+    build:
+      context: ./backend
+      dockerfile: ClanService/Dockerfile
+      args:
+        NUGET_USERNAME: ${NUGET_USERNAME}
+      secrets:
+        - nuget_password
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_URLS=http://+:8080
+      - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
+      - ConnectionStrings__ClanDb=${ConnectionStrings__ClanDb}
+      - ConnectionStrings__RabbitMQ=${ConnectionStrings__RabbitMQ}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+      wallet-service:
+        condition: service_started
+      clan-migrator:
+        condition: service_completed_successfully
+    restart: always
+
   # Dev stand-in for the Unity game server (backend/tools/FakeGameServer).
   fake-game-server:
     container_name: gameserver-v2-fake-game-server
@@ -551,6 +598,7 @@ services:
       - event-service
       - matchmaking-service
       - session-service
+      - clan-service
       - realtime-service
       - frontend
     restart: always

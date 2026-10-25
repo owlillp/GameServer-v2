@@ -40,6 +40,7 @@ export function SiteHeader() {
         { href: routes.store, label: "Магазин" },
         { href: routes.events, label: "Ивенты" },
         { href: routes.matchmaking, label: "Матчмейкинг" },
+        { href: routes.clans, label: "Клан" },
         { href: routes.inventory, label: "Инвентарь" },
         { href: routes.profile, label: "Профиль" },
         ...(staff

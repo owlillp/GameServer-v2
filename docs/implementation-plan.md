@@ -1,7 +1,7 @@
 # План реализации: SessionService, MatchmakingService, кланы
 
-> Статус: этапы 0–3 реализованы на ветке `feature/sessions-and-matchmaking-reliability`
-> (интеграционные тесты на Testcontainers не написаны), этапы 4–8 не начаты. Дата: 2026-10-25.
+> Статус: этапы 0–4 реализованы на ветке `feature/sessions-and-matchmaking-reliability`
+> (интеграционные тесты на Testcontainers не написаны), этапы 5–8 не начаты. Дата: 2026-10-25.
 > Связанные документы: `docs/architecture.md`, схема кланов —
 > https://claude.ai/artifact/6CeKfSXPU2dT2qLShGztou
 >
@@ -240,46 +240,51 @@ join-тикету, сервер отчитывается о матчах.
 
 ### Данные (схема `clans`)
 
-- [ ] `clans`: id, tag (уникальный), name, leader_account_id, member_count,
+- [x] `clans`: id, tag (уникальный), name, leader_account_id, member_count,
   clan_points, created_at, xmin
-- [ ] `clan_members`: clan_id, account_id (уникальный — один клан на игрока),
+- [x] `clan_members`: clan_id, account_id (уникальный — один клан на игрока),
   role (`Leader` / `Officer` / `Member`), joined_at
-- [ ] `clan_join_requests`: заявки и приглашения со статусами
-- [ ] `clan_points_ledger`: clan_id, operation_id (уникальный), amount, reason
-- [ ] `clan_member_history`: для кулдауна на повторное вступление
+- [x] `clan_join_requests`: заявки и приглашения со статусами
+- [x] `clan_points_ledger`: clan_id, operation_id (уникальный), amount, reason
+- [x] `clan_member_history`: для кулдауна на повторное вступление
 
 ### API
 
-- [ ] `POST /clans` (создание может стоить валюту: резерв и commit в Wallet)
-- [ ] `GET /clans/{id}`, `GET /clans/me`, поиск по тегу и имени
-- [ ] заявки и приглашения: создать, принять, отклонить
-- [ ] роли, исключение, выход, передача лидерства, роспуск
-- [ ] админ: `/admin/clans/*` (просмотр, корректировка поинтов с аудитом)
+- [x] `POST /clans` (создание может стоить валюту: резерв и commit в Wallet)
+- [x] `GET /clans/{id}`, `GET /clans/me`, поиск по тегу и имени
+- [x] заявки и приглашения: создать, принять, отклонить
+- [x] роли, исключение, выход, передача лидерства, роспуск
+- [x] админ: `/admin/clans/*` (просмотр, корректировка поинтов с аудитом)
 
 ### Правила
 
-- [ ] Лимит участников — атомарный `UPDATE ... WHERE member_count < @max`
-- [ ] Один клан на игрока — уникальный индекс
-- [ ] Кулдаун на вступление после выхода (по умолчанию 24 ч)
-- [ ] Права действий по ролям проверяются в домене
-- [ ] Поинты меняются только через ledger, идемпотентно по `operation_id`
+- [x] Лимит участников — атомарный `UPDATE ... WHERE member_count < @max`
+- [x] Один клан на игрока — уникальный индекс
+- [x] Кулдаун на вступление после выхода (по умолчанию 24 ч)
+- [x] Права действий по ролям проверяются в домене
+- [x] Поинты меняются только через ledger, идемпотентно по `operation_id`
 
 ### События (exchange `clan-events`)
 
-- [ ] `clan-created.clan`, `clan-disbanded.clan`
-- [ ] `member-joined.clan`, `member-left.clan`, `member-role-changed.clan`
-- [ ] слушать `clan-points-granted.clanwars` → начисление поинтов
+- [x] `clan-created.clan`, `clan-disbanded.clan`
+- [x] `member-joined.clan`, `member-left.clan`, `member-role-changed.clan`
+- [x] слушать `clan-points-granted.clanwars` → начисление поинтов
 
 ### Интеграции
 
-- [ ] Realtime: группа `clan:{id}` (при `Authenticate` по проекции состава или
+- [x] Realtime: группа `clan:{id}` (при `Authenticate` по проекции состава или
   запросом в ClanService), события клана → push
-- [ ] AuthService: scope `clans` уже есть — проверить ресурс и клиент
+- [x] AuthService: scope `clans` уже есть — проверить ресурс и клиент
   `ClanService`, permissions `clans.view` / `clans.manage`
-- [ ] docker-compose, migrator, nginx `/clans/*`, фронтенд: страница клана
+- [x] docker-compose, migrator, nginx `/clans/*`, фронтенд: страница клана
 
 Готово, когда: игроки создают кланы, вступают, меняют роли, участники клана
 получают push о вступлении нового игрока.
+
+> Сделано: `backend/ClanService` (см. README), группа `clan:{id}` в RealtimeService с
+> проекцией состава в Redis, клиент `clan-service-client` со scope `wallet` (для комиссии
+> за создание), страница `/clans` во фронтенде. Push видит Unity-клиент: во фронтенде нет
+> realtime-подключения, страница обновляется запросами. Не проверено end-to-end в Docker.
 
 ---
 

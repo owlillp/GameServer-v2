@@ -1,4 +1,4 @@
-﻿using RealtimeService.Core;
+using RealtimeService.Core;
 using RealtimeService.Core.Configuration;
 using RealtimeService.Core.Messaging;
 using RealtimeService.Infrastructure.Redis;
@@ -50,6 +50,7 @@ public static class DependencyInjectionExtensions
                 .AddStackExchangeRedis(redisConnectionString);
 
             builder.Services.AddSingleton<IRealtimePublisher, SignalRRealtimePublisher>();
+            builder.Services.AddSingleton<IRealtimeGroups, SignalRRealtimeGroups>();
 
             builder.Services.AddCore();
             builder.Services.AddInfrastructureRedis(configuration);

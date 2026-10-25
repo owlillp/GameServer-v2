@@ -7,6 +7,7 @@ export const routes = {
   store: "/store",
   events: "/events",
   matchmaking: "/matchmaking",
+  clans: "/clans",
   dashboard: "/dashboard",
   admin: "/admin",
   adminUsers: "/admin/users",

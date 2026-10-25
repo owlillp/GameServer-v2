@@ -29,7 +29,7 @@ public sealed class PlatformSyncService(
 
         await UpsertPublicClientAsync(options.Clients.Web, allowPasswordGrant: false, cancellationToken);
         await UpsertPublicClientAsync(options.Clients.Unity, allowPasswordGrant: true, cancellationToken);
-        await UpsertServiceClientAsync(options.Clients.ClanService, [OidcScopes.AUTH], cancellationToken);
+        await UpsertServiceClientAsync(options.Clients.ClanService, [OidcScopes.AUTH, OidcScopes.WALLET], cancellationToken);
         await UpsertServiceClientAsync(options.Clients.WalletService, [OidcScopes.WALLET], cancellationToken);
         await UpsertServiceClientAsync(options.Clients.CatalogService, [OidcScopes.CATALOG], cancellationToken);
         await UpsertServiceClientAsync(options.Clients.InventoryService, [OidcScopes.INVENTORY], cancellationToken);

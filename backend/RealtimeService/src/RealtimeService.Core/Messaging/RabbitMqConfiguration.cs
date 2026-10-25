@@ -1,3 +1,4 @@
+using Shared.IntegrationEvents.Clans;
 using Shared.IntegrationEvents.Events;
 using Shared.IntegrationEvents.Inventories;
 using Shared.IntegrationEvents.Matchmaking;
@@ -14,6 +15,7 @@ public static class RabbitMqConfiguration
     private const string WALLET_EVENTS_QUEUE = "realtime.wallet-events";
     private const string INVENTORY_EVENTS_QUEUE = "realtime.inventory-events";
     private const string MATCHMAKING_EVENTS_QUEUE = "realtime.matchmaking-events";
+    private const string CLAN_EVENTS_QUEUE = "realtime.clan-events";
 
     extension(WolverineOptions options)
     {
@@ -40,6 +42,11 @@ public static class RabbitMqConfiguration
                     exchange.IsDurable = true;
                 })
                 .DeclareExchange(MatchmakingEventRouting.EVENTS_EXCHANGE, exchange =>
+                {
+                    exchange.ExchangeType = ExchangeType.Topic;
+                    exchange.IsDurable = true;
+                })
+                .DeclareExchange(ClanEventRouting.EVENTS_EXCHANGE, exchange =>
                 {
                     exchange.ExchangeType = ExchangeType.Topic;
                     exchange.IsDurable = true;
@@ -72,6 +79,9 @@ public static class RabbitMqConfiguration
                 queue.BindExchange(
                     MatchmakingEventRouting.EVENTS_EXCHANGE,
                     MatchmakingEventRouting.RoutingKeys.MATCH_READY));
+
+            options.ListenToRabbitQueue(CLAN_EVENTS_QUEUE, queue =>
+                queue.BindExchange(ClanEventRouting.EVENTS_EXCHANGE, ClanEventRouting.RoutingKeys.ALL_CLAN_EVENTS));
         }
     }
 }
