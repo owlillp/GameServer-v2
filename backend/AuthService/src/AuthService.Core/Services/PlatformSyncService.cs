@@ -1,4 +1,4 @@
-using AuthService.Core.Configuration;
+﻿using AuthService.Core.Configuration;
 using AuthService.Domain.Authorization;
 using Microsoft.AspNetCore.Identity;
 using OpenIddict.Abstractions;
@@ -24,6 +24,8 @@ public sealed class PlatformSyncService(
         await UpsertScopeAsync(OidcScopes.EVENTS, "EventService API Access", OidcScopes.Resources.EVENT_RESOURCE, cancellationToken);
         await UpsertScopeAsync(OidcScopes.REALTIME, "RealtimeService API Access", OidcScopes.Resources.REALTIME_RESOURCE, cancellationToken);
         await UpsertScopeAsync(OidcScopes.MATCHMAKING, "MatchmakingService API Access", OidcScopes.Resources.MATCHMAKING_RESOURCE, cancellationToken);
+        await UpsertScopeAsync(OidcScopes.SESSION, "SessionService API Access", OidcScopes.Resources.SESSION_RESOURCE, cancellationToken);
+        await UpsertScopeAsync(OidcScopes.SESSION_WRITE, "Game server access to SessionService", OidcScopes.Resources.SESSION_RESOURCE, cancellationToken);
 
         await UpsertPublicClientAsync(options.Clients.Web, allowPasswordGrant: false, cancellationToken);
         await UpsertPublicClientAsync(options.Clients.Unity, allowPasswordGrant: true, cancellationToken);
@@ -40,6 +42,7 @@ public sealed class PlatformSyncService(
             options.Clients.MatchmakingService,
             [OidcScopes.MATCHMAKING, OidcScopes.WALLET],
             cancellationToken);
+        await UpsertServiceClientAsync(options.Clients.GameServer, [OidcScopes.SESSION_WRITE], cancellationToken);
     }
 
     private async Task SeedRolesAsync()
@@ -117,6 +120,7 @@ public sealed class PlatformSyncService(
                 OpenIddictConstants.Permissions.Prefixes.Scope + OidcScopes.EVENTS,
                 OpenIddictConstants.Permissions.Prefixes.Scope + OidcScopes.REALTIME,
                 OpenIddictConstants.Permissions.Prefixes.Scope + OidcScopes.MATCHMAKING,
+                OpenIddictConstants.Permissions.Prefixes.Scope + OidcScopes.SESSION,
             },
         };
 

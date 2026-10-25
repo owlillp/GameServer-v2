@@ -365,6 +365,81 @@ services:
         condition: service_completed_successfully
     restart: always
 
+  session-migrator:
+    container_name: gameserver-v2-session-migrator
+    build:
+      context: ./backend
+      dockerfile: SessionService/Dockerfile
+      target: migrations
+      args:
+        NUGET_USERNAME: ${NUGET_USERNAME}
+      secrets:
+        - nuget_password
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ConnectionStrings__SessionDb=${ConnectionStrings__SessionDb}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["--connection", "${ConnectionStrings__SessionDb}"]
+    restart: "no"
+
+  # REST for players on 8080 (through nginx), gRPC for game servers on 8081 (internal only).
+  session-service:
+    container_name: gameserver-v2-session-service
+    build:
+      context: ./backend
+      dockerfile: SessionService/Dockerfile
+      args:
+        NUGET_USERNAME: ${NUGET_USERNAME}
+      secrets:
+        - nuget_password
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
+      - ConnectionStrings__SessionDb=${ConnectionStrings__SessionDb}
+      - ConnectionStrings__RabbitMQ=${ConnectionStrings__RabbitMQ}
+      - ConnectionStrings__Redis=${ConnectionStrings__Redis}
+      # Empty in dev: an ephemeral key is generated. In production the PEM comes from Lockbox.
+      - JoinTickets__SigningKeyPem=${SESSION_TICKET_SIGNING_KEY_PEM:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+      session-migrator:
+        condition: service_completed_successfully
+    restart: always
+
+  # Dev stand-in for the Unity game server (backend/tools/FakeGameServer).
+  fake-game-server:
+    container_name: gameserver-v2-fake-game-server
+    build:
+      context: ./backend
+      dockerfile: tools/FakeGameServer/Dockerfile
+      args:
+        NUGET_USERNAME: ${NUGET_USERNAME}
+      secrets:
+        - nuget_password
+    environment:
+      - ASPNETCORE_URLS=http://+:8080
+      - ServiceAuth__Authority=http://auth-service:8080/
+      - FakeGameServer__SessionGrpcAddress=http://session-service:8081
+      - FakeGameServer__ServerId=00000000-0000-0000-0000-00000000f001
+      - FakeGameServer__PublicAddress=localhost:5291
+    ports:
+      - "5291:8080"
+    depends_on:
+      auth-service:
+        condition: service_started
+      session-service:
+        condition: service_started
+    restart: always
+
   realtime-service:
     container_name: gameserver-v2-realtime-service
     build:
@@ -473,6 +548,7 @@ services:
       - store-service
       - event-service
       - matchmaking-service
+      - session-service
       - realtime-service
       - frontend
     restart: always
