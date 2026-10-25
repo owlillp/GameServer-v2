@@ -89,7 +89,8 @@ public sealed class MatchFinalizer(
 
         Guid[] accountIds = [.. match.Participants.Select(participant => participant.AccountId)];
 
-        foreach (Guid accountId in accountIds)
+        // Clan battles and other external matches do not change the player leaderboard.
+        foreach (Guid accountId in match.IsExternal ? [] : accountIds)
         {
             MatchResult? result = match.Results.FirstOrDefault(entry => entry.AccountId == accountId);
 
@@ -109,6 +110,11 @@ public sealed class MatchFinalizer(
             {
                 await eventPublisher.PublishMatchCompletedAsync(match, result, cancellationToken);
             }
+        }
+
+        if (match.IsExternal)
+        {
+            await eventPublisher.PublishExternalCompletedAsync(match, cancellationToken);
         }
 
         List<MatchRewardGrant> grants = CreateGrants(match, accountIds, now);
@@ -131,7 +137,7 @@ public sealed class MatchFinalizer(
             match.WinnerPartyId,
             grants.Count);
 
-        return new MatchFinalization(match, accountIds, [.. grants.Select(grant => grant.Id)]);
+        return new MatchFinalization(match, match.IsExternal ? [] : accountIds, [.. grants.Select(grant => grant.Id)]);
     }
 
     /// <summary>

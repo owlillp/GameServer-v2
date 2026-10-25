@@ -261,6 +261,12 @@ public sealed class MatchmakingCoordinator(
 
             finalization = finishResult.Value;
         }
+        else if (match.IsExternal)
+        {
+            match.Cancel(now);
+            await scope.ServiceProvider.GetRequiredService<IMatchmakingEventPublisher>()
+                .PublishExternalCancelledAsync(match, "expired", cancellationToken);
+        }
         else
         {
             match.Cancel(now);

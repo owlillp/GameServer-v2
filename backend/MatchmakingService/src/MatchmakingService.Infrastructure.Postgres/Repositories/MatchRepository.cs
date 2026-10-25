@@ -10,6 +10,9 @@ public sealed class MatchRepository(MatchmakingServiceDbContext dbContext) : IMa
         FullMatchQuery()
             .FirstOrDefaultAsync(match => match.Id == matchId, cancellationToken);
 
+    public Task<Match?> GetByExternalRefAsync(string externalRef, CancellationToken cancellationToken) =>
+        FullMatchQuery().FirstOrDefaultAsync(match => match.ExternalRef == externalRef, cancellationToken);
+
     public Task<Match?> GetActiveByAccountAsync(Guid accountId, CancellationToken cancellationToken) =>
         FullMatchQuery()
             .Where(match => match.Status == MatchStatus.Active)

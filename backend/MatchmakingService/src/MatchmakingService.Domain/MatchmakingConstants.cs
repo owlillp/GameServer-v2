@@ -10,6 +10,8 @@ public static class MatchmakingConstants
     public const int REGION_MAX_LENGTH = 32;
     public const int ADDRESS_MAX_LENGTH = 256;
     public const string DEFAULT_REGION = "eu-west";
+    public const int EXTERNAL_REF_MAX_LENGTH = 128;
+    public const int MAX_EXTERNAL_TEAM_SIZE = 10;
     public const int CURRENCY_MAX_LENGTH = 16;
     public const int ITEM_CODE_MAX_LENGTH = 64;
     public const int ITEM_KIND_MAX_LENGTH = 32;

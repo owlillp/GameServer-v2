@@ -15,6 +15,7 @@ namespace MatchmakingService.Core.Services;
 /// Must run inside a transaction with the match row locked; the caller saves.
 /// </summary>
 public sealed class MatchRecovery(
+    IMatchmakingEventPublisher eventPublisher,
     IPartyRepository partyRepository,
     IQueueRepository queueRepository,
     IOptionsMonitor<MatchmakingOptions> options,
@@ -24,6 +25,14 @@ public sealed class MatchRecovery(
     {
         if (match.Cancel(now).IsFailure)
         {
+            return;
+        }
+
+        // External matches have no queue to go back to: the owner (clan wars) decides what to do.
+        if (match.IsExternal)
+        {
+            await eventPublisher.PublishExternalCancelledAsync(match, reason, cancellationToken);
+            logger.LogWarning("External match {MatchId} ({ExternalRef}) cancelled: {Reason}", match.Id, match.ExternalRef, reason);
             return;
         }
 

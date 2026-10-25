@@ -19,6 +19,7 @@ internal sealed class MatchConfiguration : IEntityTypeConfiguration<Match>
         builder.Property(match => match.AllocatedAt).HasColumnName("allocated_at");
         builder.Property(match => match.SessionId).HasColumnName("session_id");
         builder.Property(match => match.ServerAddress).HasColumnName("server_address").HasMaxLength(MatchmakingConstants.ADDRESS_MAX_LENGTH);
+        builder.Property(match => match.ExternalRef).HasColumnName("external_ref").HasMaxLength(MatchmakingConstants.EXTERNAL_REF_MAX_LENGTH);
         builder.Property(match => match.Status).HasColumnName("status").HasConversion<string>().HasMaxLength(16);
         builder.Property(match => match.StartsAt).HasColumnName("starts_at");
         builder.Property(match => match.EndsAt).HasColumnName("ends_at");
@@ -60,7 +61,13 @@ internal sealed class MatchConfiguration : IEntityTypeConfiguration<Match>
             .HasFilter("allocated_at IS NULL AND allocation_requested_at IS NOT NULL")
             .HasDatabaseName("ix_matches_waiting_for_server");
 
+        builder.HasIndex(match => match.ExternalRef)
+            .IsUnique()
+            .HasFilter("external_ref IS NOT NULL")
+            .HasDatabaseName("uq_matches_external_ref");
+
         builder.Ignore(match => match.HasResults);
+        builder.Ignore(match => match.IsExternal);
         builder.Ignore(match => match.IsWaitingForServer);
         builder.Ignore(match => match.IsAllocated);
     }

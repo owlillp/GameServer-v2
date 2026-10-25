@@ -13,6 +13,7 @@ public static class RabbitMqConfiguration
 {
     private const string REWARD_EVENTS_QUEUE = "matchmaking.reward-events";
     private const string SESSION_EVENTS_QUEUE = "matchmaking.session-events";
+    private const string EXTERNAL_COMMANDS_QUEUE = "matchmaking.external-commands";
 
     extension(WolverineOptions options)
     {
@@ -68,6 +69,21 @@ public static class RabbitMqConfiguration
                     MatchmakingEventRouting.EVENTS_EXCHANGE,
                     _ => MatchmakingEventRouting.RoutingKeys.MATCH_READY)
                 .UseDurableOutbox();
+
+            options.PublishMessagesToRabbitMqExchange<ExternalMatchStartedEvent>(
+                    MatchmakingEventRouting.EVENTS_EXCHANGE,
+                    _ => MatchmakingEventRouting.RoutingKeys.EXTERNAL_MATCH_STARTED)
+                .UseDurableOutbox();
+
+            options.PublishMessagesToRabbitMqExchange<ExternalMatchCompletedEvent>(
+                    MatchmakingEventRouting.EVENTS_EXCHANGE,
+                    _ => MatchmakingEventRouting.RoutingKeys.EXTERNAL_MATCH_COMPLETED)
+                .UseDurableOutbox();
+
+            options.PublishMessagesToRabbitMqExchange<ExternalMatchCancelledEvent>(
+                    MatchmakingEventRouting.EVENTS_EXCHANGE,
+                    _ => MatchmakingEventRouting.RoutingKeys.EXTERNAL_MATCH_CANCELLED)
+                .UseDurableOutbox();
         }
 
         private void ConfigureEventListeners()
@@ -77,6 +93,11 @@ public static class RabbitMqConfiguration
                 queue.BindExchange(MatchmakingEventRouting.EVENTS_EXCHANGE, MatchmakingEventRouting.RoutingKeys.REWARD_GRANTED);
                 queue.BindExchange(MatchmakingEventRouting.EVENTS_EXCHANGE, MatchmakingEventRouting.RoutingKeys.REWARD_FAILED);
             });
+
+            options.ListenToRabbitQueue(EXTERNAL_COMMANDS_QUEUE, queue =>
+                queue.BindExchange(
+                    MatchmakingEventRouting.COMMANDS_EXCHANGE,
+                    MatchmakingEventRouting.RoutingKeys.CREATE_EXTERNAL_MATCH));
 
             options.ListenToRabbitQueue(SESSION_EVENTS_QUEUE, queue =>
             {

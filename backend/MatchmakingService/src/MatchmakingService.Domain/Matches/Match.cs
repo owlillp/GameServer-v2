@@ -28,6 +28,14 @@ public sealed class Match
 
     public string? ServerAddress { get; private set; }
 
+    /// <summary>
+    /// Set for matches created by another service (a clan battle); such matches have no queue
+    /// parties, give no queue rewards and do not change the player leaderboard.
+    /// </summary>
+    public string? ExternalRef { get; private set; }
+
+    public bool IsExternal => ExternalRef is not null;
+
     public MatchStatus Status { get; private set; }
 
     public DateTime StartsAt { get; private set; }
@@ -121,6 +129,66 @@ public sealed class Match
 
         return match;
     }
+
+    /// <summary>
+    /// Teams are given by the caller; each side gets a synthetic team id in place of a party id.
+    /// </summary>
+    public static Result<Match, Error> CreateExternal(
+        string externalRef,
+        string mode,
+        string region,
+        IReadOnlyDictionary<int, IReadOnlyList<Guid>> teams,
+        DateTime startsAt,
+        DateTime endsAt)
+    {
+        string reference = (externalRef ?? string.Empty).Trim();
+        string normalizedMode = (mode ?? string.Empty).Trim().ToUpperInvariant();
+        Guid[] allPlayers = [.. teams.Values.SelectMany(players => players)];
+
+        if (reference.Length is 0 or > MatchmakingConstants.EXTERNAL_REF_MAX_LENGTH
+            || normalizedMode.Length is 0 or > MatchmakingConstants.MODE_MAX_LENGTH
+            || teams.Count != 2
+            || !teams.ContainsKey(1)
+            || !teams.ContainsKey(2)
+            || teams.Values.Any(players => players.Count is 0 or > MatchmakingConstants.MAX_EXTERNAL_TEAM_SIZE)
+            || allPlayers.Distinct().Count() != allPlayers.Length)
+        {
+            return MatchmakingErrors.ExternalMatchInvalid;
+        }
+
+        if (endsAt <= startsAt)
+        {
+            return MatchmakingErrors.MatchDurationInvalid;
+        }
+
+        var match = new Match
+        {
+            Id = Guid.CreateVersion7(),
+            Mode = normalizedMode,
+            Region = string.IsNullOrWhiteSpace(region) ? MatchmakingConstants.DEFAULT_REGION : region.Trim().ToLowerInvariant(),
+            Status = MatchStatus.Active,
+            StartsAt = startsAt,
+            EndsAt = endsAt,
+            CreatedAt = startsAt,
+            UpdatedAt = startsAt,
+            ExternalRef = reference,
+        };
+
+        foreach ((int side, IReadOnlyList<Guid> players) in teams.OrderBy(team => team.Key))
+        {
+            Guid teamId = Guid.CreateVersion7();
+            match._parties.Add(new MatchParty(match.Id, teamId, side));
+
+            foreach (Guid accountId in players)
+            {
+                match._participants.Add(new MatchParticipant(match.Id, teamId, accountId));
+            }
+        }
+
+        return match;
+    }
+
+    public int SideOf(Guid partyId) => _parties.Find(party => party.PartyId == partyId)?.Side ?? 0;
 
     public bool IsWaitingForServer => Status == MatchStatus.Active && AllocationRequestedAt is not null && AllocatedAt is null;
 

@@ -77,6 +77,11 @@ namespace MatchmakingService.Infrastructure.Postgres.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("ends_at");
 
+                    b.Property<string>("ExternalRef")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("external_ref");
+
                     b.Property<DateTime?>("FinishedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("finished_at");
@@ -129,6 +134,11 @@ namespace MatchmakingService.Infrastructure.Postgres.Migrations
                         .HasColumnName("xmin");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ExternalRef")
+                        .IsUnique()
+                        .HasDatabaseName("uq_matches_external_ref")
+                        .HasFilter("external_ref IS NOT NULL");
 
                     b.HasIndex("WinnerPartyId")
                         .HasDatabaseName("ix_matches_winner_party_id");

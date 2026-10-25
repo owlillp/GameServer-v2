@@ -41,6 +41,11 @@ public sealed class MatchAllocatedEventHandler(
 
         await eventPublisher.PublishMatchReadyAsync(match, cancellationToken);
 
+        if (match.IsExternal)
+        {
+            await eventPublisher.PublishExternalStartedAsync(match, cancellationToken);
+        }
+
         (await transactionManager.CommitTransactionAsync(cancellationToken)).ThrowIfFailed();
 
         logger.LogInformation("Match {MatchId} is ready on {ServerAddress}", match.Id, @event.ServerAddress);

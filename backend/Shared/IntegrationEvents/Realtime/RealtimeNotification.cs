@@ -25,6 +25,8 @@ public static class RealtimeNotificationTypes
     public const string CLAN_DISBANDED = "clan.disbanded";
     public const string CLANWARS_SEASON_STARTED = "clanwars.season.started";
     public const string CLANWARS_SEASON_ENDED = "clanwars.season.ended";
+    public const string CLANWARS_BATTLE_FOUND = "clanwars.battle.found";
+    public const string CLANWARS_BATTLE_FINISHED = "clanwars.battle.finished";
 }
 
 public static class RealtimeAudiences

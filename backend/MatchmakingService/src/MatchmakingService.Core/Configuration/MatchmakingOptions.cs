@@ -55,6 +55,12 @@ public sealed class MatchmakingOptions
     [Range(0, 100)]
     public int MaxAllocationAttempts { get; init; } = 3;
 
+    /// <summary>
+    /// How long an external match (clan battle) may run before it is closed as expired.
+    /// </summary>
+    [Range(1, 24 * 60)]
+    public int ExternalMatchDurationMinutes { get; init; } = 60;
+
     public bool AutoFinishMatches { get; init; } = true;
 
     [Range(1, 1000)]

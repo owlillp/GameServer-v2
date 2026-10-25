@@ -14,6 +14,7 @@ namespace MatchmakingService.Core.Features.Matches.Commands.CancelMatch;
 public sealed class CancelMatchHandler(
     IMatchRepository matchRepository,
     IPartyRepository partyRepository,
+    IMatchmakingEventPublisher eventPublisher,
     ITransactionManager transactionManager) : ICommandHandler<MatchDetailsDto, CancelMatchCommand>
 {
     public async Task<Result<MatchDetailsDto, Error>> Handle(
@@ -31,6 +32,11 @@ public sealed class CancelMatchHandler(
         if (cancelResult.IsFailure)
         {
             return cancelResult.Error;
+        }
+
+        if (match.IsExternal)
+        {
+            await eventPublisher.PublishExternalCancelledAsync(match, "admin", cancellationToken);
         }
 
         var partyIds = match.Parties.Select(party => party.PartyId).ToArray();

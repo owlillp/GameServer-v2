@@ -6,6 +6,8 @@ public interface IMatchRepository
 {
     Task<Match?> GetAsync(Guid matchId, CancellationToken cancellationToken);
 
+    Task<Match?> GetByExternalRefAsync(string externalRef, CancellationToken cancellationToken);
+
     Task<Match?> GetActiveByAccountAsync(Guid accountId, CancellationToken cancellationToken);
 
     Task<IReadOnlyList<Match>> ListAsync(MatchStatus? status, int limit, CancellationToken cancellationToken);

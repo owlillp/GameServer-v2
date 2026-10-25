@@ -94,6 +94,9 @@ public static class MatchmakingErrors
     public static Error RewardItemsInvalid { get; } =
         Error.Validation("matchmaking.reward.items.invalid", "Reward items are invalid", "items");
 
+    public static Error ExternalMatchInvalid { get; } =
+        Error.Validation("matchmaking.match.external.invalid", "External match needs a reference and two non-empty teams of distinct players", "teams");
+
     public static Error QueueRegionInvalid { get; } =
         Error.Validation("matchmaking.queue.region.invalid", "Region is invalid", "region");
 

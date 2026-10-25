@@ -53,4 +53,44 @@ public sealed class MatchmakingEventPublisher(IOutboxService outbox) : IMatchmak
             match.ServerAddress ?? string.Empty,
             [.. match.Participants.Select(participant => participant.AccountId)],
             match.AllocatedAt ?? DateTime.UtcNow));
+
+    public Task PublishExternalStartedAsync(Match match, CancellationToken cancellationToken) =>
+        outbox.PublishAsync(new ExternalMatchStartedEvent(
+            match.ExternalRef!,
+            match.Id,
+            match.ServerAddress ?? string.Empty,
+            match.AllocatedAt ?? DateTime.UtcNow));
+
+    public Task PublishExternalCompletedAsync(Match match, CancellationToken cancellationToken)
+    {
+        int? winnerSide = match.WinnerPartyId is null ? null : match.SideOf(match.WinnerPartyId.Value);
+
+        ExternalMatchTeamResult[] teams = [.. match.Parties
+            .OrderBy(party => party.Side)
+            .Select(party => new ExternalMatchTeamResult(
+                party.Side,
+                match.PartyTotal(party.PartyId),
+                [.. match.Participants
+                    .Where(participant => participant.PartyId == party.PartyId)
+                    .Select(participant =>
+                    {
+                        MatchResult? result = match.Results.FirstOrDefault(entry => entry.AccountId == participant.AccountId);
+                        return new ExternalMatchPlayerResult(participant.AccountId, result?.Score ?? 0, result?.Kills ?? 0);
+                    })]))];
+
+        return outbox.PublishAsync(new ExternalMatchCompletedEvent(
+            match.ExternalRef!,
+            match.Id,
+            match.Mode,
+            winnerSide,
+            teams,
+            match.FinishedAt ?? DateTime.UtcNow));
+    }
+
+    public Task PublishExternalCancelledAsync(Match match, string reason, CancellationToken cancellationToken) =>
+        outbox.PublishAsync(new ExternalMatchCancelledEvent(
+            match.ExternalRef!,
+            match.Id,
+            reason,
+            match.FinishedAt ?? DateTime.UtcNow));
 }
