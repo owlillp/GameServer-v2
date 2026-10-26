@@ -1,0 +1,18 @@
+# Scrapes /metrics of the services (internal port; nginx does not expose it).
+global:
+  scrape_interval: 15s
+  evaluation_interval: 30s
+
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+scrape_configs:
+  - job_name: session-service
+    static_configs:
+      - targets: ["session-service:8080"]
+  - job_name: matchmaking-service
+    static_configs:
+      - targets: ["matchmaking-service:8080"]
+  - job_name: clanwars-service
+    static_configs:
+      - targets: ["clanwars-service:8080"]

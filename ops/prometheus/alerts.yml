@@ -1,0 +1,100 @@
+# Alerts from docs/implementation-plan.md, stage 8: queues, DLQ, failed grants,
+# roster projection lag, Redis leaderboard vs PostgreSQL. Thresholds are starting points.
+groups:
+  - name: platform
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: "{{ $labels.job }} does not answer /metrics"
+
+      - alert: DeadLetters
+        expr: wolverine_dead_letters > 0
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: "{{ $labels.job }} has {{ $value }} messages in the Wolverine dead letter queue"
+          runbook: "Inspect public.wolverine_dead_letters, fix the cause, replay the messages."
+
+  - name: clanwars
+    rules:
+      - alert: ClanWarsRewardGrantsFailed
+        expr: clanwars_reward_grants{status="Failed"} > 0
+        for: 5m
+        labels: { severity: critical }
+        annotations:
+          summary: "{{ $value }} season reward grants failed"
+          runbook: "GET /admin/clanwars/seasons/{id}/rewards?status=Failed, fix the cause, POST .../rewards/retry-failed."
+
+      - alert: ClanWarsSeasonStuckInRewarding
+        expr: clanwars_seasons_rewarding > 0
+        for: 2h
+        labels: { severity: warning }
+        annotations:
+          summary: "A season has been delivering rewards for over 2 hours"
+
+      - alert: ClanWarsBattleQueueBacklog
+        expr: clanwars_battle_queue_length > 50
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "{{ $value }} squads wait for a battle for 10 minutes"
+
+      - alert: ClanWarsRosterProjectionLag
+        expr: histogram_quantile(0.95, sum by (le) (rate(clanwars_roster_event_lag_seconds_bucket[5m]))) > 30
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "Roster projection is {{ $value }}s behind ClanService (p95)"
+
+      - alert: ClanWarsLeaderboardDiverges
+        expr: increase(clanwars_leaderboard_divergences_total[30m]) > 3
+        labels: { severity: warning }
+        annotations:
+          summary: "Redis clan leaderboard keeps diverging from PostgreSQL"
+
+  - name: matchmaking
+    rules:
+      - alert: MatchmakingQueueBacklog
+        expr: sum(matchmaking_queue_length) > 200
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "{{ $value }} parties wait in the queue"
+
+      - alert: MatchesWaitingForServer
+        expr: matchmaking_matches_waiting_for_server > 10
+        for: 5m
+        labels: { severity: critical }
+        annotations:
+          summary: "{{ $value }} matches have no game server"
+
+      - alert: MatchRewardGrantsFailed
+        expr: matchmaking_reward_grants{status="Failed"} > 0
+        for: 5m
+        labels: { severity: critical }
+        annotations:
+          summary: "{{ $value }} match reward grants failed"
+
+      - alert: MatchmakingLeaderboardDiverges
+        expr: increase(matchmaking_leaderboard_divergences_total[30m]) > 3
+        labels: { severity: warning }
+        annotations:
+          summary: "Redis player leaderboard keeps diverging from PostgreSQL"
+
+  - name: sessions
+    rules:
+      - alert: NoGameServers
+        expr: session_game_servers_online == 0
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: "No game server sends heartbeats"
+
+      - alert: SuspiciousReportsSpike
+        expr: session_reports_suspicious_24h > 100
+        labels: { severity: warning }
+        annotations:
+          summary: "{{ $value }} suspicious match reports in 24 hours"
