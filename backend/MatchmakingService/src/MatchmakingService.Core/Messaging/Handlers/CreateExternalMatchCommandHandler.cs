@@ -61,6 +61,7 @@ public sealed class CreateExternalMatchCommandHandler(
         }
 
         saveResult.ThrowIfFailed();
+        MatchmakingMetrics.MatchesCreated.Add(1);
 
         logger.LogInformation("External match {MatchId} created for {ExternalRef}", match.Id, command.ExternalRef);
     }

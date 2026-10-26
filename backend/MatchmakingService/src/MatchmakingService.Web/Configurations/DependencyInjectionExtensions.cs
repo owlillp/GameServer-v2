@@ -12,6 +12,7 @@ using Shared.Framework.HealthChecks;
 using Shared.Framework.Logging;
 using Shared.Framework.OpenApi;
 using Shared.Messaging;
+using Shared.Observability;
 using SessionService.Contracts.Communication;
 using WalletService.Contracts.Communication;
 
@@ -37,6 +38,8 @@ public static class DependencyInjectionExtensions
                 .AddRabbitMqCheck(configuration, tags: [HealthCheckExtensions.READY_TAG])
                 .AddCheck<RedisHealthCheck>("redis", failureStatus: HealthStatus.Degraded);
             builder.Services.AddEndpoints(typeof(DependencyInjectionExtensions).Assembly);
+            builder.Services.AddPlatformMetrics(Constants.SERVICE_NAME, MatchmakingService.Core.MatchmakingMetrics.METER_NAME);
+            builder.Services.AddHostedService<MatchmakingMetricsSampler>();
 
             builder.Services.AddWalletServiceGrpcCommunication(configuration);
             builder.Services.AddSessionServiceGrpcCommunication(configuration);

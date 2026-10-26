@@ -11,6 +11,7 @@ using Shared.Framework.HealthChecks;
 using Shared.Framework.Logging;
 using Shared.Framework.OpenApi;
 using Shared.Messaging;
+using Shared.Observability;
 using WalletService.Contracts.Communication;
 
 namespace ClanWarsService.Web.Configurations;
@@ -37,6 +38,8 @@ public static class DependencyInjectionExtensions
                 .AddRabbitMqCheck(configuration, tags: [HealthCheckExtensions.READY_TAG])
                 .AddCheck<RedisHealthCheck>("redis", failureStatus: HealthStatus.Degraded);
             builder.Services.AddEndpoints(typeof(DependencyInjectionExtensions).Assembly);
+            builder.Services.AddPlatformMetrics(Constants.SERVICE_NAME, ClanWarsService.Core.ClanWarsMetrics.METER_NAME);
+            builder.Services.AddHostedService<ClanWarsMetricsSampler>();
 
             builder.Services.AddWalletServiceGrpcCommunication(configuration);
             builder.Services.AddCore();

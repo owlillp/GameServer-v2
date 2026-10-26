@@ -76,6 +76,7 @@ public sealed class BattleResultService(
         if (firstDelivery)
         {
             await eventPublisher.PublishBattleFinishedAsync(battle, FINISHED, outcome, now);
+            ClanWarsMetrics.BattlesFinished.Add(1, new KeyValuePair<string, object?>("status", FINISHED));
             await DetectAbuseAsync(battle, winnerSide, scoreA, scoreB, current, now, cancellationToken);
         }
 
@@ -112,6 +113,7 @@ public sealed class BattleResultService(
         if (await battleRepository.TryCancelAsync(battle.Id, reason, now, cancellationToken))
         {
             await eventPublisher.PublishBattleFinishedAsync(battle, CANCELLED, null, now);
+            ClanWarsMetrics.BattlesFinished.Add(1, new KeyValuePair<string, object?>("status", CANCELLED));
             logger.LogInformation("Battle {BattleId} cancelled: {Reason}", battle.Id, reason);
         }
     }
@@ -146,6 +148,7 @@ public sealed class BattleResultService(
         foreach (AbuseSignal signal in signals)
         {
             await eventPublisher.PublishAbuseSignalAsync(signal);
+            ClanWarsMetrics.AbuseSignals.Add(1, new KeyValuePair<string, object?>("kind", signal.Kind));
             logger.LogWarning("Abuse signal {Kind} for battle {BattleId}: {Details}", signal.Kind, battle.Id, signal.Details);
         }
 

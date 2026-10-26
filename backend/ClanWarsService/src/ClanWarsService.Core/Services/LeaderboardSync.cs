@@ -20,9 +20,14 @@ public sealed class LeaderboardSync(
 {
     public async Task<bool> SyncAsync(Guid seasonId, bool force, CancellationToken cancellationToken)
     {
-        if (!force && !await HasDivergedAsync(seasonId, cancellationToken))
+        if (!force)
         {
-            return false;
+            if (!await HasDivergedAsync(seasonId, cancellationToken))
+            {
+                return false;
+            }
+
+            ClanWarsMetrics.LeaderboardDivergences.Add(1);
         }
 
         await using IAsyncDisposable? rebuildLock = await scoreRepository.TryAcquireRebuildLockAsync(seasonId, cancellationToken);
@@ -37,6 +42,7 @@ public sealed class LeaderboardSync(
             (afterClanId, token) => scoreRepository.ListAfterAsync(seasonId, afterClanId, batchSize, token),
             cancellationToken);
 
+        ClanWarsMetrics.LeaderboardRebuilds.Add(1);
         logger.LogInformation("Leaderboard of season {SeasonId} rebuilt from PostgreSQL", seasonId);
         return true;
     }

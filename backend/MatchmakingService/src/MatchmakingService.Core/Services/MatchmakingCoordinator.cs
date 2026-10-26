@@ -90,6 +90,8 @@ public sealed class MatchmakingCoordinator(
             },
             cancellationToken);
 
+        MatchmakingMetrics.MatchesCreated.Add(created.Count);
+
         foreach (Match match in created)
         {
             logger.LogInformation(

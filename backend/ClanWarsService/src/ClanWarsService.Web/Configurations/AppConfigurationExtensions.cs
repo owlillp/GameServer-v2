@@ -5,6 +5,7 @@ using Shared.Framework.Endpoints;
 using Shared.Framework.HealthChecks;
 using Shared.Framework.Logging;
 using Shared.Framework.Middlewares;
+using Shared.Observability;
 
 namespace ClanWarsService.Web.Configurations;
 
@@ -26,6 +27,7 @@ public static class AppConfigurationExtensions
         }
 
         app.MapPlatformHealthChecks();
+        app.MapPlatformMetrics();
         app.MapEndpoints();
         app.MapEndpointGroups(typeof(AppConfigurationExtensions).Assembly);
 

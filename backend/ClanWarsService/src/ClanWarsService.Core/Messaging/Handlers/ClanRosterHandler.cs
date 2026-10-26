@@ -11,12 +11,15 @@ namespace ClanWarsService.Core.Messaging.Handlers;
 /// </summary>
 public sealed class ClanRosterHandler(
     IRosterRepository rosterRepository,
-    ITransactionManager transactionManager)
+    ITransactionManager transactionManager,
+    TimeProvider timeProvider)
 {
     private const string LEADER_ROLE = "leader";
 
     public async Task Handle(ClanCreatedEvent @event, CancellationToken cancellationToken)
     {
+        ClanWarsMetrics.RecordLag(@event.CreatedAt, timeProvider.GetUtcNow().UtcDateTime);
+
         if (await rosterRepository.GetClanAsync(@event.ClanId, cancellationToken) is null)
         {
             await rosterRepository.AddClanAsync(
@@ -30,12 +33,16 @@ public sealed class ClanRosterHandler(
 
     public async Task Handle(ClanMemberJoinedEvent @event, CancellationToken cancellationToken)
     {
+        ClanWarsMetrics.RecordLag(@event.JoinedAt, timeProvider.GetUtcNow().UtcDateTime);
+
         await UpsertAsync(@event.AccountId, @event.ClanId, @event.Role, @event.JoinedAt, cancellationToken);
         await SaveAsync(cancellationToken);
     }
 
     public async Task Handle(ClanMemberRoleChangedEvent @event, CancellationToken cancellationToken)
     {
+        ClanWarsMetrics.RecordLag(@event.ChangedAt, timeProvider.GetUtcNow().UtcDateTime);
+
         RosterEntry? entry = await rosterRepository.GetEntryAsync(@event.AccountId, cancellationToken);
         if (entry is null || entry.ClanId != @event.ClanId || entry.IsNewerThan(@event.ChangedAt))
         {
@@ -48,12 +55,16 @@ public sealed class ClanRosterHandler(
 
     public async Task Handle(ClanMemberLeftEvent @event, CancellationToken cancellationToken)
     {
+        ClanWarsMetrics.RecordLag(@event.LeftAt, timeProvider.GetUtcNow().UtcDateTime);
+
         await RemoveAsync(@event.AccountId, @event.ClanId, @event.LeftAt, cancellationToken);
         await SaveAsync(cancellationToken);
     }
 
     public async Task Handle(ClanDisbandedEvent @event, CancellationToken cancellationToken)
     {
+        ClanWarsMetrics.RecordLag(@event.DisbandedAt, timeProvider.GetUtcNow().UtcDateTime);
+
         ClanProjection? clan = await rosterRepository.GetClanAsync(@event.ClanId, cancellationToken);
         clan?.MarkDisbanded(@event.DisbandedAt);
 

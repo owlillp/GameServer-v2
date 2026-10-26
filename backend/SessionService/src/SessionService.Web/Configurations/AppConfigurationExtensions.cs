@@ -6,6 +6,7 @@ using Shared.Framework.Endpoints;
 using Shared.Framework.HealthChecks;
 using Shared.Framework.Logging;
 using Shared.Framework.Middlewares;
+using Shared.Observability;
 
 namespace SessionService.Web.Configurations;
 
@@ -27,6 +28,7 @@ public static class AppConfigurationExtensions
         }
 
         app.MapPlatformHealthChecks();
+        app.MapPlatformMetrics();
         app.MapGrpcService<GameServerSessionsGrpcService>().RequireAuthorization();
         app.MapGrpcService<MatchSessionsGrpcService>().RequireAuthorization();
         app.MapEndpoints();

@@ -11,6 +11,7 @@ using Shared.Framework.HealthChecks;
 using Shared.Framework.Logging;
 using Shared.Framework.OpenApi;
 using Shared.Messaging;
+using Shared.Observability;
 
 namespace SessionService.Web.Configurations;
 
@@ -47,6 +48,8 @@ public static class DependencyInjectionExtensions
                 .AddRabbitMqCheck(configuration, tags: [HealthCheckExtensions.READY_TAG])
                 .AddCheck<RedisHealthCheck>(REDIS_HEALTH_CHECK, tags: [HealthCheckExtensions.READY_TAG]);
             builder.Services.AddEndpoints(typeof(DependencyInjectionExtensions).Assembly);
+            builder.Services.AddPlatformMetrics(Constants.SERVICE_NAME, SessionService.Core.SessionMetrics.METER_NAME);
+            builder.Services.AddHostedService<SessionMetricsSampler>();
 
             builder.Services.AddCore();
             builder.Services.AddInfrastructurePostgres(configuration);

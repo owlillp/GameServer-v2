@@ -92,6 +92,7 @@ public sealed class SessionLivenessSweeper(
         foreach (Guid sessionId in closed.Select(session => session.Id))
         {
             await registry.RemoveSessionAsync(sessionId, cancellationToken);
+            SessionMetrics.SessionsExpired.Add(1);
             logger.LogInformation("Session {SessionId} expired and was closed", sessionId);
         }
     }

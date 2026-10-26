@@ -18,6 +18,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\..\Shared\Observability\Shared.Observability.csproj" />
       <ProjectReference Include="..\MatchmakingService.Contracts\MatchmakingService.Contracts.csproj" />
       <ProjectReference Include="..\MatchmakingService.Core\MatchmakingService.Core.csproj" />
       <ProjectReference Include="..\MatchmakingService.Domain\MatchmakingService.Domain.csproj" />

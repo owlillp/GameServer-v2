@@ -1,10 +1,11 @@
-﻿using Scalar.AspNetCore;
+using Scalar.AspNetCore;
 using Shared.Authentication;
 using Shared.Framework.Cors;
 using Shared.Framework.Endpoints;
 using Shared.Framework.HealthChecks;
 using Shared.Framework.Logging;
 using Shared.Framework.Middlewares;
+using Shared.Observability;
 
 namespace MatchmakingService.Web.Configurations;
 
@@ -26,6 +27,7 @@ public static class AppConfigurationExtensions
         }
 
         app.MapPlatformHealthChecks();
+        app.MapPlatformMetrics();
         app.MapEndpoints();
         app.MapEndpointGroups(typeof(AppConfigurationExtensions).Assembly);
 

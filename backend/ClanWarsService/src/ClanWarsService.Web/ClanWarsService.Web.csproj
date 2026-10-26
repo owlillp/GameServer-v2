@@ -20,6 +20,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\..\Shared\Observability\Shared.Observability.csproj" />
       <ProjectReference Include="..\ClanWarsService.Contracts\ClanWarsService.Contracts.csproj" />
       <ProjectReference Include="..\ClanWarsService.Core\ClanWarsService.Core.csproj" />
       <ProjectReference Include="..\ClanWarsService.Domain\ClanWarsService.Domain.csproj" />

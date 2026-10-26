@@ -26,9 +26,14 @@ public sealed class LeaderboardSync(
 {
     public async Task<LeaderboardSyncOutcome> SyncAsync(bool force, CancellationToken cancellationToken)
     {
-        if (!force && !await HasDivergedAsync(cancellationToken))
+        if (!force)
         {
-            return LeaderboardSyncOutcome.InSync;
+            if (!await HasDivergedAsync(cancellationToken))
+            {
+                return LeaderboardSyncOutcome.InSync;
+            }
+
+            MatchmakingMetrics.LeaderboardDivergences.Add(1);
         }
 
         await using IAsyncDisposable? rebuildLock = await repository.TryAcquireRebuildLockAsync(cancellationToken);

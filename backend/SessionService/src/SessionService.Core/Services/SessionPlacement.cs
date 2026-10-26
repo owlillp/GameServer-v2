@@ -69,7 +69,7 @@ public sealed class SessionPlacement(
             TimeSpan.FromSeconds(current.NewSessionTtlSeconds),
             cancellationToken);
 
-        return session.ToTicketDto(server, ticketService.Issue(accountId, session.Id, server.Id, now));
+        return IssueTicket(accountId, session, server, now);
     }
 
     public async Task<Result<SessionTicketDto, Error>> IssueAsync(
@@ -84,7 +84,7 @@ public sealed class SessionPlacement(
             return SessionErrors.ServerNotFound;
         }
 
-        return session.ToTicketDto(server, ticketService.Issue(accountId, session.Id, server.Id, now));
+        return IssueTicket(accountId, session, server, now);
     }
 
     /// <summary>
@@ -112,5 +112,11 @@ public sealed class SessionPlacement(
             cancellationToken);
 
         return sessions.FirstOrDefault(session => alive.Contains(session.Id));
+    }
+
+    private SessionTicketDto IssueTicket(Guid accountId, Session session, GameServer server, DateTime now)
+    {
+        SessionMetrics.Joins.Add(1, new KeyValuePair<string, object?>("kind", session.Kind.ToWireName()));
+        return session.ToTicketDto(server, ticketService.Issue(accountId, session.Id, server.Id, now));
     }
 }

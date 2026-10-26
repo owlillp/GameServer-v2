@@ -19,6 +19,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\..\Shared\Observability\Shared.Observability.csproj" />
       <ProjectReference Include="..\SessionService.Contracts\SessionService.Contracts.csproj" />
       <ProjectReference Include="..\SessionService.Core\SessionService.Core.csproj" />
       <ProjectReference Include="..\SessionService.Domain\SessionService.Domain.csproj" />

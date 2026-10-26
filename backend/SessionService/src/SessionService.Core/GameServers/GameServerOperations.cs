@@ -235,6 +235,7 @@ public sealed class GameServerOperations(
         RawReport? existing = await reportRepository.GetByActivityAsync(report.ActivityId, cancellationToken);
         if (existing is not null)
         {
+            SessionMetrics.Report("duplicate");
             return existing.SessionId == sessionId
                 ? new ReportOutcome(Duplicate: true, existing.IsSuspicious)
                 : SessionErrors.ReportInvalid;
@@ -251,6 +252,7 @@ public sealed class GameServerOperations(
         var validationResult = ReportChecks.Validate(report, session);
         if (validationResult.IsFailure)
         {
+            SessionMetrics.Report("rejected");
             return validationResult.Error;
         }
 
@@ -287,6 +289,7 @@ public sealed class GameServerOperations(
                 string.Join(", ", flags));
         }
 
+        SessionMetrics.Report(rawReport.IsSuspicious ? "suspicious" : "accepted");
         return new ReportOutcome(Duplicate: false, rawReport.IsSuspicious);
     }
 

@@ -28,6 +28,8 @@ public sealed class MatchRecovery(
             return;
         }
 
+        MatchmakingMetrics.MatchesCancelled.Add(1, new KeyValuePair<string, object?>("reason", reason.Split(':')[0]));
+
         // External matches have no queue to go back to: the owner (clan wars) decides what to do.
         if (match.IsExternal)
         {
