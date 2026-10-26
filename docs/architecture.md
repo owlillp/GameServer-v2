@@ -7,8 +7,13 @@
 >
 > Решение (2026-10-21): кланы и клан-войны исключены. Вместо них —
 > `MatchmakingService`: пати 2–5, простая очередь, длительные матчи двух пати,
-> награды за матч и глобальный лидерборд. Упоминания кланов ниже — исторический
-> контекст раннего черновика.
+> награды за матч и глобальный лидерборд.
+>
+> Решение (2026-10-25, `docs/implementation-plan.md`): кланы возвращены отдельным
+> доменом — `ClanService` (социальная часть) и `ClanWarsService` (сезоны, битвы,
+> рейтинг, награды) поверх матчмейкинга и сессий. `SessionService` реализован:
+> матчи из очереди и клановые битвы играются на игровых серверах, результаты
+> приходят от серверов, а не от админа.
 
 ## 1. Цели и принципы
 
@@ -63,8 +68,11 @@
 | 7 | **PaymentService** | Реальные деньги: PSP-интеграция, checkout, вебхуки, возвраты/чарджбеки, идемпотентность | `payments` | 3 |
 | 8 | **BattlePassService** | BP-сезоны, уровни/награды (free/premium), прогресс, задания (ежедневные/недельные/сезонные), клеймы | `battlepass` | 2 |
 | 9 | **EventsService** | Сезонные ивенты: календарь и фазы, ивент-задания/очки, ивент-награды, feature flags для клиента | `events` | 2 |
-| 10 | **MatchmakingService** | Пати 2–5 игроков, простая FIFO-очередь, длительные матчи двух пати (дни), результаты, награды за матч, глобальный лидерборд | `matchmaking` + Redis ZSET | 2 |
-| 11 | **SessionService** | Приём результатов матчей от игровых серверов: валидация, дедуп, античит-эвристики, канонический `MatchCompleted` | `sessions` | 3 |
+| 10 | **MatchmakingService** *(есть)* | Пати 2–5 игроков, очередь с подбором по Elo и расширяющимся окном, матчи двух пати, «внешние» матчи для клановых битв, награды за матч, глобальный лидерборд | `matchmaking` + Redis ZSET | 2 |
+| 11 | **SessionService** *(есть)* | Реестр игровых серверов и живых сессий, join-тикеты, heartbeat, приём отчётов о матчах: проверка, дедуп, античит-флаги, канонический `MatchCompleted` | `sessions` + Redis | 3 |
+| 14 | **ClanService** *(есть)* | Кланы, состав и роли, заявки/приглашения, кулдауны, клановые поинты (ledger) | `clans` | 3 |
+| 15 | **ClanWarsService** *(есть)* | Сезоны по расписанию (Quartz), окна и очередь битв, подбор соперников, очки и рейтинг кланов, награды сезона, антиабьюз | `clanwars` + Redis ZSET | 3 |
+| 16 | **RealtimeService** *(есть)* | SignalR-hub: доставка событий клиентам по группам `player`, `clan`, `liveops` | Redis (тикеты, backplane, проекция кланов) | 3 |
 | 12 | **PlayerHub BFF** *(опц.)* | Агрегация экрана входа: профиль + кошелёк + BP + пати + активные ивенты одним вызовом, кэш в Redis | — | 3 |
 | 13 | **Notification/Mail** *(опц.)* | Внутриигровая почта (выдача наград/компенсаций), push/e-mail, шаблоны, локализация | `notifications` | 3 |
 
@@ -82,14 +90,47 @@
 - `WalletService` отделён от `StoreService`: ledger — критичный инвариант
   (идемпотентность, аудит), витрина и саги меняются часто.
 - `SessionService` — единственная точка контакта игровых серверов и ворота
-  античита: всё остальное потребляет уже очищенный `MatchCompleted`. Пока
-  результаты матчей вводит админ (`/admin/matchmaking/*`), контракт события
-  `match-completed.session` уже совместим с будущим SessionService.
-- Выдача наград матча идёт через существующие Wallet (REST + service-токен) и
+  античита: всё остальное потребляет уже очищенный `MatchCompleted`. Серверы
+  говорят с ним по gRPC (`Register`, стрим `Heartbeat`, `ValidateJoinTicket`,
+  `PlayerJoined/Left`, `ReportMatch`) с токеном `session.write`. Матчмейкинг
+  просит сервер командой `allocate-match` и получает результаты событием
+  `match-completed.session`; админский ввод результатов остался для споров
+  (`Matchmaking:ResultsSource`).
+- Выдача наград матча идёт через Wallet (gRPC `Credit` + service-токен) и
   Inventory (RabbitMQ-команда), идемпотентно по id гранта, без отдельного
   «сервиса наград».
+- `ClanService` и `ClanWarsService` разделены: состав клана меняется часто и
+  мелко, а сезоны, битвы и награды — тяжёлые фоновые процессы со своим
+  расписанием. ClanWars не ходит в ClanService синхронно: состав — проекция из
+  событий `clan-events`, поинты — событие `clan-points-granted.clanwars`.
+- Клановая битва — это «внешний» матч матчмейкинга: ClanWars выбирает отряды, а
+  проведение на сервере, тикеты и приём результата переиспользуют общий контур
+  Matchmaking ↔ Session (`create-external-match`, `external-match-*`).
 
 ## 3. Схема связей
+
+### 3.1 Сессии, матчи и кланы (реализовано)
+
+```mermaid
+flowchart LR
+  GS["Игровой сервер"] -->|"gRPC session.write"| SESSION["SessionService"]
+  MM["MatchmakingService"] -->|"allocate-match"| SESSION
+  SESSION -->|"match-allocated / match-completed / session-closed"| MM
+  MM -->|"gRPC IssueMatchTicket"| SESSION
+  CW["ClanWarsService"] -->|"create-external-match"| MM
+  MM -->|"external-match-started / completed / cancelled"| CW
+  CLAN["ClanService"] -->|"clan-events"| CW
+  CW -->|"clan-points-granted"| CLAN
+  CW -->|"gRPC Credit"| WALLET["WalletService"]
+  CW -->|"grant-items"| INV["InventoryService"]
+  MM -->|"gRPC Credit"| WALLET
+  CLAN -->|"clan-events"| RT["RealtimeService"]
+  CW -->|"season / battle events"| RT
+  MM -->|"match-ready"| RT
+  SESSION -->|"match-completed"| EV["EventService"]
+```
+
+### 3.2 Общая схема (черновик)
 
 ```mermaid
 flowchart LR
@@ -205,7 +246,14 @@ Kafka-топики ключуются по `player_id` / `match_id` — поря
 | --- | --- | --- | --- |
 | `identity.account.registered` | Auth | Rabbit | Player (провижининг профиля) |
 | `identity.account.blocked` | Auth | Rabbit | Player, Matchmaking (исключение из очереди) |
-| `match-completed.session` | Matchmaking (позже Session) | Rabbit + Kafka | Player, BattlePass, Events, аналитика |
+| `match-completed.session` | Session (в режиме `Admin` — Matchmaking) | Rabbit + Kafka | Matchmaking, Events, Player, аналитика |
+| `player-joined/left.session`, `session-closed.session` | Session | Rabbit | Matchmaking (падение сервера), Social/Realtime (позже) |
+| `allocate-match.matchmaking` → `match-allocated/-allocation-failed.session` | Matchmaking → Session | Rabbit | выделение сервера под матч |
+| `create-external-match.matchmaking` → `external-match-started/completed/cancelled.matchmaking` | ClanWars → Matchmaking | Rabbit | клановые битвы |
+| `clan-created/disbanded.clan`, `member-joined/left/role-changed.clan` | Clan | Rabbit | ClanWars (проекция), Realtime |
+| `season-started/ended.clanwars`, `battle-found/finished.clanwars` | ClanWars | Rabbit | Realtime, аналитика |
+| `clan-points-granted.clanwars`, `grant-items.clanwars` | ClanWars | Rabbit | Clan (ledger), Inventory |
+| `abuse-signal.clanwars` | ClanWars | Rabbit | Moderation (будущий) |
 | `grant-reward.matchmaking` | Matchmaking | Rabbit | Inventory (выдача предметов) |
 | `reward-granted/failed.matchmaking` | Inventory | Rabbit | Matchmaking (статус гранта) |
 | `economy.purchase.completed` | Store | Rabbit | Inventory, BattlePass, Events, аналитика |
@@ -243,7 +291,11 @@ Kafka-топики ключуются по `player_id` / `match_id` — поря
   создаётся;
 - добавляется параллельно REST: существующие REST-эндпоинты не удаляются.
 
-### 4.6 Realtime-оповещения клиентов (SignalR) — будущее
+### 4.6 Realtime-оповещения клиентов (SignalR) — реализовано в RealtimeService
+
+Сейчас: группы `player:{id}`, `liveops` и `clan:{id}` (состав клана —
+проекция из `clan-events` в Redis, соединение вступает в группу при
+`Authenticate` и при вступлении игрока в клан). Ниже — исходное решение.
 
 Решение: доставка серверных событий клиенту (старт/конец сезона, изменение
 очков клана, личные награды/сообщения) — через **SignalR** (WebSocket с
@@ -549,6 +601,13 @@ matches_played)` — истина, Redis ZSET `matchmaking:leaderboard:global` �
 
 ## 10. Наблюдаемость
 
+Реализовано (этап 8 плана): Session, Matchmaking и ClanWars отдают `/metrics`
+(OpenTelemetry → Prometheus, `Shared.Observability`): длины очередей, открытые
+сессии и битвы, матчи без сервера, гранты по статусам, dead letters Wolverine,
+лаг проекции состава кланов, расхождения Redis-лидербордов с PostgreSQL.
+Правила алертов и дашборд — `ops/`, профиль compose `observability`;
+нагрузочные сценарии — `load/k6`.
+
 - OpenTelemetry: trace через HTTP/gRPC/RabbitMQ/Kafka (`traceparent` в конверте
   события), экспорт в Tempo/Jaeger.
 - Логи: Serilog → Loki, correlation/causation id в каждой записи.
@@ -578,13 +637,16 @@ matches_played)` — истина, Redis ZSET `matchmaking:leaderboard:global` �
 | 1.5 gRPC-транспорт | `.proto`-контракт Wallet `Reserve/Commit/Release`, gRPC-сервер рядом с REST, gRPC-клиент в Store; общий маппер ошибок | Store вызывает Wallet по gRPC, REST-эндпоинты кошелька продолжают работать |
 | 2. Сезонный контент | BattlePass, Events (Quartz-планировщик фаз), **Matchmaking (реализовано)**, реальные отчёты матчей | BP-сезон, летний/новогодний ивент, пати/очередь/длительные матчи, награды и лидерборд |
 | 3. Донат и сервис-полировка | Payment, hard-валюта, premium BP, Notification/Mail, BFF, аналитика | донат end-to-end, возвраты, почта, агрегированный экран входа |
+| 3.2 Сессии и кланы *(реализовано)* | SessionService, матчи на игровых серверах, ClanService, ClanWarsService (сезоны, битвы, награды), Elo в матчмейкинге, антиабьюз, метрики и k6 | см. `docs/implementation-plan.md` |
 | 3.5 Realtime-оповещения | SignalR-hub (RealtimeGateway), Redis backplane, группы `player/match/liveops`, консьюмеры событий, «снимок + подписка» на клиенте, nginx WebSocket | клиент получает старт сезона, статус матча и личные события в реальном времени |
 | 4. Масштаб | реплики/шардирование PG, Kafka-реплей, canary, anti-fraud ML-сигналы | нагрузочный тест 50k+ CCU, сезонный «шторм» выдерживается |
 
 ## 13. Открытые вопросы
 
-1. **Игровые серверы**: какой движок/протокол, сервер-авторитативность, как
-   передаются отчёты (gRPC-стрим или батчи)? От этого зависит SessionService.
+1. **Игровые серверы**: движок — Unity; контракт с SessionService — gRPC
+   (`Shared/Protos/session.proto`, heartbeat стримом, отчёт unary по
+   `activity_id`). Открыто: выделение серверов (Fleet API) — пока
+   `StaticPoolAllocator` по зарегистрированным серверам.
 2. **Мир один или регионы**: шардирование по `player_id`, региональные
    очереди матчмейкинга (отдельный координатор на регион?).
 3. **Продуктовые параметры матчмейкинга**: размер пати (сейчас 2–5), пара пати
